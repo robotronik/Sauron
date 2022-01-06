@@ -1,0 +1,3 @@
+/home/moddingear/Desktop/marker/CMakeFiles/rebuild_cache.dir
+/home/moddingear/Desktop/marker/CMakeFiles/edit_cache.dir
+/home/moddingear/Desktop/marker/CMakeFiles/create_markers.dir
