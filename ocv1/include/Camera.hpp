@@ -1,11 +1,13 @@
 #pragma once
 
+#include <iostream>
 #include <string>   // for strings
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/cudawarping.hpp>
 using namespace std;
 using namespace cv;
 
@@ -62,12 +64,13 @@ struct Camera
 			return false;
 		}
 		feed = new VideoCapture();
+		cout << "Opening device at \"" << DeviceID << "\" with API id " << ApiID << endl;
 		feed->open(DeviceID, ApiID);
-		feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
-		feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
-		feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
-		feed->set(CAP_PROP_FPS, fps);
-		feed->set(CAP_PROP_BUFFERSIZE, 1);
+		//feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
+		//feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
+		//feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
+		//feed->set(CAP_PROP_FPS, fps);
+		//feed->set(CAP_PROP_BUFFERSIZE, 1);
 		connected = true;
 		return true;
 	}
@@ -141,8 +144,12 @@ struct Camera
 		double fx = frame.cols / winsize.width;
 		double fy = frame.rows / winsize.height;
 		double fz = max(fx, fy);
+		cuda::GpuMat resizedgpu, framegpu;
+		framegpu.upload(frame);
+		cuda::resize(framegpu, resizedgpu, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
 		UMat resized;
-		resize(frame, resized, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
+		resizedgpu.download(resized);
+		//cout << "Resize OK" <<endl;
 		if (arucoed)
 		{
 			vector<vector<Point2f>> raruco;

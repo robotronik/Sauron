@@ -19,7 +19,11 @@ message(STATUS "    version: ${OpenCV_VERSION}")
 message(STATUS "    libraries: ${OpenCV_LIBS}")
 message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
-include_directories(include)
+include_directories(
+    $OPENCV_INCLUDE_DIRS
+    ./include
+    )
+
 file(GLOB SOURCES "source/*.cpp")
 add_executable(Robotronikaruco ${SOURCES})
 

@@ -9,6 +9,10 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
+
+#include <opencv2/core/cuda.hpp>
+#include <opencv2/cudaimgproc.hpp>
+#include <opencv2/core/ocl.hpp>
 #include "Camera.hpp"
 #include "trackedobject.hpp"
 using namespace std;
@@ -90,16 +94,18 @@ vector<Camera*> Cameras;
 
 int main(int argc, char** argv )
 {
-    /*int cuda_devices_number = getCudaEnabledDeviceCount();
+	//cout << getBuildInformation() << endl;
+	ocl::setUseOpenCL(true);
+    int cuda_devices_number = cuda::getCudaEnabledDeviceCount();
     cout << "CUDA Device(s) Number: "<< cuda_devices_number << endl;
 	if (cuda_devices_number > 0)
 	{
-		DeviceInfo _deviceInfo;
+		cuda::DeviceInfo _deviceInfo;
 		bool _isd_evice_compatible = _deviceInfo.isCompatible();
 		cout << "CUDA Device(s) Compatible: " << _isd_evice_compatible << endl;
-		printShortCudaDeviceInfo(getDevice());
-	}*/
-	physicalCameras = autoDetectCameras(10);
+		cuda::printShortCudaDeviceInfo(cuda::getDevice());
+	}
+	physicalCameras = autoDetectCameras(3);
 	for (int i = 0; i < physicalCameras.size(); i++)
 	{
 		Cameras.push_back(physicalCameras[i]);
@@ -160,11 +166,12 @@ int main(int argc, char** argv )
 		double fps = getTickFrequency() / (double)(dt2-dt);
 		dt = dt2;
 		UMat image = ConcatCameras(Cameras, Cameras.size());
+		//cout << "Concat OK" <<endl;
 		String strfps = String("fps : ") + to_string(fps);
 		putText(image, strfps, Point2i(0,image.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(255, 255, 255), 5);
 		putText(image, strfps, Point2i(0,image.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 0, 0), 2);
+		//printf("fps : %f\n", fps);
 		imshow("Cameras", image);
-		//DisplayCameras(Cameras);
 		if (waitKey(5) >= 0)
 			break;
 		
