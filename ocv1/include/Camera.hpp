@@ -7,6 +7,8 @@
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
 #include <opencv2/imgproc.hpp>
+
+#include <opencv2/cudacodec.hpp>
 #include <opencv2/cudawarping.hpp>
 using namespace std;
 using namespace cv;
@@ -20,9 +22,14 @@ struct Camera
 	string DeviceID;
 	int ApiID;
 
+	bool CudaCapture;
+
 	//capture
 	VideoCapture* feed;
 	UMat frame;
+
+	Ptr<cudacodec::VideoReader> d_reader;
+	cuda::GpuMat d_frame;
 
 	//calibration
 	Mat CameraMatrix;
@@ -41,17 +48,19 @@ struct Camera
 
 	Camera(string InWindowName)
 		:WindowName(InWindowName),
+		CudaCapture(false),
 		physical(false),
 		connected(false),
 		grabbed(false)
 	{}
 
-	Camera(string InWindowName, Size InCaptureSize, int InFPS, string InDeviceID, int InApiId)
+	Camera(string InWindowName, Size InCaptureSize, int InFPS, string InDeviceID, int InApiId, bool InCudaCapture)
 		:WindowName(InWindowName),
 		CaptureSize(InCaptureSize),
 		fps(InFPS),
 		DeviceID(InDeviceID),
 		ApiID(InApiId),
+		CudaCapture(InCudaCapture),
 		physical(true),
 		connected(false),
 		grabbed(false)
@@ -63,14 +72,27 @@ struct Camera
 		{
 			return false;
 		}
-		feed = new VideoCapture();
-		cout << "Opening device at \"" << DeviceID << "\" with API id " << ApiID << endl;
-		feed->open(DeviceID, ApiID);
-		//feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
-		//feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
-		//feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
-		//feed->set(CAP_PROP_FPS, fps);
-		//feed->set(CAP_PROP_BUFFERSIZE, 1);
+		if (CudaCapture)
+		{
+			d_reader = cudacodec::createVideoReader(DeviceID, {
+				CAP_PROP_FRAME_WIDTH, CaptureSize.width, 
+				CAP_PROP_FRAME_HEIGHT, CaptureSize.height, 
+				CAP_PROP_FPS, fps,
+				CAP_PROP_BUFFERSIZE, 1});
+
+		}
+		else
+		{
+			feed = new VideoCapture();
+			cout << "Opening device at \"" << DeviceID << "\" with API id " << ApiID << endl;
+			feed->open(DeviceID, ApiID);
+			feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
+			feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
+			feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
+			feed->set(CAP_PROP_FPS, fps);
+			feed->set(CAP_PROP_BUFFERSIZE, 1);
+		}
+		
 		connected = true;
 		return true;
 	}
@@ -85,7 +107,16 @@ struct Camera
 		{
 			return false;
 		}
-		grabbed = feed->grab();
+		if (CudaCapture)
+		{
+			d_reader->grab();
+		}
+		else
+		{
+			grabbed = feed->grab();
+		}
+		
+		
 		return grabbed;
 	}
 
@@ -100,13 +131,33 @@ struct Camera
 			return false;
 		}
 		arucoed = false;
-		if (grabbed)
+		if (CudaCapture)
 		{
-			grabbed = false;
-			return feed->retrieve(frame);
+			if (grabbed)
+			{
+				grabbed = false;
+				d_reader->retrieve(d_frame);
+			}
+			else
+			{
+				d_reader->nextFrame(d_frame);
+			}
+			
+			d_frame.download(frame);
+			return true;
+		}
+		else
+		{
+			if (grabbed)
+			{
+				grabbed = false;
+				return feed->retrieve(frame);
+			}
+			
+			return feed->read(frame);
 		}
 		
-		return feed->read(frame);
+		
 	}
 
 	void Show()
@@ -169,8 +220,6 @@ struct Camera
 
 };
 
-vector<Camera*> autoDetectCameras(int maxidx);
+vector<Camera*> autoDetectCameras();
 
 bool StartCameras(vector<Camera*> Cameras);
-
-static bool readCameraParameters(std::string filename, Mat& camMatrix, Mat& distCoeffs);

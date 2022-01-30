@@ -11,16 +11,20 @@
 #include <opencv2/calib3d.hpp>
 
 #include <opencv2/core/cuda.hpp>
+#include <opencv2/cudacodec.hpp>
 #include <opencv2/cudaimgproc.hpp>
+
 #include <opencv2/core/ocl.hpp>
+
 #include "Camera.hpp"
 #include "trackedobject.hpp"
+#include "Calibrate.hpp"
+#include "boardviz.hpp"
 using namespace std;
 using namespace cv;
 
+#define HAVE_CUDA
 
-//Camera cam0 = Camera("Camera0", Size(1920, 1080), 30, "/dev/video0", CAP_ANY);
-//Camera cam1 = Camera("Camera1", Size(1920, 1080), 30, "/dev/video2", CAP_ANY);
 vector<Camera*> physicalCameras; //= {&cam0, &cam1};
 vector<Camera*> virtualCameras;
 
@@ -55,15 +59,6 @@ void DetectArucoCameras(vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Pt
 	});
 }
 
-/*void DisplayCameras(vector<Camera*> Cameras)
-{
-	for (int i = 0; i < Cameras.size(); i++)
-	{
-		Cameras[i]->Show();
-		//cout << "shown camera " << i<< endl;
-	}
-}*/
-
 UMat ConcatCameras(vector<Camera*> Cameras, int NumCams)
 {
 	Size screensize = Size(1920, 1080);
@@ -94,7 +89,9 @@ vector<Camera*> Cameras;
 
 int main(int argc, char** argv )
 {
-	//cout << getBuildInformation() << endl;
+	CommandLineParser parser(argc, argv, "");
+	cout << getBuildInformation() << endl;
+	cv::cuda::setDevice(0);
 	ocl::setUseOpenCL(true);
     int cuda_devices_number = cuda::getCudaEnabledDeviceCount();
     cout << "CUDA Device(s) Number: "<< cuda_devices_number << endl;
@@ -105,13 +102,12 @@ int main(int argc, char** argv )
 		cout << "CUDA Device(s) Compatible: " << _isd_evice_compatible << endl;
 		cuda::printShortCudaDeviceInfo(cuda::getDevice());
 	}
-	physicalCameras = autoDetectCameras(3);
+	physicalCameras = autoDetectCameras();
+	TestBoardViz();
+	//docalibration(physicalCameras[0]);
 	for (int i = 0; i < physicalCameras.size(); i++)
 	{
 		Cameras.push_back(physicalCameras[i]);
-		/*Camera* arucopair = new Camera(physicalCameras[i]->WindowName + string("Aruco"));
-		virtualCameras.push_back(arucopair);
-		Cameras.push_back(arucopair);*/
 	}
 	
 	namedWindow("Cameras", WINDOW_NORMAL);
