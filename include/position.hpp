@@ -121,4 +121,9 @@ struct FVector2D
 		);
 	}
 
+	static FVector2D<T> Clamp(FVector2D<T> Vec, FVector2D<T> Minimum, FVector2D<T> Maximum)
+	{
+		return Min(Max(Vec, Minimum), Maximum);
+	}
+
 };

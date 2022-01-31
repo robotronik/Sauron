@@ -17,18 +17,28 @@ using namespace cv;
 
 cuda::GpuMat table;
 cuda::GpuMat robot;
+cuda::GpuMat rouge, vert, bleu, autre;
+const String assetpath = "../assets/";
 
 FVector2D<float> TailleTable;
 FVector2D<float> CentreTable;
 
 cuda::GpuMat image;
 
+void LoadImage(cuda::GpuMat& output, String location)
+{
+	output.upload(imread(assetpath + location, IMREAD_UNCHANGED));
+}
+
 void InitImages()
 {
-	Mat tablecpu = imread("../assets/VisuelTable.png", IMREAD_UNCHANGED);
-	table.upload(tablecpu);
-	Mat robotcpu = imread("../assets/Robot.png", IMREAD_UNCHANGED);
-	robot.upload(robotcpu);
+	
+	LoadImage(table, "VisuelTable.png");
+	LoadImage(robot, "Robot.png");
+	LoadImage(rouge, "rouge.png");
+	LoadImage(vert, "vert.png");
+	LoadImage(bleu, "bleu.png");
+	LoadImage(autre, "autre.png");
 }
 
 void CreateSpace(FVector2D<float> extent, FVector2D<float> center)
@@ -57,8 +67,9 @@ void TestBoardViz()
 	while (waitKey(1) < 0)
 	{
 		CreateBackground(Size(1500, 1000));
+		OverlayImage(rouge, FVector2D<float>(0.1,0.2), M_PI/4, FVector2D<float>(0.15));
 		FVector2D<float> actualpos = (pos - TailleTable).Abs() - CentreTable;
-		OverlayImage(robot, actualpos, rot, FVector2D<float>(0.1));
+		OverlayImage(robot, actualpos, rot, FVector2D<float>(0.42));
 		double deltaTime = fps.GetDeltaTime();
 		pos = (pos + FVector2D<float>(1.0,1.0) * deltaTime) % (TailleTable*2);
 		rot = fmod(rot + deltaTime * M_PI, 2*M_PI);
@@ -92,38 +103,42 @@ FVector2D<float> RotatePointAround(FVector2D<float> center, FVector2D<float> poi
 
 void OverlayImage(cuda::GpuMat& ImageToOverlay, FVector2D<float> position, float rotation, FVector2D<float> ImageSize)
 {
-	cuda::GpuMat OverlayRotated(image.size(), ImageToOverlay.type());
 
 	FVector2D<int> BoardLocation = BoardToPixel(position);
 	FVector2D<float> width = FVector2D<float>(ImageToOverlay.cols, 0);
 	FVector2D<float> height = FVector2D<float>(0, ImageToOverlay.rows);
 	Point2f srcTri[3];
     srcTri[0] = GetImageCenter(ImageToOverlay);
-    srcTri[1] = FVector2D<float>(srcTri[0]) - width/2.f;
-    srcTri[2] = FVector2D<float>(srcTri[0]) - height/2.f;
+    srcTri[1] = FVector2D<float>(srcTri[0]) - width;
+    srcTri[2] = FVector2D<float>(srcTri[0]) - height;
+
+	FVector2D<float> TargetSize = ImageSize/TailleTable*FVector2D<int>(image.size());
+	FVector2D<int> Oversize = TargetSize * sqrt(2); //oversize to guarantee no cropping
+	cuda::GpuMat OverlayRotated(Oversize.ToSize(), ImageToOverlay.type());
+
     Point2f dstTri[3];
-    dstTri[0] = FVector2D<float>(BoardLocation);
-    dstTri[1] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(ImageSize.x/TailleTable.x * image.cols,0), rotation);
-    dstTri[2] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(0,ImageSize.y/TailleTable.y * image.rows), rotation);
+    dstTri[0] = GetImageCenter(OverlayRotated);
+    dstTri[1] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(TargetSize.x,0), rotation);
+    dstTri[2] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(0,TargetSize.y), rotation);
 	Mat warp_mat = getAffineTransform( srcTri, dstTri );
 
 	cuda::warpAffine(ImageToOverlay, OverlayRotated, warp_mat, OverlayRotated.size());
 
-	/*FVector2D<int> halfsize = FVector2D<int>(OverlayRotated.size())/2;
+	FVector2D<int> halfsize = Oversize/2;
 	
 	FVector2D<int> ROIStart = BoardLocation - halfsize;
-	ROIStart = FVector2D<int>::Max(ROIStart, FVector2D<int>(0));
-	FVector2D<int> ROIEnd = BoardLocation + halfsize;
-	ROIEnd = FVector2D<int>::Min(ROIEnd, FVector2D<int>(image.size()));
+	ROIStart = FVector2D<int>::Clamp(ROIStart, FVector2D<int>(0), FVector2D<int>(image.size()));
+	FVector2D<int> ROIEnd = BoardLocation - halfsize + Oversize;
+	ROIEnd = FVector2D<int>::Clamp(ROIEnd, FVector2D<int>(0), FVector2D<int>(image.size()));
 
 	cv::Rect ROIImage((Point2i)ROIStart, (Point2i)ROIEnd);
 	cv::Rect ROIrobot((Point2i)(ROIStart-BoardLocation+halfsize), (Point2i)(ROIEnd-BoardLocation+halfsize));
 
-	printf("img1 type = %d, img2 type = %d should be %d %d %d %d\n", OverlayRotated.type(), image.type(), CV_8UC4, CV_16UC4, CV_32SC4, CV_32FC4);
+	//printf("img1 type = %d, img2 type = %d should be %d %d %d %d\n", OverlayRotated.type(), image.type(), CV_8UC4, CV_16UC4, CV_32SC4, CV_32FC4);
 
-	cuda::alphaComp(cuda::GpuMat(OverlayRotated, ROIrobot), cuda::GpuMat(image, ROIImage), cuda::GpuMat(image, ROIImage), cuda::ALPHA_OVER);*/
+	cuda::alphaComp(cuda::GpuMat(OverlayRotated, ROIrobot), cuda::GpuMat(image, ROIImage), cuda::GpuMat(image, ROIImage), cuda::ALPHA_OVER);
 
-	cuda::alphaComp(OverlayRotated, image, image, cuda::ALPHA_OVER);
+	//cuda::alphaComp(OverlayRotated, image, image, cuda::ALPHA_OVER);
 }
 
 cuda::GpuMat& GetRobotImage()

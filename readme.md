@@ -31,6 +31,7 @@ sudo apt-get install -y libprotobuf-dev libgoogle-glog-dev libgflags-dev
 Telecharger opencv et opencv_contrib et les mettre dans home
 
 Déplacer l'exécutable InstallOpenCV.sh dans home
+
 `./InstallOpenCV.sh`
 
 ## Coder dessus
