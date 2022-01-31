@@ -11,6 +11,8 @@
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudaimgproc.hpp>
 
+#include "FrameCounter.hpp"
+
 using namespace cv;
 
 cuda::GpuMat table;
@@ -50,22 +52,19 @@ void TestBoardViz()
 	InitImages();
 	CreateSpace(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
 	FVector2D<float> pos = CentreTable + TailleTable;
-	float rot = 0;
-	int64 dt;
+	double rot = 0;
+	FrameCounter fps;
 	while (waitKey(1) < 0)
 	{
 		CreateBackground(Size(1500, 1000));
 		FVector2D<float> actualpos = (pos - TailleTable).Abs() - CentreTable;
 		OverlayImage(robot, actualpos, rot, FVector2D<float>(0.1));
-		int64 dt2 = getTickCount();
-		double deltaTime = (double)(dt2-dt) / getTickFrequency();
-		dt = dt2;
+		double deltaTime = fps.GetDeltaTime();
 		pos = (pos + FVector2D<float>(1.0,1.0) * deltaTime) % (TailleTable*2);
-		rot += deltaTime * M_PI;
-		String strfps = String("fps : ") + std::to_string(1/deltaTime);
-		cv::UMat imagecpu; GetImage(imagecpu);
-		putText(imagecpu, strfps, Point2i(0,imagecpu.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(255, 255, 255), 5);
-		putText(imagecpu, strfps, Point2i(0,imagecpu.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 0, 0), 2);
+		rot = fmod(rot + deltaTime * M_PI, 2*M_PI);
+		cv::UMat imagecpu; 
+		GetImage(imagecpu);
+		fps.AddFpsToImage(imagecpu, deltaTime);
 		imshow("Boardviz", imagecpu);
 	}
 	exit(EXIT_SUCCESS);

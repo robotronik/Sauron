@@ -1,40 +1,31 @@
+#include "Calibrate.hpp"
+
 #include <iostream> // for standard I/O
 #include <string>   // for strings
-#include <iomanip>  // for controlling float print precision
 #include <fstream>
 #include <iosfwd>
+#include <stdio.h>
 #include <sstream>  // string to number conversion
+#include <chrono> //seconds, micros, nanos
+#include <thread> //sleep_for
+#include <unistd.h>
+
 #include <opencv2/core.hpp>     // Basic OpenCV structures (cv::Mat, Scalar)
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
 #include <opencv2/aruco/charuco.hpp>
 #include <opencv2/calib3d.hpp>
-#include <stdio.h>
+
+#include "Camera.hpp"
+#include "Calibfile.hpp"
+#include "FrameCounter.hpp"
+
 using namespace std;
 using namespace cv;
 
 const float CalibrationSquareEdge = 0.02; //m
 const Size CheckerSize = Size(9, 13);
-
-static bool readCameraParameters(std::string filename, Mat& camMatrix, Mat& distCoeffs)
-{
-	cv::FileStorage fs(filename, cv::FileStorage::READ);
-	if (!fs.isOpened())
-		return false;
-	fs["camera_matrix"] >> camMatrix;
-	fs["distortion_coefficients"] >> distCoeffs;
-	return (camMatrix.size() == cv::Size(3,3)) ;
-}
-
-static void writeCameraParameters(std::string filename, Mat camMatrix, Mat distCoeffs)
-{
-	cv::FileStorage fs(filename, cv::FileStorage::WRITE);
-	if (!fs.isOpened())
-		return;
-	fs.write("camera_matrix", camMatrix);
-	fs.write("distortion_coefficients", distCoeffs);
-}
 
 void CreateKnownBoardPos(Size BoardSize, float squareEdgeLength, vector<Point3f>& corners)
 {
@@ -81,72 +72,28 @@ void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Siz
 	calibrateCamera(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, BoardSize, CameraMatrix, DistanceCoefficients, rVectors, tVectors);
 }
 
-bool SaveCameraCalibration(string name, Mat CameraMatrix, Mat distanceCoef)
-{
-	ofstream outStream(name);
-	if (outStream)
-	{
-		uint16_t rows = CameraMatrix.rows;
-		uint16_t columns = CameraMatrix.cols;
-		for (int r = 0; r < rows; r++)
-		{
-			for (int c = 0; c < columns; c++)
-			{
-				double value = CameraMatrix.at<double>(r, c);
-				outStream << value << endl;
-			}
-			
-		}
-		rows = distanceCoef.rows;
-		columns = distanceCoef.cols;
-
-		for (int r = 0; r < rows; r++)
-		{
-			for (int c = 0; c < columns; c++)
-			{
-				double value = distanceCoef.at<double>(r, c);
-				outStream << value << endl;
-			}
-			
-		}
-		outStream.close();
-		return true;
-	}
-	return false;
-}
-
-int main(int argc, char const *argv[])
+bool docalibration(Camera* CamToCalib)
 {
 
 	Mat CameraMatrix;
 	Mat distanceCoefficients;
 
 	vector<vector<Point2f>> savedImages;
-
-	VideoCapture* vid = new VideoCapture();
-
-	vid->open(0, CAP_ANY);
-	vid->set(CAP_PROP_FRAME_WIDTH, 1920);
-	vid->set(CAP_PROP_FRAME_HEIGHT, 1080);
-	//vid->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
-	vid->set(CAP_PROP_FPS, 30);
-	vid->set(CAP_PROP_BUFFERSIZE, 1);
-	if (!vid->isOpened())
-	{
-		return 0;
-	}
+	CamToCalib->StartFeed();
 
 	namedWindow("Webcam", WINDOW_NORMAL);
 	setWindowProperty("Webcam", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 
+	FrameCounter fps;
 	while (true)
 	{
 		UMat frame;
-		if (!vid->read(frame))
+		if (!CamToCalib->Read())
 		{
 			//cout<< "read fail" <<endl;
 			continue;
 		}
+		frame = CamToCalib->GetFrame();
 		//cout << "read success" << endl;
 		//drawChessboardCorners(drawToFrame, CheckerSize, foundPoints, found);
 		char character = waitKey(1);
@@ -161,28 +108,34 @@ int main(int argc, char const *argv[])
 				drawChessboardCorners(frame, CheckerSize, foundPoints, found);
 				if (found)
 				{
-					savedImages.push_back(foundPoints);
-					imshow("Webcam", frame);
-					waitKey(1000);
+					Scalar sharpness = estimateChessboardSharpness(frame, CheckerSize, foundPoints);
+					putText(frame, to_string(sharpness[0]), Point2i(0, frame.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 0, 0));
+					if (sharpness[0] < 4.f)
+					{
+						savedImages.push_back(foundPoints);
+					}
 				}
+				imshow("Webcam", frame);
+				this_thread::sleep_for(chrono::seconds(1));
 			}
 			break;
 		
 		case 13: //enter
 			//start calib
 			CameraCalibration(savedImages, CheckerSize, CalibrationSquareEdge, CameraMatrix, distanceCoefficients);
-			writeCameraParameters("Calibration", CameraMatrix, distanceCoefficients);
+			writeCameraParameters(CamToCalib->WindowName, CameraMatrix, distanceCoefficients);
 			goto aftercalib;
 			break;
 
 		case 27:
 			//exit
-			return 0;
+			return false;
 			break;
 
 		default:
 			break;
 		}
+		fps.AddFpsToImage(frame, fps.GetDeltaTime());
 		imshow("Webcam", frame);
 	}
 
@@ -190,17 +143,16 @@ aftercalib:
 	while (true)
 	{
 		UMat frame;
-		if (!vid->read(frame))
+		if (!CamToCalib->Read())
 		{
-			break;
+			//cout<< "read fail" <<endl;
+			continue;
 		}
+		frame = CamToCalib->GetFrame();
 		UMat undistorted;
 		undistort(frame, undistorted, CameraMatrix, distanceCoefficients);
 		imshow("Webcam", undistorted);
 		waitKey(1);
 	}
-	
-	
-	
-	return 0;
+	return true;
 }

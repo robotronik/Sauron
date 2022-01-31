@@ -20,6 +20,7 @@
 #include "trackedobject.hpp"
 #include "Calibrate.hpp"
 #include "boardviz.hpp"
+#include "FrameCounter.hpp"
 using namespace std;
 using namespace cv;
 
@@ -89,22 +90,85 @@ vector<Camera*> Cameras;
 
 int main(int argc, char** argv )
 {
-	CommandLineParser parser(argc, argv, "");
-	cout << getBuildInformation() << endl;
-	cv::cuda::setDevice(0);
-	ocl::setUseOpenCL(true);
-    int cuda_devices_number = cuda::getCudaEnabledDeviceCount();
-    cout << "CUDA Device(s) Number: "<< cuda_devices_number << endl;
-	if (cuda_devices_number > 0)
+	const string keys = 
+		"{help h usage ? |      | print this message   }"
+		"{build b        |      | print build information   }"
+		"{calibrate c    |0     | start camera calibration wizard   }"
+		"{marker m       |      | print out markers               }"
+		"{cuda           |      | print cuda info         }"
+		"{board          |      | runs boardview test }"
+        ;
+	CommandLineParser parser(argc, argv, keys);
+
+	if (parser.has("help"))
+    {
+        parser.printMessage();
+        exit(EXIT_SUCCESS);
+    }
+	if (parser.has("build"))
 	{
-		cuda::DeviceInfo _deviceInfo;
-		bool _isd_evice_compatible = _deviceInfo.isCompatible();
-		cout << "CUDA Device(s) Compatible: " << _isd_evice_compatible << endl;
-		cuda::printShortCudaDeviceInfo(cuda::getDevice());
+		cout << getBuildInformation() << endl;
+        exit(EXIT_SUCCESS);
 	}
+	
+	
+	cuda::setDevice(0);
+	ocl::setUseOpenCL(true);
+	if (parser.has("cuda"))
+	{
+		int cuda_devices_number = cuda::getCudaEnabledDeviceCount();
+		cout << "CUDA Device(s) Number: "<< cuda_devices_number << endl;
+		if (cuda_devices_number > 0)
+		{
+			cuda::DeviceInfo _deviceInfo;
+			bool _isd_evice_compatible = _deviceInfo.isCompatible();
+			cout << "CUDA Device(s) Compatible: " << _isd_evice_compatible << endl;
+			cuda::printShortCudaDeviceInfo(cuda::getDevice());
+		}
+	}
+	if (parser.has("board"))
+	{
+		TestBoardViz();
+		exit(EXIT_SUCCESS);
+	}
+	Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_4X4_100);
+	if (parser.has("marker"))
+	{
+		cout << "markers folder must exist before calling this function" << endl;
+		for (int i = 0; i < 100; i++)
+		{
+			UMat markerImage;
+			aruco::drawMarker(dictionary, i, 1024, markerImage, 1);
+			char buffer[30];
+			snprintf(buffer, sizeof(buffer), "../markers/marker%d.png", i);
+			imwrite(buffer, markerImage);
+		}
+		exit(EXIT_SUCCESS);
+	}
+	
+	
+	
+    
 	physicalCameras = autoDetectCameras();
-	TestBoardViz();
-	//docalibration(physicalCameras[0]);
+
+	if (physicalCameras.size() == 0)
+	{
+		cerr << "No cameras detected" << endl;
+		exit(EXIT_FAILURE);
+	}
+	
+
+	if (parser.has("calibrate"))
+	{
+		int camIndex = parser.get<int>("calibrate");
+		if (0<= camIndex && camIndex < physicalCameras.size())
+		{
+			docalibration(physicalCameras[0]);
+			exit(EXIT_SUCCESS);
+		}
+		exit(EXIT_FAILURE);
+		
+	}
 	for (int i = 0; i < physicalCameras.size(); i++)
 	{
 		Cameras.push_back(physicalCameras[i]);
@@ -121,8 +185,7 @@ int main(int argc, char** argv )
 	
 	Ptr<aruco::DetectorParameters> parameters = aruco::DetectorParameters::create();
 	parameters->cornerRefinementMethod = aruco::CORNER_REFINE_CONTOUR;
-	Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_4X4_100);
-	int64 dt = 0;
+	FrameCounter fps;
 	for (;;)
 	{
 		GrabReadCameras(physicalCameras, dictionary, parameters);
@@ -158,14 +221,10 @@ int main(int argc, char** argv )
 		}
 		
 
-		int64 dt2 = getTickCount();
-		double fps = getTickFrequency() / (double)(dt2-dt);
-		dt = dt2;
+		double deltaTime = fps.GetDeltaTime();
 		UMat image = ConcatCameras(Cameras, Cameras.size());
 		//cout << "Concat OK" <<endl;
-		String strfps = String("fps : ") + to_string(fps);
-		putText(image, strfps, Point2i(0,image.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(255, 255, 255), 5);
-		putText(image, strfps, Point2i(0,image.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 0, 0), 2);
+		fps.AddFpsToImage(image, deltaTime);
 		//printf("fps : %f\n", fps);
 		imshow("Cameras", image);
 		if (waitKey(5) >= 0)
