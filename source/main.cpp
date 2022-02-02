@@ -76,11 +76,13 @@ UMat ConcatCameras(vector<Camera*> Cameras, int NumCams)
 		for (int i = range.start; i < range.end; i++)
 		{
 			Rect roi(winWidth * (i%rows), winHeight * (i / rows), winWidth, winHeight);
-			if (Cameras[i]->frame.empty())
+			UMat frame; Cameras[i]->GetFrame(frame);
+			if (frame.empty())
 			{
 				continue;
 			}
-			Cameras[i]->GetFrameDebug(Size(winWidth, winHeight)).copyTo(concatenated(roi));
+			UMat region = concatenated(roi);
+			Cameras[i]->GetOutputFrame(region, Size(winWidth, winHeight));
 		}
 	});
 	return concatenated;
@@ -93,7 +95,7 @@ int main(int argc, char** argv )
 	const string keys = 
 		"{help h usage ? |      | print this message   }"
 		"{build b        |      | print build information   }"
-		"{calibrate c    |0     | start camera calibration wizard   }"
+		"{calibrate c    |      | start camera calibration wizard   }"
 		"{marker m       |      | print out markers               }"
 		"{cuda           |      | print cuda info         }"
 		"{board          |      | runs boardview test }"
@@ -160,6 +162,7 @@ int main(int argc, char** argv )
 
 	if (parser.has("calibrate"))
 	{
+		cout << "Starting calibration of camera index" << parser.get<int>("calibrate") <<endl;
 		int camIndex = parser.get<int>("calibrate");
 		if (0<= camIndex && camIndex < physicalCameras.size())
 		{
@@ -186,15 +189,22 @@ int main(int argc, char** argv )
 	Ptr<aruco::DetectorParameters> parameters = aruco::DetectorParameters::create();
 	parameters->cornerRefinementMethod = aruco::CORNER_REFINE_CONTOUR;
 	FrameCounter fps;
+	FrameCounter fpsRead, fpsDetect;
 	for (;;)
 	{
+		fpsRead.GetDeltaTime();
 		GrabReadCameras(physicalCameras, dictionary, parameters);
+		double TimeRead = fpsRead.GetDeltaTime();
+		fpsDetect.GetDeltaTime();
 		DetectArucoCameras(physicalCameras, dictionary, parameters);
+		double TimeDetect = fpsDetect.GetDeltaTime();
+
+		cout << "Took " << TimeRead<< "s to read, " <<TimeDetect <<"s to detect" <<endl;
 
 		for (int i = 0; i < Cameras.size(); i++)
 		{
 			Camera* cam = Cameras[i];
-			if (cam->arucoed)
+			if (cam->GetStatus() == CameraStatus::Arucoed)
 			{
 				for (int mark = 0; mark < cam->markerIDs.size(); mark++)
 				{

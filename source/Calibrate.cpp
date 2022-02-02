@@ -68,7 +68,7 @@ void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Siz
 	vector<Mat> rVectors, tVectors;
 	CameraMatrix = Mat::eye(3, 3, CV_64F);
 	DistanceCoefficients = Mat::zeros(8, 1, CV_64F);
-
+	
 	calibrateCamera(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, BoardSize, CameraMatrix, DistanceCoefficients, rVectors, tVectors);
 }
 
@@ -78,7 +78,7 @@ bool docalibration(Camera* CamToCalib)
 	Mat CameraMatrix;
 	Mat distanceCoefficients;
 
-	vector<vector<Point2f>> savedImages;
+	vector<vector<Point2f>> savedPoints;
 	CamToCalib->StartFeed();
 
 	namedWindow("Webcam", WINDOW_NORMAL);
@@ -93,7 +93,7 @@ bool docalibration(Camera* CamToCalib)
 			//cout<< "read fail" <<endl;
 			continue;
 		}
-		frame = CamToCalib->GetFrame();
+		CamToCalib->GetFrame(frame);
 		//cout << "read success" << endl;
 		//drawChessboardCorners(drawToFrame, CheckerSize, foundPoints, found);
 		char character = waitKey(1);
@@ -104,15 +104,19 @@ bool docalibration(Camera* CamToCalib)
 			//save image
 			{
 				vector<Point2f> foundPoints;
-				bool found = findChessboardCorners(frame, CheckerSize, foundPoints, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE | CALIB_CB_FAST_CHECK);
+				UMat grayscale;
+				cvtColor(frame, grayscale, COLOR_BGR2GRAY);
+				bool found = findChessboardCorners(grayscale, CheckerSize, foundPoints, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE | CALIB_CB_FAST_CHECK);
 				drawChessboardCorners(frame, CheckerSize, foundPoints, found);
 				if (found)
 				{
+					TermCriteria criteria(TermCriteria::COUNT | TermCriteria::EPS, 30, 0.001);
+	      			cornerSubPix(grayscale, foundPoints, Size(11,11), Size(-1,-1), criteria);
 					Scalar sharpness = estimateChessboardSharpness(frame, CheckerSize, foundPoints);
 					putText(frame, to_string(sharpness[0]), Point2i(0, frame.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 0, 0));
-					if (sharpness[0] < 4.f)
+					if (sharpness[0] < 4.f || true)
 					{
-						savedImages.push_back(foundPoints);
+						savedPoints.push_back(foundPoints);
 					}
 				}
 				imshow("Webcam", frame);
@@ -122,8 +126,8 @@ bool docalibration(Camera* CamToCalib)
 		
 		case 13: //enter
 			//start calib
-			CameraCalibration(savedImages, CheckerSize, CalibrationSquareEdge, CameraMatrix, distanceCoefficients);
-			writeCameraParameters(CamToCalib->WindowName, CameraMatrix, distanceCoefficients);
+			CameraCalibration(savedPoints, CheckerSize, CalibrationSquareEdge, CameraMatrix, distanceCoefficients);
+			writeCameraParameters(CamToCalib->GetName(), CameraMatrix, distanceCoefficients);
 			goto aftercalib;
 			break;
 
@@ -148,9 +152,10 @@ aftercalib:
 			//cout<< "read fail" <<endl;
 			continue;
 		}
-		frame = CamToCalib->GetFrame();
+		CamToCalib->GetFrame(frame);
 		UMat undistorted;
 		undistort(frame, undistorted, CameraMatrix, distanceCoefficients);
+		fps.AddFpsToImage(frame, fps.GetDeltaTime());
 		imshow("Webcam", undistorted);
 		waitKey(1);
 	}

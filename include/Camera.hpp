@@ -10,16 +10,29 @@
 
 #include <opencv2/cudacodec.hpp>
 #include <opencv2/cudawarping.hpp>
+
+#include "OutputImage.hpp"
+
 using namespace std;
 using namespace cv;
 
-struct Camera
+enum class CameraStatus
 {
+	None,
+	Grabbed,
+	Read,
+	Arucoed
+};
+
+class Camera : public OutputImage
+{
+
+private:
 	//config
-	string WindowName;
+	String Name;
 	Size CaptureSize;
 	int fps;
-	string DeviceID;
+	string DevicePath;
 	int ApiID;
 
 	bool CudaCapture;
@@ -31,192 +44,68 @@ struct Camera
 	Ptr<cudacodec::VideoReader> d_reader;
 	cuda::GpuMat d_frame;
 
+public:
 	//calibration
 	Mat CameraMatrix;
 	Mat distanceCoeffs;
 
+public:
 	//status
-	bool physical;
 	bool connected;
-	bool grabbed;
-	bool arucoed;
+	CameraStatus ReadStatus;
 
+public:
 	//aruco
 	vector<int> markerIDs;
 	vector<vector<Point2f>> markerCorners;
 
+public:
 
-	Camera(string InWindowName)
-		:WindowName(InWindowName),
-		CudaCapture(false),
-		physical(false),
-		connected(false),
-		grabbed(false)
-	{}
-
-	Camera(string InWindowName, Size InCaptureSize, int InFPS, string InDeviceID, int InApiId, bool InCudaCapture)
-		:WindowName(InWindowName),
+	Camera(String InName, Size InCaptureSize, int InFPS, string InDevicePath, int InApiId, bool InCudaCapture = false)
+		:Name(InName),
 		CaptureSize(InCaptureSize),
 		fps(InFPS),
-		DeviceID(InDeviceID),
+		DevicePath(InDevicePath),
 		ApiID(InApiId),
 		CudaCapture(InCudaCapture),
-		physical(true),
 		connected(false),
-		grabbed(false)
+		ReadStatus(CameraStatus::None),
+		OutputImage()
 	{}
 
-	bool StartFeed()
+	~Camera()
 	{
-		if (!physical || connected)
+		if (connected)
 		{
-			return false;
-		}
-		if (CudaCapture)
-		{
-			d_reader = cudacodec::createVideoReader(DeviceID, {
-				CAP_PROP_FRAME_WIDTH, CaptureSize.width, 
-				CAP_PROP_FRAME_HEIGHT, CaptureSize.height, 
-				CAP_PROP_FPS, fps,
-				CAP_PROP_BUFFERSIZE, 1});
-
-		}
-		else
-		{
-			feed = new VideoCapture();
-			cout << "Opening device at \"" << DeviceID << "\" with API id " << ApiID << endl;
-			feed->open(DeviceID, ApiID);
-			feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
-			feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
-			feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
-			feed->set(CAP_PROP_FPS, fps);
-			feed->set(CAP_PROP_BUFFERSIZE, 1);
-		}
-		
-		connected = true;
-		return true;
-	}
-
-	bool Grab()
-	{
-		if (!physical)
-		{
-			return false;
-		}
-		if (!connected)
-		{
-			return false;
-		}
-		if (CudaCapture)
-		{
-			d_reader->grab();
-		}
-		else
-		{
-			grabbed = feed->grab();
-		}
-		
-		
-		return grabbed;
-	}
-
-	bool Read()
-	{
-		if (!physical)
-		{
-			return false;
-		}
-		if (!connected)
-		{
-			return false;
-		}
-		arucoed = false;
-		if (CudaCapture)
-		{
-			if (grabbed)
+			if (CudaCapture)
 			{
-				grabbed = false;
-				d_reader->retrieve(d_frame);
+				delete d_reader;
 			}
 			else
 			{
-				d_reader->nextFrame(d_frame);
+				delete feed;
 			}
 			
-			d_frame.download(frame);
-			return true;
-		}
-		else
-		{
-			if (grabbed)
-			{
-				grabbed = false;
-				return feed->retrieve(frame);
-			}
 			
-			return feed->read(frame);
-		}
-		
-		
-	}
-
-	void Show()
-	{
-		if (!frame.empty())
-		{
-			imshow(WindowName, frame);
-		}
-		else
-		{
-			Mat red = Mat(Size(192,108), CV_8UC3, Scalar(0, 0, 255));
-			imshow(WindowName, red);
 		}
 		
 	}
 
-	void detectMarkers(Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
-	{
-		if (frame.empty())
-		{
-			return;
-		}
-		
-		aruco::detectMarkers(frame, dict, markerCorners, markerIDs, params);
-		arucoed = true;
-	}
+	String GetName();
 
-	UMat GetFrame()
-	{
-		return frame;
-	}
+	CameraStatus GetStatus();
 
-	UMat GetFrameDebug(Size winsize)
-	{
-		double fx = frame.cols / winsize.width;
-		double fy = frame.rows / winsize.height;
-		double fz = max(fx, fy);
-		cuda::GpuMat resizedgpu, framegpu;
-		framegpu.upload(frame);
-		cuda::resize(framegpu, resizedgpu, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
-		UMat resized;
-		resizedgpu.download(resized);
-		//cout << "Resize OK" <<endl;
-		if (arucoed)
-		{
-			vector<vector<Point2f>> raruco;
-			for (int i = 0; i < markerCorners.size(); i++)
-			{
-				vector<Point2f> marker;
-				for (int j = 0; j < markerCorners[i].size(); j++)
-				{
-					marker.push_back(markerCorners[i][j]/fz);
-				}
-				raruco.push_back(marker);
-			}
-			aruco::drawDetectedMarkers(resized, raruco, markerIDs);
-		}
-		return resized;
-	}
+	bool StartFeed();
+
+	bool Grab();
+
+	bool Read();
+
+	void detectMarkers(Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
+
+	virtual void GetFrame(UMat& frame) override;
+
+	virtual void GetOutputFrame(UMat& frame, Size winsize) override;
 
 };
 
