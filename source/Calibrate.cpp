@@ -88,12 +88,12 @@ bool docalibration(Camera* CamToCalib)
 	while (true)
 	{
 		UMat frame;
-		if (!CamToCalib->Read())
+		if (!CamToCalib->Read(0))
 		{
 			//cout<< "read fail" <<endl;
 			continue;
 		}
-		CamToCalib->GetFrame(frame);
+		CamToCalib->GetFrame(0, frame);
 		//cout << "read success" << endl;
 		//drawChessboardCorners(drawToFrame, CheckerSize, foundPoints, found);
 		char character = waitKey(1);
@@ -147,12 +147,12 @@ aftercalib:
 	while (true)
 	{
 		UMat frame;
-		if (!CamToCalib->Read())
+		if (!CamToCalib->Read(0))
 		{
 			//cout<< "read fail" <<endl;
 			continue;
 		}
-		CamToCalib->GetFrame(frame);
+		CamToCalib->GetFrame(0, frame);
 		UMat undistorted;
 		undistort(frame, undistorted, CameraMatrix, distanceCoefficients);
 		fps.AddFpsToImage(frame, fps.GetDeltaTime());

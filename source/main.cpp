@@ -16,6 +16,7 @@
 
 #include <opencv2/core/ocl.hpp>
 
+#include "OutputImage.hpp"
 #include "Camera.hpp"
 #include "trackedobject.hpp"
 #include "Calibrate.hpp"
@@ -24,22 +25,19 @@
 using namespace std;
 using namespace cv;
 
-#define HAVE_CUDA
-
-vector<Camera*> physicalCameras; //= {&cam0, &cam1};
-vector<Camera*> virtualCameras;
+vector<Camera*> physicalCameras;
 
 void GrabReadCameras(vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
 {
 	for (int i = 0; i < Cameras.size(); i++)
 	{
-		Cameras[i]->Grab();
+		Cameras[i]->Grab(0);
 	}
 	parallel_for_(Range(0, Cameras.size()), [&](const Range& range)
 	{
 		for (int i = range.start; i < range.end; i++)
 		{
-			if(Cameras[i]->Read())
+			if(Cameras[i]->Read(0))
 			{
 				//Cameras[i]->detectMarkers(dict, params);
 			}
@@ -54,13 +52,48 @@ void DetectArucoCameras(vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Pt
 	{
 		for (int i = range.start; i < range.end; i++)
 		{
-			Cameras[i]->detectMarkers(dict, params);
+			Cameras[i]->detectMarkers(0, dict, params);
 		}
 		//cout << "Aruco stripe from " << range.start << " to " << range.end << endl;
 	});
 }
 
-UMat ConcatCameras(vector<Camera*> Cameras, int NumCams)
+void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
+{
+	int numCams = Cameras.size();
+	for (int i = 0; i < Cameras.size(); i++)
+	{
+		Cameras[i]->Grab(BufferCaptureIdx);
+	}
+	parallel_for_(Range(0, numCams * Camera::FrameBufferSize), [&](const Range& range)
+	{
+		for (int i = range.start; i < range.end; i++)
+		{
+			int BufferIdx = (BufferCaptureIdx + i/numCams) % Camera::FrameBufferSize;
+			switch (i/numCams)
+			{
+			case 0:
+				// read
+				Cameras[i%numCams]->Read(BufferIdx);
+				break;
+			
+			case 1:
+				//Detect aruco
+				Cameras[i%numCams]->detectMarkers(BufferIdx, dict, params);
+				break;
+
+			default:
+				cout << "Frame buffer too big or operation unimplemented" << endl;
+				break;
+			}
+			
+			
+		}
+		//cout << "Aruco stripe from " << range.start << " to " << range.end << endl;
+	}, numCams*Camera::FrameBufferSize);
+} 
+
+UMat ConcatCameras(int BufferIndex, vector<Camera*> Cameras, int NumCams)
 {
 	Size screensize = Size(1920, 1080);
 	UMat concatenated(screensize, CV_8UC3, Scalar(0,0,255));
@@ -76,13 +109,13 @@ UMat ConcatCameras(vector<Camera*> Cameras, int NumCams)
 		for (int i = range.start; i < range.end; i++)
 		{
 			Rect roi(winWidth * (i%rows), winHeight * (i / rows), winWidth, winHeight);
-			UMat frame; Cameras[i]->GetFrame(frame);
+			UMat frame; Cameras[i]->GetFrame(BufferIndex, frame);
 			if (frame.empty())
 			{
 				continue;
 			}
 			UMat region = concatenated(roi);
-			Cameras[i]->GetOutputFrame(region, Size(winWidth, winHeight));
+			Cameras[i]->GetOutputFrame(BufferIndex, region, Size(winWidth, winHeight));
 		}
 	});
 	return concatenated;
@@ -190,18 +223,26 @@ int main(int argc, char** argv )
 	parameters->cornerRefinementMethod = aruco::CORNER_REFINE_CONTOUR;
 	FrameCounter fps;
 	FrameCounter fpsRead, fpsDetect;
+	FrameCounter fpsPipeline;
+	int PipelineIdx = 0;
 	for (;;)
 	{
-		fpsRead.GetDeltaTime();
-		GrabReadCameras(physicalCameras, dictionary, parameters);
-		double TimeRead = fpsRead.GetDeltaTime();
-		fpsDetect.GetDeltaTime();
-		DetectArucoCameras(physicalCameras, dictionary, parameters);
-		double TimeDetect = fpsDetect.GetDeltaTime();
+		//fpsRead.GetDeltaTime();
+		//GrabReadCameras(physicalCameras, dictionary, parameters);
+		//double TimeRead = fpsRead.GetDeltaTime();
+		//fpsDetect.GetDeltaTime();
+		//DetectArucoCameras(physicalCameras, dictionary, parameters);
+		//double TimeDetect = fpsDetect.GetDeltaTime();
 
-		cout << "Took " << TimeRead<< "s to read, " <<TimeDetect <<"s to detect" <<endl;
+		//cout << "Took " << TimeRead<< "s to read, " <<TimeDetect <<"s to detect" <<endl;
+		fpsPipeline.GetDeltaTime();
+		BufferedPipeline(PipelineIdx, Cameras, dictionary, parameters);
+		PipelineIdx = (PipelineIdx + 1) % Camera::FrameBufferSize;
+		double TimePipeline = fpsPipeline.GetDeltaTime();
 
-		for (int i = 0; i < Cameras.size(); i++)
+		cout << "Pipeline took " << TimePipeline << "s to run" << endl;
+
+		/*for (int i = 0; i < Cameras.size(); i++)
 		{
 			Camera* cam = Cameras[i];
 			if (cam->GetStatus() == CameraStatus::Arucoed)
@@ -228,11 +269,17 @@ int main(int argc, char** argv )
 				
 			}
 			
-		}
+		}*/
 		
 
 		double deltaTime = fps.GetDeltaTime();
-		UMat image = ConcatCameras(Cameras, Cameras.size());
+		vector<OutputImage*> OutputTargets;
+		for (int i = 0; i < Cameras.size(); i++)
+		{
+			OutputTargets.push_back(Cameras[i]);
+		}
+		
+		UMat image = ConcatCameras(PipelineIdx, Cameras, Cameras.size());
 		//cout << "Concat OK" <<endl;
 		fps.AddFpsToImage(image, deltaTime);
 		//printf("fps : %f\n", fps);

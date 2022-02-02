@@ -8,17 +8,17 @@ OutputImage::~OutputImage()
 {
 }
 
-void OutputImage::SetFrame(UMat& InFrame)
+void OutputImage::SetFrame(int BufferIndex, UMat& InFrame)
 {
 
 }
 
-void OutputImage::GetFrame(UMat& OutFrame)
+void OutputImage::GetFrame(int BufferIndex, UMat& OutFrame)
 {
 
 }
 
-void OutputImage::GetOutputFrame(UMat& OutFrame, Size winsize)
+void OutputImage::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
 
 }

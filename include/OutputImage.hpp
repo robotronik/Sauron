@@ -11,9 +11,9 @@ public:
     OutputImage(/* args */);
     ~OutputImage();
 
-    virtual void SetFrame(UMat& frame);
+    virtual void SetFrame(int BufferIndex, UMat& frame);
 
-    virtual void GetFrame(UMat& frame);
+    virtual void GetFrame(int BufferIndex, UMat& frame);
 
-    virtual void GetOutputFrame(UMat& frame, Size winsize);
+    virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize);
 };

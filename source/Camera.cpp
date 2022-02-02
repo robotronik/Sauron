@@ -13,14 +13,48 @@
 
 using namespace std;
 
+bool BufferedFrame::GetCPUFrame(UMat& OutFrame)
+{
+	switch (Status)
+	{
+	case CameraStatus::ReadGPU :
+		GPUFrame.download(CPUFrame);
+		Status = CameraStatus::ReadBoth;
+	case CameraStatus::ReadCPU :
+	case CameraStatus::ReadBoth :
+		OutFrame = CPUFrame;
+		return true;
+	default:
+		return false;
+		break;
+	}
+}
+
+bool BufferedFrame::GetGPUFrame(cuda::GpuMat& OutFrame)
+{
+	switch (Status)
+	{
+	case CameraStatus::ReadCPU :
+		GPUFrame.upload(CPUFrame);
+		Status = CameraStatus::ReadBoth;
+	case CameraStatus::ReadGPU :
+	case CameraStatus::ReadBoth :
+		OutFrame = GPUFrame;
+		return true;
+	default:
+		return false;
+		break;
+	}
+}
+
 String Camera::GetName()
 {
 	return Name;
 }
 
-CameraStatus Camera::GetStatus()
+CameraStatus Camera::GetStatus(int BufferIndex)
 {
-	return ReadStatus;
+	return FrameBuffer[BufferIndex].Status;
 }
 
 bool Camera::StartFeed()
@@ -29,6 +63,11 @@ bool Camera::StartFeed()
 	{
 		return false;
 	}
+	for (int i = 0; i < FrameBufferSize; i++)
+	{
+		FrameBuffer[i] = BufferedFrame();
+	}
+	
 	if (CudaCapture)
 	{
 		d_reader = cudacodec::createVideoReader(DevicePath, {
@@ -54,7 +93,7 @@ bool Camera::StartFeed()
 	return true;
 }
 
-bool Camera::Grab()
+bool Camera::Grab(int BufferIndex)
 {
 	if (!connected)
 	{
@@ -71,17 +110,18 @@ bool Camera::Grab()
 	}
 	if (grabsuccess)
 	{
-		ReadStatus = CameraStatus::Grabbed;
+		FrameBuffer[BufferIndex].Status = CudaCapture ? CameraStatus::GrabbedGPU : CameraStatus::GrabbedCPU;
 	}
 	else
 	{
-		ReadStatus = CameraStatus::None;
+		cerr << "Failed to grab frame for camera " << Name << " with buffer " << BufferIndex <<endl;
+		FrameBuffer[BufferIndex].Status = CameraStatus::None;
 	}
 	
 	return grabsuccess;
 }
 
-bool Camera::Read()
+bool Camera::Read(int BufferIndex)
 {
 	if (!connected)
 	{
@@ -90,81 +130,86 @@ bool Camera::Read()
 	bool ReadSuccess = false;
 	if (CudaCapture)
 	{
-		if (ReadStatus == CameraStatus::Grabbed)
+		if (FrameBuffer[BufferIndex].Status == CameraStatus::GrabbedGPU)
 		{
-			ReadSuccess = d_reader->retrieve(d_frame);
+			ReadSuccess = d_reader->retrieve(FrameBuffer[BufferIndex].GPUFrame);
 		}
 		else
 		{
-			ReadSuccess = d_reader->nextFrame(d_frame);
+			ReadSuccess = d_reader->nextFrame(FrameBuffer[BufferIndex].GPUFrame);
 		}
-		d_frame.download(frame);
 	}
 	else
 	{
-		if (ReadStatus == CameraStatus::Grabbed)
+		if (FrameBuffer[BufferIndex].Status == CameraStatus::GrabbedCPU)
 		{
-			ReadSuccess = feed->retrieve(frame);
+			ReadSuccess = feed->retrieve(FrameBuffer[BufferIndex].CPUFrame);
 		}
 		else
 		{
-			ReadSuccess = feed->read(frame);
+			ReadSuccess = feed->read(FrameBuffer[BufferIndex].CPUFrame);
 		}
 	}
 	if (ReadSuccess)
 	{
-		ReadStatus = CameraStatus::Read;
+		FrameBuffer[BufferIndex].Status = CudaCapture ? CameraStatus::ReadGPU : CameraStatus::ReadCPU;
+		FrameBuffer[BufferIndex].HasAruco = false;
 	}
 	else
 	{
-		ReadStatus = CameraStatus::None;
+		cerr << "Failed to read frame for camera " << Name << " with buffer " << BufferIndex <<endl;
+		FrameBuffer[BufferIndex].Status = CameraStatus::None;
 	}
 	return ReadSuccess;
 }
 
-void Camera::GetFrame(UMat& OutFrame)
+void Camera::GetFrame(int BufferIndex, UMat& OutFrame)
 {
-	OutFrame = frame;
+	FrameBuffer[BufferIndex].GetCPUFrame(OutFrame);
 }
 
-void Camera::GetOutputFrame(UMat& OutFrame, Size winsize)
+void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
-	double fx = frame.cols / winsize.width;
-	double fy = frame.rows / winsize.height;
-	double fz = max(fx, fy);
 	cuda::GpuMat resizedgpu, framegpu;
-	framegpu.upload(frame);
+	FrameBuffer[BufferIndex].GetGPUFrame(framegpu);
+
+	double fx = framegpu.cols / winsize.width;
+	double fy = framegpu.rows / winsize.height;
+	double fz = max(fx, fy);
+
 	cuda::resize(framegpu, resizedgpu, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
 	resizedgpu.download(OutFrame);
 	//cout << "Resize OK" <<endl;
-	if (ReadStatus == CameraStatus::Arucoed)
+	if (FrameBuffer[BufferIndex].HasAruco)
 	{
 		vector<vector<Point2f>> raruco;
-		for (int i = 0; i < markerCorners.size(); i++)
+		for (int i = 0; i < FrameBuffer[BufferIndex].markerCorners.size(); i++)
 		{
 			vector<Point2f> marker;
-			for (int j = 0; j < markerCorners[i].size(); j++)
+			for (int j = 0; j < FrameBuffer[BufferIndex].markerCorners[i].size(); j++)
 			{
-				marker.push_back(markerCorners[i][j]/fz);
+				marker.push_back(FrameBuffer[BufferIndex].markerCorners[i][j]/fz);
 			}
 			raruco.push_back(marker);
 		}
-		aruco::drawDetectedMarkers(OutFrame, raruco, markerIDs);
+		aruco::drawDetectedMarkers(OutFrame, raruco, FrameBuffer[BufferIndex].markerIDs);
 	}
 }
 
-void Camera::detectMarkers(Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
+void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
 {
-	if (frame.empty())
-	{
-		return;
-	}
 	/*cuda::GpuMat framegpu; framegpu.upload(frame);
 	cuda::cvtColor(framegpu, framegpu, COLOR_BGR2GRAY);
 	cuda::threshold(framegpu, framegpu, 127, 255, THRESH_BINARY);
 	UMat framethreshed; framegpu.download(framethreshed);*/
-	aruco::detectMarkers(frame, dict, markerCorners, markerIDs, params);
-	ReadStatus = CameraStatus::Arucoed;
+	UMat FrameCPU;
+
+	if(!FrameBuffer[BufferIndex].GetCPUFrame(FrameCPU))
+	{
+		return;
+	}
+	aruco::detectMarkers(FrameCPU, dict, FrameBuffer[BufferIndex].markerCorners, FrameBuffer[BufferIndex].markerIDs, params);
+	FrameBuffer[BufferIndex].HasAruco = true;
 }
 
 vector<Camera*> autoDetectCameras()

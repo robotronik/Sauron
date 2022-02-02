@@ -19,14 +19,43 @@ using namespace cv;
 enum class CameraStatus
 {
 	None,
-	Grabbed,
-	Read,
-	Arucoed
+	GrabbedCPU,
+	GrabbedGPU,
+	ReadCPU,
+	ReadGPU,
+	ReadBoth
 };
+
+class BufferedFrame
+{
+
+protected:
+	UMat CPUFrame;
+	cuda::GpuMat GPUFrame;
+	CameraStatus Status;
+	bool HasAruco;
+
+	vector<int> markerIDs;
+	vector<vector<Point2f>> markerCorners;
+
+public:
+
+	BufferedFrame()
+		:Status(CameraStatus::None)
+	{}
+
+	bool GetCPUFrame(UMat& OutFrame);
+
+	bool GetGPUFrame(cuda::GpuMat& OutFrame);
+
+friend class Camera;
+};
+
 
 class Camera : public OutputImage
 {
-
+public:
+	static const int FrameBufferSize = 2;
 private:
 	//config
 	String Name;
@@ -39,10 +68,10 @@ private:
 
 	//capture
 	VideoCapture* feed;
-	UMat frame;
 
 	Ptr<cudacodec::VideoReader> d_reader;
-	cuda::GpuMat d_frame;
+
+	BufferedFrame FrameBuffer[FrameBufferSize];
 
 public:
 	//calibration
@@ -52,12 +81,6 @@ public:
 public:
 	//status
 	bool connected;
-	CameraStatus ReadStatus;
-
-public:
-	//aruco
-	vector<int> markerIDs;
-	vector<vector<Point2f>> markerCorners;
 
 public:
 
@@ -69,9 +92,10 @@ public:
 		ApiID(InApiId),
 		CudaCapture(InCudaCapture),
 		connected(false),
-		ReadStatus(CameraStatus::None),
+		FrameBuffer(),
 		OutputImage()
-	{}
+	{
+	}
 
 	~Camera()
 	{
@@ -93,19 +117,19 @@ public:
 
 	String GetName();
 
-	CameraStatus GetStatus();
+	CameraStatus GetStatus(int BufferIndex);
 
 	bool StartFeed();
 
-	bool Grab();
+	bool Grab(int BufferIndex);
 
-	bool Read();
+	bool Read(int BufferIndex);
 
-	void detectMarkers(Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
+	void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
 
-	virtual void GetFrame(UMat& frame) override;
+	virtual void GetFrame(int BufferIndex, UMat& frame) override;
 
-	virtual void GetOutputFrame(UMat& frame, Size winsize) override;
+	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize) override;
 
 };
 
