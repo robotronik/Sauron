@@ -93,7 +93,7 @@ void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::
 	}, numCams*Camera::FrameBufferSize);
 } 
 
-UMat ConcatCameras(int BufferIndex, vector<Camera*> Cameras, int NumCams)
+UMat ConcatCameras(int BufferIndex, vector<OutputImage*> Cameras, int NumCams)
 {
 	Size screensize = Size(1920, 1080);
 	UMat concatenated(screensize, CV_8UC3, Scalar(0,0,255));
@@ -109,19 +109,17 @@ UMat ConcatCameras(int BufferIndex, vector<Camera*> Cameras, int NumCams)
 		for (int i = range.start; i < range.end; i++)
 		{
 			Rect roi(winWidth * (i%rows), winHeight * (i / rows), winWidth, winHeight);
-			UMat frame; Cameras[i]->GetFrame(BufferIndex, frame);
+			/*UMat frame; Cameras[i]->GetFrame(BufferIndex, frame);
 			if (frame.empty())
 			{
 				continue;
-			}
+			}*/
 			UMat region = concatenated(roi);
 			Cameras[i]->GetOutputFrame(BufferIndex, region, Size(winWidth, winHeight));
 		}
 	});
 	return concatenated;
 }
-
-vector<Camera*> Cameras;
 
 int main(int argc, char** argv )
 {
@@ -205,17 +203,13 @@ int main(int argc, char** argv )
 		exit(EXIT_FAILURE);
 		
 	}
-	for (int i = 0; i < physicalCameras.size(); i++)
-	{
-		Cameras.push_back(physicalCameras[i]);
-	}
 	
 	namedWindow("Cameras", WINDOW_NORMAL);
 	setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 
 	StartCameras(physicalCameras);
 
-	cout << "Start grabbing " << Cameras.size() << " cameras, " << physicalCameras.size() << " physical" << endl
+	cout << "Start grabbing " << physicalCameras.size() << " physical" << endl
 		<< "Press any key to terminate" << endl;
 
 	
@@ -225,6 +219,8 @@ int main(int argc, char** argv )
 	FrameCounter fpsRead, fpsDetect;
 	FrameCounter fpsPipeline;
 	int PipelineIdx = 0;
+	boardviz* board = new boardviz(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
+	boardviz::InitImages();
 	for (;;)
 	{
 		//fpsRead.GetDeltaTime();
@@ -236,29 +232,41 @@ int main(int argc, char** argv )
 
 		//cout << "Took " << TimeRead<< "s to read, " <<TimeDetect <<"s to detect" <<endl;
 		fpsPipeline.GetDeltaTime();
-		BufferedPipeline(PipelineIdx, Cameras, dictionary, parameters);
+		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters);
 		PipelineIdx = (PipelineIdx + 1) % Camera::FrameBufferSize;
 		double TimePipeline = fpsPipeline.GetDeltaTime();
 
-		cout << "Pipeline took " << TimePipeline << "s to run" << endl;
+		//cout << "Pipeline took " << TimePipeline << "s to run" << endl;
 
-		/*for (int i = 0; i < Cameras.size(); i++)
+		board->CreateBackground(Size(1500, 1000));
+		board->OverlayImage(board->GetPalet(PaletCouleur::autre), FVector2D<float>(1), 0, FVector2D<float>(0.1));
+
+		for (int i = 0; i < physicalCameras.size(); i++)
 		{
-			Camera* cam = Cameras[i];
-			if (cam->GetStatus() == CameraStatus::Arucoed)
+			Camera* cam = physicalCameras[i];
+			vector<int> MarkerIDs; vector<vector<Point2f>> MarkerCorners;
+			if (cam->GetMarkerData(PipelineIdx, MarkerIDs, MarkerCorners))
 			{
-				for (int mark = 0; mark < cam->markerIDs.size(); mark++)
+				for (int mark = 0; mark < MarkerIDs.size(); mark++)
 				{
-					int markerid = cam->markerIDs[mark];
+					int markerid = MarkerIDs[mark];
 					switch (markerid)
 					{
 					case 42:
 						{
 							Mat rvec(3, 1, DataType<double>::type);
 							Mat tvec(3, 1, DataType<double>::type);
-							solvePnP(center.GetObjectPointsNoOffset(), cam->markerCorners[mark], cam->CameraMatrix, cam->distanceCoeffs, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
+							solvePnP(center.GetObjectPointsNoOffset(), ReorderMarkerCorners(MarkerCorners[mark]), cam->CameraMatrix, cam->distanceCoeffs, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
 							Point3d tvec2(tvec.at<double>(0,0), tvec.at<double>(1,0), tvec.at<double>(2,0));
-							cout << sqrt(tvec2.dot(tvec2)) <<endl;
+							Mat rotationMatrix; //Matrice de rotation Camera -> Tag
+							Rodrigues(rvec, rotationMatrix);
+							Mat InvRotMat = rotationMatrix.inv(); //Matrice de rotation Tag -> Camera
+							Mat tvecworld = InvRotMat * tvec + Mat(center.OffsetLocation); //Vecteur Tag -> Camera
+							Mat rvecworld;
+							Rodrigues(InvRotMat, rvecworld);
+							board->OverlayImage(boardviz::GetCamera(), 
+							FVector2D<float>(tvecworld.at<double>(0,0), tvecworld.at<double>(1,0)), rvecworld.at<double>(2,0), FVector2D<float>(0.4));
+							//cout << sqrt(tvec2.dot(tvec2)) << endl;
 						}
 						break;
 					
@@ -269,17 +277,19 @@ int main(int argc, char** argv )
 				
 			}
 			
-		}*/
+		}
 		
 
 		double deltaTime = fps.GetDeltaTime();
 		vector<OutputImage*> OutputTargets;
-		for (int i = 0; i < Cameras.size(); i++)
+		for (int i = 0; i < physicalCameras.size(); i++)
 		{
-			OutputTargets.push_back(Cameras[i]);
+			OutputTargets.push_back(physicalCameras[i]);
 		}
+		OutputTargets.push_back(board);
 		
-		UMat image = ConcatCameras(PipelineIdx, Cameras, Cameras.size());
+		UMat image = ConcatCameras(PipelineIdx, OutputTargets, OutputTargets.size());
+		//board.GetOutputFrame(0, image, Size(1920,1080));
 		//cout << "Concat OK" <<endl;
 		fps.AddFpsToImage(image, deltaTime);
 		//printf("fps : %f\n", fps);

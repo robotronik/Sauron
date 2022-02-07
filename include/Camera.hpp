@@ -127,6 +127,8 @@ public:
 
 	void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
 
+	bool GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners);
+
 	virtual void GetFrame(int BufferIndex, UMat& frame) override;
 
 	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize) override;

@@ -171,7 +171,10 @@ void Camera::GetFrame(int BufferIndex, UMat& OutFrame)
 void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
 	cuda::GpuMat resizedgpu, framegpu;
-	FrameBuffer[BufferIndex].GetGPUFrame(framegpu);
+	if (!FrameBuffer[BufferIndex].GetGPUFrame(framegpu))
+	{
+		return;
+	}
 
 	double fx = framegpu.cols / winsize.width;
 	double fy = framegpu.rows / winsize.height;
@@ -212,6 +215,17 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 	FrameBuffer[BufferIndex].HasAruco = true;
 }
 
+bool Camera::GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners)
+{
+	if (!FrameBuffer[BufferIndex].HasAruco)
+	{
+		return false;
+	}
+	markerIDs = FrameBuffer[BufferIndex].markerIDs;
+	markerCorners = FrameBuffer[BufferIndex].markerCorners;
+	return true;
+}
+
 vector<Camera*> autoDetectCameras()
 {
 	vector<v4l2::devices::DEVICE_INFO> devices;
@@ -239,7 +253,7 @@ vector<Camera*> autoDetectCameras()
 		//string capname = string("v4l2src device=/dev/video") + to_string(i)
 		//+ String(" io-mode=2 do-timestamp=true ! image/jpeg, width=1920, height=1080, framerate=30/2 ! nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink");
 		
-		if (strstr(device.device_description.c_str(), "C920") != NULL)
+		if (strstr(device.device_description.c_str(), "4") != NULL)
 		{
 			string capname = String(device.device_paths[0]);
 			int API = CAP_ANY;

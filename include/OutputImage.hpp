@@ -8,12 +8,12 @@ class OutputImage
 {
 
 public:
-    OutputImage(/* args */);
-    ~OutputImage();
+	OutputImage(/* args */);
+	~OutputImage();
 
-    virtual void SetFrame(int BufferIndex, UMat& frame);
+	virtual void SetFrame(int BufferIndex, UMat& frame);
 
-    virtual void GetFrame(int BufferIndex, UMat& frame);
+	virtual void GetFrame(int BufferIndex, UMat& frame);
 
-    virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize);
+	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize);
 };

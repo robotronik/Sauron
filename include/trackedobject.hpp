@@ -56,3 +56,5 @@ struct trackedobject
 };
 
 extern ArucoMarker center;
+
+vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners);
