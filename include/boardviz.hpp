@@ -68,6 +68,7 @@ public:
 	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize) override;
 };
 
+
 //fonction de test captivante (litérallement et figurativement)
 void TestBoardViz();
 

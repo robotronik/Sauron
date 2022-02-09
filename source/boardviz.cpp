@@ -9,6 +9,7 @@
 #include <opencv2/cudawarping.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudaimgproc.hpp>
+#include <opencv2/viz.hpp>
 
 #include "FrameCounter.hpp"
 

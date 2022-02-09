@@ -16,11 +16,13 @@
 
 #include <opencv2/core/ocl.hpp>
 
+#include "GlobalConf.hpp"
 #include "OutputImage.hpp"
 #include "Camera.hpp"
 #include "trackedobject.hpp"
 #include "Calibrate.hpp"
 #include "boardviz.hpp"
+#include "BoardViz3d.hpp"
 #include "FrameCounter.hpp"
 using namespace std;
 using namespace cv;
@@ -130,6 +132,7 @@ int main(int argc, char** argv )
 		"{marker m       |      | print out markers               }"
 		"{cuda           |      | print cuda info         }"
 		"{board          |      | runs boardview test }"
+		"{viz3d          |      | runs viz3d test }"
         ;
 	CommandLineParser parser(argc, argv, keys);
 
@@ -164,7 +167,12 @@ int main(int argc, char** argv )
 		TestBoardViz();
 		exit(EXIT_SUCCESS);
 	}
-	Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_4X4_100);
+	if (parser.has("viz3d") || true)
+	{
+		TestViz3D();
+		exit(EXIT_SUCCESS);
+	}
+	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 	if (parser.has("marker"))
 	{
 		cout << "markers folder must exist before calling this function" << endl;
@@ -173,7 +181,7 @@ int main(int argc, char** argv )
 			UMat markerImage;
 			aruco::drawMarker(dictionary, i, 1024, markerImage, 1);
 			char buffer[30];
-			snprintf(buffer, sizeof(buffer), "../markers/marker%d.png", i);
+			snprintf(buffer, sizeof(buffer)/sizeof(char), "../markers/marker%d.png", i);
 			imwrite(buffer, markerImage);
 		}
 		exit(EXIT_SUCCESS);
@@ -213,8 +221,7 @@ int main(int argc, char** argv )
 		<< "Press any key to terminate" << endl;
 
 	
-	Ptr<aruco::DetectorParameters> parameters = aruco::DetectorParameters::create();
-	parameters->cornerRefinementMethod = aruco::CORNER_REFINE_CONTOUR;
+	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
 	FrameCounter fps;
 	FrameCounter fpsRead, fpsDetect;
 	FrameCounter fpsPipeline;
