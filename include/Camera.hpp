@@ -119,6 +119,8 @@ public:
 
 	CameraStatus GetStatus(int BufferIndex);
 
+	String GetDevicePath();
+
 	bool StartFeed();
 
 	bool Grab(int BufferIndex);

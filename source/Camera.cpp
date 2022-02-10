@@ -57,6 +57,11 @@ CameraStatus Camera::GetStatus(int BufferIndex)
 	return FrameBuffer[BufferIndex].Status;
 }
 
+String Camera::GetDevicePath()
+{
+	return DevicePath;
+}
+
 bool Camera::StartFeed()
 {
 	if (connected)

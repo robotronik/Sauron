@@ -9,6 +9,9 @@
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core/affine.hpp>
+
+class Camera;
 
 using namespace std;
 using namespace cv;
@@ -17,7 +20,7 @@ struct ArucoMarker
 {
     float sideLength;
     int number;
-    Point3d OffsetLocation;
+    Affine3d Pose;
 
     vector<Point3d> GetObjectPointsNoOffset()
     {
@@ -33,19 +36,19 @@ struct ArucoMarker
     ArucoMarker()
         :sideLength(0.05),
         number(-1),
-        OffsetLocation(0,0,0)
+        Pose(Affine3d::Identity())
     {}
 
     ArucoMarker(float InSideLength, int InNumber)
         :sideLength(InSideLength),
         number(InNumber),
-        OffsetLocation(0,0,0)
+        Pose(Affine3d::Identity())
     {}
 
-    ArucoMarker(float InSideLength, int InNumber, Point3d InOffsetLocation)
+    ArucoMarker(float InSideLength, int InNumber, Affine3d InPose)
         :sideLength(InSideLength),
         number(InNumber),
-        OffsetLocation(InOffsetLocation)
+        Pose(InPose)
     {}
 };
 
@@ -58,3 +61,7 @@ struct trackedobject
 extern ArucoMarker center;
 
 vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners);
+
+Affine3d GetTagTransform(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam);
+
+Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam);

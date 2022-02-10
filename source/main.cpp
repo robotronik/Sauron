@@ -167,7 +167,7 @@ int main(int argc, char** argv )
 		TestBoardViz();
 		exit(EXIT_SUCCESS);
 	}
-	if (parser.has("viz3d") || true)
+	if (parser.has("viz3d"))
 	{
 		TestViz3D();
 		exit(EXIT_SUCCESS);
@@ -228,6 +228,10 @@ int main(int argc, char** argv )
 	int PipelineIdx = 0;
 	boardviz* board = new boardviz(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
 	boardviz::InitImages();
+	viz::Viz3d board3d("3D board");
+	BoardViz3D::SetupTerrain(board3d);
+	int lastmarker = 0;
+	//board3d.spin();
 	for (;;)
 	{
 		//fpsRead.GetDeltaTime();
@@ -248,40 +252,52 @@ int main(int argc, char** argv )
 		board->CreateBackground(Size(1500, 1000));
 		board->OverlayImage(board->GetPalet(PaletCouleur::autre), FVector2D<float>(1), 0, FVector2D<float>(0.1));
 
+		for (int i = 0; i < lastmarker; i++)
+		{
+			board3d.removeWidget(String("marker") + to_string(i));
+		}
+		lastmarker = 0;
+
 		for (int i = 0; i < physicalCameras.size(); i++)
 		{
 			Camera* cam = physicalCameras[i];
 			vector<int> MarkerIDs; vector<vector<Point2f>> MarkerCorners;
-			if (cam->GetMarkerData(PipelineIdx, MarkerIDs, MarkerCorners))
+			if (!cam->GetMarkerData(PipelineIdx, MarkerIDs, MarkerCorners))
 			{
-				for (int mark = 0; mark < MarkerIDs.size(); mark++)
+				continue;
+			}
+			Affine3d CamTransform = Affine3d::Identity();
+			for (int mark = 0; mark < MarkerIDs.size(); mark++)
+			{
+				int markerid = MarkerIDs[mark];
+				switch (markerid)
 				{
-					int markerid = MarkerIDs[mark];
-					switch (markerid)
+				case 42:
 					{
-					case 42:
-						{
-							Mat rvec(3, 1, DataType<double>::type);
-							Mat tvec(3, 1, DataType<double>::type);
-							solvePnP(center.GetObjectPointsNoOffset(), ReorderMarkerCorners(MarkerCorners[mark]), cam->CameraMatrix, cam->distanceCoeffs, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
-							Point3d tvec2(tvec.at<double>(0,0), tvec.at<double>(1,0), tvec.at<double>(2,0));
-							Mat rotationMatrix; //Matrice de rotation Camera -> Tag
-							Rodrigues(rvec, rotationMatrix);
-							Mat InvRotMat = rotationMatrix.inv(); //Matrice de rotation Tag -> Camera
-							Mat tvecworld = InvRotMat * tvec + Mat(center.OffsetLocation); //Vecteur Tag -> Camera
-							Mat rvecworld;
-							Rodrigues(InvRotMat, rvecworld);
-							board->OverlayImage(boardviz::GetCamera(), 
-							FVector2D<float>(tvecworld.at<double>(0,0), tvecworld.at<double>(1,0)), rvecworld.at<double>(2,0), FVector2D<float>(0.4));
-							//cout << sqrt(tvec2.dot(tvec2)) << endl;
-						}
-						break;
-					
-					default:
-						break;
+						CamTransform = GetTransformRelativeToTag(center, MarkerCorners[mark], cam);
+						BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, CamTransform);
 					}
-				}
+					break;
 				
+				default:
+					break;
+				}
+			}
+			for (int mark = 0; mark < MarkerIDs.size(); mark++)
+			{
+				int markerid = MarkerIDs[mark];
+				switch (markerid)
+				{
+				case 42:
+					continue;
+				
+				default:
+					ArucoMarker markerstruct(0.05, markerid);
+					Affine3d MarkerTransform = CamTransform * GetTagTransform(markerstruct, MarkerCorners[mark], cam);
+					viz::WImage3D markerWidget(GetArucoImage(markerid), Size2d(0.05, 0.05));
+					board3d.showWidget(String("marker") + to_string(lastmarker++), markerWidget, MarkerTransform);
+					break;
+				}
 			}
 			
 		}
@@ -301,7 +317,8 @@ int main(int argc, char** argv )
 		fps.AddFpsToImage(image, deltaTime);
 		//printf("fps : %f\n", fps);
 		imshow("Cameras", image);
-		if (waitKey(5) >= 0)
+		board3d.spinOnce(1, true);
+		if (waitKey(1) == 27 || board3d.wasStopped())
 			break;
 		
 	}
