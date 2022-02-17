@@ -127,6 +127,7 @@ int main(int argc, char** argv )
 {
 	const string keys = 
 		"{help h usage ? |      | print this message   }"
+		"{direct d       |      | show direct camera output }"
 		"{build b        |      | print build information   }"
 		"{calibrate c    |      | start camera calibration wizard   }"
 		"{marker m       |      | print out markers               }"
@@ -211,14 +212,21 @@ int main(int argc, char** argv )
 		exit(EXIT_FAILURE);
 		
 	}
+
+	bool direct = parser.has("direct");
 	
-	namedWindow("Cameras", WINDOW_NORMAL);
-	setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+	if (direct)
+	{
+		namedWindow("Cameras", WINDOW_NORMAL);
+		setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+	}
+	
+	
 
 	StartCameras(physicalCameras);
 
 	cout << "Start grabbing " << physicalCameras.size() << " physical" << endl
-		<< "Press any key to terminate" << endl;
+		<< "Press ESC to terminate" << endl;
 
 	
 	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
@@ -227,21 +235,17 @@ int main(int argc, char** argv )
 	FrameCounter fpsPipeline;
 	int PipelineIdx = 0;
 	boardviz* board = new boardviz(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
-	boardviz::InitImages();
+	if (direct)
+	{
+		boardviz::InitImages();
+	}
+	
+	
 	viz::Viz3d board3d("3D board");
 	BoardViz3D::SetupTerrain(board3d);
 	int lastmarker = 0;
-	//board3d.spin();
 	for (;;)
 	{
-		//fpsRead.GetDeltaTime();
-		//GrabReadCameras(physicalCameras, dictionary, parameters);
-		//double TimeRead = fpsRead.GetDeltaTime();
-		//fpsDetect.GetDeltaTime();
-		//DetectArucoCameras(physicalCameras, dictionary, parameters);
-		//double TimeDetect = fpsDetect.GetDeltaTime();
-
-		//cout << "Took " << TimeRead<< "s to read, " <<TimeDetect <<"s to detect" <<endl;
 		fpsPipeline.GetDeltaTime();
 		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters);
 		PipelineIdx = (PipelineIdx + 1) % Camera::FrameBufferSize;
@@ -249,8 +253,13 @@ int main(int argc, char** argv )
 
 		//cout << "Pipeline took " << TimePipeline << "s to run" << endl;
 
-		board->CreateBackground(Size(1500, 1000));
-		board->OverlayImage(board->GetPalet(PaletCouleur::autre), FVector2D<float>(1), 0, FVector2D<float>(0.1));
+		if (direct)
+		{
+			board->CreateBackground(Size(1500, 1000));
+			board->OverlayImage(board->GetPalet(PaletCouleur::autre), FVector2D<float>(1), 0, FVector2D<float>(0.1));
+		}
+		
+		
 
 		for (int i = 0; i < lastmarker; i++)
 		{
@@ -267,6 +276,7 @@ int main(int argc, char** argv )
 				continue;
 			}
 			Affine3d CamTransform = Affine3d::Identity();
+			bool has42 = false;
 			for (int mark = 0; mark < MarkerIDs.size(); mark++)
 			{
 				int markerid = MarkerIDs[mark];
@@ -275,7 +285,8 @@ int main(int argc, char** argv )
 				case 42:
 					{
 						CamTransform = GetTransformRelativeToTag(center, MarkerCorners[mark], cam);
-						BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, CamTransform);
+						cam->Location = CamTransform;
+						has42 = true;
 					}
 					break;
 				
@@ -283,6 +294,7 @@ int main(int argc, char** argv )
 					break;
 				}
 			}
+			BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, cam->Location, has42 ? viz::Color::green() : viz::Color::red());
 			for (int mark = 0; mark < MarkerIDs.size(); mark++)
 			{
 				int markerid = MarkerIDs[mark];
@@ -293,7 +305,7 @@ int main(int argc, char** argv )
 				
 				default:
 					ArucoMarker markerstruct(0.05, markerid);
-					Affine3d MarkerTransform = CamTransform * GetTagTransform(markerstruct, MarkerCorners[mark], cam);
+					Affine3d MarkerTransform = cam->Location * GetTagTransform(markerstruct, MarkerCorners[mark], cam);
 					viz::WImage3D markerWidget(GetArucoImage(markerid), Size2d(0.05, 0.05));
 					board3d.showWidget(String("marker") + to_string(lastmarker++), markerWidget, MarkerTransform);
 					break;
@@ -304,19 +316,27 @@ int main(int argc, char** argv )
 		
 
 		double deltaTime = fps.GetDeltaTime();
-		vector<OutputImage*> OutputTargets;
-		for (int i = 0; i < physicalCameras.size(); i++)
+
+		if (direct)
 		{
-			OutputTargets.push_back(physicalCameras[i]);
+			vector<OutputImage*> OutputTargets;
+			for (int i = 0; i < physicalCameras.size(); i++)
+			{
+				OutputTargets.push_back(physicalCameras[i]);
+			}
+			OutputTargets.push_back(board);
+			
+			UMat image = ConcatCameras(PipelineIdx, OutputTargets, OutputTargets.size());
+			//board.GetOutputFrame(0, image, Size(1920,1080));
+			//cout << "Concat OK" <<endl;
+			fps.AddFpsToImage(image, deltaTime);
+			//printf("fps : %f\n", fps);
+			imshow("Cameras", image);
 		}
-		OutputTargets.push_back(board);
 		
-		UMat image = ConcatCameras(PipelineIdx, OutputTargets, OutputTargets.size());
-		//board.GetOutputFrame(0, image, Size(1920,1080));
-		//cout << "Concat OK" <<endl;
-		fps.AddFpsToImage(image, deltaTime);
-		//printf("fps : %f\n", fps);
-		imshow("Cameras", image);
+		
+		viz::WText fpstext(to_string(1/deltaTime), Point2i(100,100));
+		board3d.showWidget("fps", fpstext);
 		board3d.spinOnce(1, true);
 		if (waitKey(1) == 27 || board3d.wasStopped())
 			break;

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>   // for strings
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
+#include <opencv2/core/affine.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
@@ -63,6 +64,9 @@ private:
 	int fps;
 	string DevicePath;
 	int ApiID;
+public:
+	Affine3d Location;
+private:
 
 	bool CudaCapture;
 
@@ -90,6 +94,7 @@ public:
 		fps(InFPS),
 		DevicePath(InDevicePath),
 		ApiID(InApiId),
+		Location(Affine3d::Identity()),
 		CudaCapture(InCudaCapture),
 		connected(false),
 		FrameBuffer(),

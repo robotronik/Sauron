@@ -42,7 +42,7 @@ void BoardViz3D::SetupTerrain(viz::Viz3d& Visualizer)
 	Visualizer.showWidget("BoardMat", tableImg, ImageToWorld());
 }
 
-void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose)
+void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose, viz::Color color)
 {
 	viz::WCameraPosition CamWidget;
 	try
@@ -53,14 +53,14 @@ void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferId
 	{
 		std::cerr << e.what() << '\n';
 	}
-	if (BufferIdx != -1)
+	if (BufferIdx != -1 && false)
 	{
 		UMat Frame;Camera->GetOutputFrame(BufferIdx, Frame, Size(640,480));
-		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), Frame, 1.0);
+		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), Frame, 1.0, color);
 	}
 	else
 	{
-		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), 1.0);
+		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), 0.2, color);
 	}
 	Visualizer.showWidget(Camera->GetDevicePath(), CamWidget, Pose);
 	return;

@@ -18,45 +18,75 @@ using namespace cv;
 
 struct ArucoMarker
 {
-    float sideLength;
-    int number;
-    Affine3d Pose;
+	float sideLength;
+	int number;
+	Affine3d Pose;
 
-    vector<Point3d> GetObjectPointsNoOffset()
-    {
-        float sql2 = sideLength*0.5;
-        return {
-            Point3d(-sql2, sql2, 0.0),
-            Point3d(sql2, sql2, 0.0),
-            Point3d(sql2, -sql2, 0.0),
-            Point3d(-sql2, -sql2, 0.0)
-        };
-    }
+	vector<Point3d> GetObjectPointsNoOffset()
+	{
+		float sql2 = sideLength*0.5;
+		return {
+			Point3d(-sql2, sql2, 0.0),
+			Point3d(sql2, sql2, 0.0),
+			Point3d(sql2, -sql2, 0.0),
+			Point3d(-sql2, -sql2, 0.0)
+		};
+	}
 
-    ArucoMarker()
-        :sideLength(0.05),
-        number(-1),
-        Pose(Affine3d::Identity())
-    {}
+	ArucoMarker()
+		:sideLength(0.05),
+		number(-1),
+		Pose(Affine3d::Identity())
+	{}
 
-    ArucoMarker(float InSideLength, int InNumber)
-        :sideLength(InSideLength),
-        number(InNumber),
-        Pose(Affine3d::Identity())
-    {}
+	ArucoMarker(float InSideLength, int InNumber)
+		:sideLength(InSideLength),
+		number(InNumber),
+		Pose(Affine3d::Identity())
+	{}
 
-    ArucoMarker(float InSideLength, int InNumber, Affine3d InPose)
-        :sideLength(InSideLength),
-        number(InNumber),
-        Pose(InPose)
-    {}
+	ArucoMarker(float InSideLength, int InNumber, Affine3d InPose)
+		:sideLength(InSideLength),
+		number(InNumber),
+		Pose(InPose)
+	{}
 };
 
-struct trackedobject
+struct ArucoView
 {
-    vector<ArucoMarker> markers;
-
+	Affine3d CameraPosition;
+	Affine3d MarkerPosition;
+	int markerNumber;
+	float score;
 };
+
+class trackedobject
+{
+protected:
+	vector<ArucoMarker> markers;
+	vector<trackedobject*> childs;
+	Affine3d Location;
+	bool Unique;
+
+public:
+
+	trackedobject()
+	{};
+
+	virtual Affine3d ResolveLocation(vector<ArucoView> views);
+};
+
+class TrackerCube : public trackedobject
+{
+private:
+	
+public:
+	TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize);
+	~TrackerCube();
+};
+
+
+
 
 extern ArucoMarker center;
 

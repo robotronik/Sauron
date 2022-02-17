@@ -24,7 +24,7 @@ public:
 
 	static void SetupTerrain(viz::Viz3d& Visualizer);
 
-	static void ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose);
+	static void ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose, viz::Color color);
 
 	static viz::Mesh GetBoardMesh();
 	static viz::Mesh GetRobotMesh();

@@ -16,7 +16,7 @@ cmake -G Ninja \
 -D CMAKE_INSTALL_PREFIX=/usr \
 -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
 -D EIGEN_INCLUDE_PATH=/usr/include/eigen3 \
--D WITH_OPENCL=OFF \
+-D WITH_OPENCL=ON \
 -D WITH_OPENMP=ON \
 -D WITH_OPENGL=OFF \
 -D HAVE_CUDA=ON \
