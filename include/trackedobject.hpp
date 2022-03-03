@@ -10,6 +10,7 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/affine.hpp>
+#include <opencv2/viz.hpp>
 
 class Camera;
 
@@ -50,6 +51,8 @@ struct ArucoMarker
 		number(InNumber),
 		Pose(InPose)
 	{}
+
+	void DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation);
 };
 
 struct ArucoView
@@ -74,6 +77,9 @@ public:
 	{};
 
 	virtual Affine3d ResolveLocation(vector<ArucoView> views);
+
+
+	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation);
 };
 
 class TrackerCube : public trackedobject
@@ -95,3 +101,5 @@ vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners);
 Affine3d GetTagTransform(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam);
 
 Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam);
+
+void Tracker3DTest();

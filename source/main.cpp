@@ -243,6 +243,8 @@ int main(int argc, char** argv )
 	
 	viz::Viz3d board3d("3D board");
 	BoardViz3D::SetupTerrain(board3d);
+
+	Tracker3DTest();
 	int lastmarker = 0;
 	for (;;)
 	{
