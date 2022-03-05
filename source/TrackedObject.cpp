@@ -1,4 +1,4 @@
-#include "trackedobject.hpp"
+#include "TrackedObject.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 #include <opencv2/calib3d.hpp>
@@ -10,38 +10,54 @@
 
 extern ArucoMarker center(0.1, 42, Affine3d(Vec3d::all(0), Vec3d(0, -0.25, 0)));
 
-void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation)
+void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
 {
 	Affine3d Location = RootLocation * Pose;
 	viz::WImage3D widget(GetArucoImage(number), Size2d(sideLength, sideLength));
-	char buff[128];
-	snprintf(buff, 127, "%p marker", this);
-	visualizer->showWidget(buff, widget, Location * Affine3d(ImageToWorld()));
-	char buff2[128];
-	snprintf(buff2, 127, "%p coord", this);
-	visualizer->showWidget(buff2, viz::WCoordinateSystem(0.01), Location);
+	visualizer->showWidget(rootName + "/" + to_string(number), widget, Location * Affine3d(ImageToWorld()));
+	visualizer->showWidget(rootName + "/" + to_string(number) + "/axis", viz::WCoordinateSystem(0.01), Location);
 }
 
-Affine3d trackedobject::ResolveLocation(vector<ArucoView> views)
+Affine3d TrackedObject::ResolveLocation(vector<ArucoView> views)
 {
-	if (views.size() == 1)
+	vector<Affine3d> positions;
+	vector<Vec3d> CameraRays;
+	positions.reserve(views.size());
+	CameraRays.reserve(views.size());
+	for (int i = 0; i < views.size(); i++)
 	{
-		return views[0].CameraPosition * views[0].MarkerPosition;
+		for (int j = 0; j < markers.size(); j++)
+		{
+			if (markers[j].number == views[i].markerNumber)
+			{
+				Affine3d MarkerWorld = views[i].CameraPosition * views[i].MarkerPosition;
+				Affine3d OriginWorld = MarkerWorld * markers[j].Pose.inv();
+				positions.push_back(OriginWorld);
+				Vec3d ray = OriginWorld.translation() - views[i].CameraPosition.translation();
+				CameraRays.push_back(ray);
+			}
+		}
 	}
-	
+	vector<Affine3d> ChildLocations;
+	for (int i = 0; i < childs.size(); i++)
+	{
+		Affine3d ChildWorld = childs[i]->ResolveLocation(views);
+		ChildLocations.push_back(childs[i]->Location * ChildWorld);
+	}
+	return positions[0];
 }
 
-void trackedobject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation)
+void TrackedObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
 {
 	Affine3d worldlocation = RootLocation * Location;
 	for (int i = 0; i < markers.size(); i++)
 	{
-		markers[i].DisplayMarker(visualizer, worldlocation);
+		markers[i].DisplayMarker(visualizer, worldlocation, rootName + "/" + Name);
 	}
 	
 	for (int i = 0; i < childs.size(); i++)
 	{
-		childs[i]->DisplayRecursive(visualizer, worldlocation);
+		childs[i]->DisplayRecursive(visualizer, worldlocation, rootName + "/" + Name);
 	}
 	
 }
@@ -49,7 +65,8 @@ void trackedobject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocati
 TrackerCube::TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize)
 {
 	Unique = false;
-	vector<Point3d> Locations = {Point3d(CubeSize.x,0,0), Point3d(0,CubeSize.y,0), Point3d(-CubeSize.x,0,0), Point3d(0,-CubeSize.y,0)};
+	Name = "Cube";
+	vector<Point3d> Locations = {Point3d(CubeSize.x/2.0,0,0), Point3d(0,CubeSize.y/2.0,0), Point3d(-CubeSize.x/2.0,0,0), Point3d(0,-CubeSize.y/2.0,0)};
 	for (int i = 0; i < 4; i++)
 	{
 		Matx33d markerrot = MakeRotationFromZY(Locations[i], Vec3d(0,0,1));
@@ -89,8 +106,8 @@ void Tracker3DTest()
 	viz::Viz3d env("3D tracker position check");
 	viz::WCoordinateSystem coords(0.1);
 	env.showWidget("coordinate", coords);
-	TrackerCube cube({50, 51, 52, 54}, 0.06, Point3d(0.05, 0.05, 0));
-	cube.DisplayRecursive(&env, Affine3d::Identity());
+	TrackerCube* cube = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0));
+	cube->DisplayRecursive(&env, Affine3d::Identity(), String());
 	env.spin();
 }
 

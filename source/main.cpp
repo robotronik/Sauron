@@ -19,7 +19,8 @@
 #include "GlobalConf.hpp"
 #include "OutputImage.hpp"
 #include "Camera.hpp"
-#include "trackedobject.hpp"
+#include "TrackedObject.hpp"
+#include "ObjectTracker.hpp"
 #include "Calibrate.hpp"
 #include "boardviz.hpp"
 #include "BoardViz3d.hpp"
@@ -190,6 +191,7 @@ int main(int argc, char** argv )
 	
 	
 	
+	Tracker3DTest();
     
 	physicalCameras = autoDetectCameras();
 
@@ -244,7 +246,10 @@ int main(int argc, char** argv )
 	viz::Viz3d board3d("3D board");
 	BoardViz3D::SetupTerrain(board3d);
 
-	Tracker3DTest();
+	ObjectTracker tracker;
+	TrackedObject* cube = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0));
+	tracker.RegisterTrackedObject(cube);
+
 	int lastmarker = 0;
 	for (;;)
 	{
@@ -261,12 +266,14 @@ int main(int argc, char** argv )
 			board->OverlayImage(board->GetPalet(PaletCouleur::autre), FVector2D<float>(1), 0, FVector2D<float>(0.1));
 		}
 		
-		
+		vector<CameraView> views;
+		vector<Affine3d> cameras;
+		cameras.reserve(physicalCameras.size());
 
-		for (int i = 0; i < lastmarker; i++)
+		/*for (int i = 0; i < lastmarker; i++)
 		{
 			board3d.removeWidget(String("marker") + to_string(i));
-		}
+		}*/
 		lastmarker = 0;
 
 		for (int i = 0; i < physicalCameras.size(); i++)
@@ -296,6 +303,7 @@ int main(int argc, char** argv )
 					break;
 				}
 			}
+			cameras.push_back(cam->Location);
 			BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, cam->Location, has42 ? viz::Color::green() : viz::Color::red());
 			for (int mark = 0; mark < MarkerIDs.size(); mark++)
 			{
@@ -307,15 +315,20 @@ int main(int argc, char** argv )
 				
 				default:
 					ArucoMarker markerstruct(0.05, markerid);
-					Affine3d MarkerTransform = cam->Location * GetTagTransform(markerstruct, MarkerCorners[mark], cam);
-					viz::WImage3D markerWidget(GetArucoImage(markerid), Size2d(0.05, 0.05));
-					board3d.showWidget(String("marker") + to_string(lastmarker++), markerWidget, MarkerTransform);
+					Affine3d MarkerTransform = GetTagTransform(markerstruct, MarkerCorners[mark], cam);
+					Affine3d MarkerWorld = cam->Location * MarkerTransform;
+					views.push_back(CameraView(i, markerid, MarkerTransform));
+					
+					//viz::WImage3D markerWidget(GetArucoImage(markerid), Size2d(0.05, 0.05));
+					//board3d.showWidget(String("marker") + to_string(lastmarker++), markerWidget, MarkerWorld);
 					break;
 				}
 			}
 			
 		}
 		
+		tracker.SolveLocations(cameras, views);
+		tracker.DisplayObjects(&board3d);
 
 		double deltaTime = fps.GetDeltaTime();
 

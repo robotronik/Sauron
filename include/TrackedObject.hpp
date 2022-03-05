@@ -52,7 +52,7 @@ struct ArucoMarker
 		Pose(InPose)
 	{}
 
-	void DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation);
+	void DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
 };
 
 struct ArucoView
@@ -61,28 +61,38 @@ struct ArucoView
 	Affine3d MarkerPosition;
 	int markerNumber;
 	float score;
+
+	ArucoView()
+	{}
+
+	ArucoView(Affine3d InCameraPosition, Affine3d InMarkerPosition, int InMarkerNumber)
+		:CameraPosition(InCameraPosition),
+		MarkerPosition(InMarkerPosition),
+		markerNumber(InMarkerNumber),
+		score(0.0)
+	{}
 };
 
-class trackedobject
+class TrackedObject
 {
-protected:
+public:
 	vector<ArucoMarker> markers;
-	vector<trackedobject*> childs;
+	vector<TrackedObject*> childs;
 	Affine3d Location;
 	bool Unique;
+	String Name;
 
 public:
 
-	trackedobject()
+	TrackedObject()
 	{};
 
 	virtual Affine3d ResolveLocation(vector<ArucoView> views);
 
-
-	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation);
+	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
 };
 
-class TrackerCube : public trackedobject
+class TrackerCube : public TrackedObject
 {
 private:
 	
@@ -90,7 +100,6 @@ public:
 	TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize);
 	~TrackerCube();
 };
-
 
 
 

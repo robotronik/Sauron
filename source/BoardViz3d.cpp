@@ -4,7 +4,7 @@
 #include <opencv2/core/affine.hpp>
 
 #include "GlobalConf.hpp"
-#include "trackedobject.hpp"
+#include "TrackedObject.hpp"
 #include "Camera.hpp"
 
 const String assetpath = "../assets/";
