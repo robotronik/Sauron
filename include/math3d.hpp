@@ -22,3 +22,7 @@ Matx33d MakeRotationFromXYZ(Vec3d X, Vec3d Y, Vec3d Z);
 Matx33d MakeRotationFromZX(Vec3d Z, Vec3d X);
 
 Matx33d MakeRotationFromZY(Vec3d Z, Vec3d Y);
+
+Matx31d GetAxis(Matx33d rotation, int i);
+
+bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Vec3d Line2Dir, Vec3d& Line1Point, Vec3d& Line2Point);

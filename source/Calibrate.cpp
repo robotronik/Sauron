@@ -2,19 +2,14 @@
 
 #include <iostream> // for standard I/O
 #include <string>   // for strings
-#include <fstream>
-#include <iosfwd>
-#include <stdio.h>
 #include <sstream>  // string to number conversion
-#include <chrono> //seconds, micros, nanos
-#include <thread> //sleep_for
-#include <unistd.h>
+
+#include <filesystem>
 
 #include <opencv2/core.hpp>     // Basic OpenCV structures (cv::Mat, Scalar)
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
-#include <opencv2/aruco/charuco.hpp>
 #include <opencv2/calib3d.hpp>
 
 #include "Camera.hpp"
@@ -23,9 +18,12 @@
 
 using namespace std;
 using namespace cv;
+namespace fs = std::filesystem;
 
 const float CalibrationSquareEdge = 0.02; //m
-const Size CheckerSize = Size(9, 13);
+const Size CheckerSize = Size(9, 9);
+const String TempImgPath = "TempCalib";
+
 
 void CreateKnownBoardPos(Size BoardSize, float squareEdgeLength, vector<Point3f>& corners)
 {
@@ -72,17 +70,62 @@ void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Siz
 	calibrateCamera(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, BoardSize, CameraMatrix, DistanceCoefficients, rVectors, tVectors);
 }
 
+vector<String> CalibrationImages()
+{
+	vector<String> pathos;
+	for (const auto & entry : fs::directory_iterator(TempImgPath))
+    {
+		pathos.push_back(entry.path());
+	}
+}
+
+int LastIdx(vector<String> Pathes)
+{
+	int next = -1;
+	for (int i = 0; i < Pathes.size(); i++)
+	{
+		int thatidx = stoi(Pathes[i]);
+		next = next < thatidx ? thatidx : next;
+	}
+	return next;
+}
+
+void ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients)
+{
+	vector<String> pathes = CalibrationImages();
+	vector<vector<Point2f>> savedPoints;
+	for (int i = 0; i < pathes.size(); i++)
+	{
+		Mat frame = imread(pathes[i], IMREAD_GRAYSCALE);
+		vector<Point2f> foundPoints;
+		bool found = findChessboardCorners(frame, CheckerSize, foundPoints, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE | CALIB_CB_FAST_CHECK);
+		if (found)
+		{
+			TermCriteria criteria(TermCriteria::COUNT | TermCriteria::EPS, 30, 0.001);
+			cornerSubPix(frame, foundPoints, Size(11,11), Size(-1,-1), criteria);
+			//Scalar sharpness = estimateChessboardSharpness(frame, CheckerSize, foundPoints);
+			savedPoints.push_back(foundPoints);
+		}
+	}
+	CameraCalibration(savedPoints, CheckerSize, CalibrationSquareEdge, CameraMatrix, DistanceCoefficients);
+}
+
 bool docalibration(Camera* CamToCalib)
 {
 
 	Mat CameraMatrix;
 	Mat distanceCoefficients;
 
-	vector<vector<Point2f>> savedPoints;
+	bool ShowUndistorted = false;
 	CamToCalib->StartFeed();
+
+	fs::create_directory(TempImgPath);
 
 	namedWindow("Webcam", WINDOW_NORMAL);
 	setWindowProperty("Webcam", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+	
+	vector<String> pathes = CalibrationImages();
+	int nextIdx = LastIdx(pathes) +1;
 
 	FrameCounter fps;
 	while (true)
@@ -98,42 +141,60 @@ bool docalibration(Camera* CamToCalib)
 		//drawChessboardCorners(drawToFrame, CheckerSize, foundPoints, found);
 		char character = waitKey(1);
 
+		if (ShowUndistorted)
+		{
+			undistort(frame, frame, CameraMatrix, distanceCoefficients);
+		}
+
 		switch (character)
 		{
 		case ' ':
 			//save image
+			if (!ShowUndistorted)
 			{
 				vector<Point2f> foundPoints;
 				UMat grayscale;
 				cvtColor(frame, grayscale, COLOR_BGR2GRAY);
 				bool found = findChessboardCorners(grayscale, CheckerSize, foundPoints, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE | CALIB_CB_FAST_CHECK);
-				drawChessboardCorners(frame, CheckerSize, foundPoints, found);
+				
 				if (found)
 				{
-					TermCriteria criteria(TermCriteria::COUNT | TermCriteria::EPS, 30, 0.001);
+					imwrite(TempImgPath + to_string(nextIdx++), frame);
+					/*TermCriteria criteria(TermCriteria::COUNT | TermCriteria::EPS, 30, 0.001);
 	      			cornerSubPix(grayscale, foundPoints, Size(11,11), Size(-1,-1), criteria);
 					Scalar sharpness = estimateChessboardSharpness(frame, CheckerSize, foundPoints);
 					putText(frame, to_string(sharpness[0]), Point2i(0, frame.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 0, 0));
 					if (sharpness[0] < 4.f || true)
 					{
 						savedPoints.push_back(foundPoints);
-					}
+					}*/
 				}
+				drawChessboardCorners(frame, CheckerSize, foundPoints, found);
 				imshow("Webcam", frame);
-				this_thread::sleep_for(chrono::seconds(1));
+				timespec waitFor;
+				waitFor.tv_sec = 1;
+				waitFor.tv_nsec = 0;
+				nanosleep(&waitFor, NULL);
 			}
 			break;
 		
 		case 13: //enter
 			//start calib
-			CameraCalibration(savedPoints, CheckerSize, CalibrationSquareEdge, CameraMatrix, distanceCoefficients);
-			writeCameraParameters(CamToCalib->GetName(), CameraMatrix, distanceCoefficients);
-			goto aftercalib;
+			if (ShowUndistorted)
+			{
+				ShowUndistorted = false;
+			}
+			else
+			{
+				ReadAndCalibrate(CameraMatrix, distanceCoefficients);
+				writeCameraParameters(CamToCalib->GetName(), CameraMatrix, distanceCoefficients);
+				ShowUndistorted = true;
+			}
 			break;
 
 		case 27:
 			//exit
-			return false;
+			return true;
 			break;
 
 		default:
@@ -141,23 +202,6 @@ bool docalibration(Camera* CamToCalib)
 		}
 		fps.AddFpsToImage(frame, fps.GetDeltaTime());
 		imshow("Webcam", frame);
-	}
-
-aftercalib:
-	while (true)
-	{
-		UMat frame;
-		if (!CamToCalib->Read(0))
-		{
-			//cout<< "read fail" <<endl;
-			continue;
-		}
-		CamToCalib->GetFrame(0, frame);
-		UMat undistorted;
-		undistort(frame, undistorted, CameraMatrix, distanceCoefficients);
-		fps.AddFpsToImage(frame, fps.GetDeltaTime());
-		imshow("Webcam", undistorted);
-		waitKey(1);
 	}
 	return true;
 }

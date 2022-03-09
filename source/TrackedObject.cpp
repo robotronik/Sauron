@@ -18,33 +18,92 @@ void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, S
 	visualizer->showWidget(rootName + "/" + to_string(number) + "/axis", viz::WCoordinateSystem(0.01), Location);
 }
 
-Affine3d TrackedObject::ResolveLocation(vector<ArucoView> views)
+Affine3d TrackedObject::ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views)
 {
 	vector<Affine3d> positions;
 	vector<Vec3d> CameraRays;
-	positions.reserve(views.size());
-	CameraRays.reserve(views.size());
+	vector<int> bestViews;
+	positions.resize(views.size());
+	CameraRays.resize(views.size());
+
 	for (int i = 0; i < views.size(); i++)
 	{
 		for (int j = 0; j < markers.size(); j++)
 		{
-			if (markers[j].number == views[i].markerNumber)
+			if (markers[j].number == views[i].TagID)
 			{
-				Affine3d MarkerWorld = views[i].CameraPosition * views[i].MarkerPosition;
+				Affine3d MarkerWorld = Cameras[views[i].Camera] * views[i].TagTransform;
 				Affine3d OriginWorld = MarkerWorld * markers[j].Pose.inv();
-				positions.push_back(OriginWorld);
-				Vec3d ray = OriginWorld.translation() - views[i].CameraPosition.translation();
-				CameraRays.push_back(ray);
+				positions[i] = OriginWorld;
+				Vec3d ray = OriginWorld.translation() - Cameras[views[i].Camera].translation();
+				CameraRays[i] = ray;
+				views[i].score = MarkerWorld.rotation().col(3).ddot(-ray);
+				bool replaced = false;
+				for (int k = 0; k < bestViews.size(); k++)
+				{
+					if (views[bestViews[k]].Camera != views[i].Camera)
+					{
+						continue;
+					}
+					if (views[bestViews[k]].score < views[i].score)
+					{
+						bestViews[k] = i;
+					}
+					replaced = true;
+					break;
+				}
+				if (!replaced)
+				{
+					bestViews.push_back(i);
+				}
+				break;
 			}
 		}
 	}
-	vector<Affine3d> ChildLocations;
+	/*vector<Affine3d> ChildLocations;
 	for (int i = 0; i < childs.size(); i++)
 	{
-		Affine3d ChildWorld = childs[i]->ResolveLocation(views);
+		Affine3d ChildWorld = childs[i]->ResolveLocation(Cameras, views);
 		ChildLocations.push_back(childs[i]->Location * ChildWorld);
+	}*/
+	if (bestViews.size() >= 2) //more than one camera sees the object
+	{
+		int best =-1;
+		int secondbest = -1;
+		for (int i = 0; i < bestViews.size(); i++)
+		{
+			if (best==-1)
+			{
+				best=i;
+			}
+			else if (views[bestViews[i]].score > views[bestViews[best]].score)
+			{
+				secondbest = best;
+				best = i;
+			}
+			else if (secondbest ==-1)
+			{
+				secondbest = i;
+			}
+			else if (views[bestViews[i]].score > views[bestViews[secondbest]].score)
+			{
+				secondbest = i;
+			}
+		}
+		int bestidx = bestViews[best];
+		int secondbestidx = bestViews[secondbest];
+		Vec3d bestpoint, secondbestpoint;
+		ClosestPointsOnTwoLine(positions[bestidx].translation(), CameraRays[bestidx], 
+		positions[secondbestidx].translation(), CameraRays[secondbestidx], bestpoint, secondbestpoint);
+
+		Affine3d theend = Affine3d(positions[bestidx].rotation(), (bestpoint + secondbestpoint)/2);
+		Location = theend;
 	}
-	return positions[0];
+	else
+	{
+		Location = positions[bestViews[0]];
+	}
+	return Location;
 }
 
 void TrackedObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)

@@ -23,7 +23,7 @@ void ObjectTracker::RegisterTrackedObject(TrackedObject* object)
 	RegisterArucoRecursive(object, index);
 }
 
-void ObjectTracker::SolveLocations(vector<Affine3d> Cameras, vector<CameraView> Tags)
+void ObjectTracker::SolveLocations(vector<Affine3d>& Cameras, vector<CameraView>& Tags)
 {
 	vector<vector<CameraView>> tagsForObject;
 	tagsForObject.resize(objects.size());
@@ -38,7 +38,7 @@ void ObjectTracker::SolveLocations(vector<Affine3d> Cameras, vector<CameraView> 
 	}
 	for (int ObjIdx = 0; ObjIdx < tagsForObject.size(); ObjIdx++)
 	{
-		vector<ArucoView> arucos;
+		vector<CameraView> arucos;
 		if (tagsForObject[ObjIdx].size() == 0)
 		{
 			continue;
@@ -48,9 +48,9 @@ void ObjectTracker::SolveLocations(vector<Affine3d> Cameras, vector<CameraView> 
 		for (int i = 0; i < arucos.size(); i++)
 		{
 			CameraView& v = tagsForObject[ObjIdx][i];
-			arucos[i] = ArucoView(Cameras[v.Camera], v.TagTransform, v.TagID);
+			arucos[i] = v;
 		}
-		objects[ObjIdx]->Location = objects[ObjIdx]->ResolveLocation(arucos);
+		objects[ObjIdx]->ResolveLocation(Cameras, arucos);
 	}
 }
 

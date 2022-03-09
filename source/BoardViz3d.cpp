@@ -45,14 +45,6 @@ void BoardViz3D::SetupTerrain(viz::Viz3d& Visualizer)
 void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose, viz::Color color)
 {
 	viz::WCameraPosition CamWidget;
-	try
-	{
-		Visualizer.removeWidget(Camera->GetDevicePath());
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-	}
 	if (BufferIdx != -1 && false)
 	{
 		UMat Frame;Camera->GetOutputFrame(BufferIdx, Frame, Size(640,480));

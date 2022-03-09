@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.1)
 # Define project name
 project(Robotronikaruco)
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17")
+
 # Find OpenCV, you may need to set OpenCV_DIR variable
 # to the absolute path to the directory containing OpenCVConfig.cmake file
 # via the command line or GUI
@@ -28,4 +30,4 @@ file(GLOB SOURCES "source/*.cpp")
 add_executable(Robotronikaruco ${SOURCES})
 
 # Link your application with OpenCV libraries
-target_link_libraries(Robotronikaruco PRIVATE ${OpenCV_LIBS})
+target_link_libraries(Robotronikaruco PRIVATE ${OpenCV_LIBS} stdc++fs)

@@ -3,26 +3,6 @@
 #include <opencv2/core.hpp>
 #include "TrackedObject.hpp"
 
-struct CameraView
-{
-	int Camera;
-	int TagID;
-	Affine3d TagTransform;
-
-	CameraView()
-		:Camera(0),
-		TagID(0),
-		TagTransform(Affine3d::Identity())
-	{}
-
-	CameraView(int InCamera, int InTagID, Affine3d InTagTransform)
-		:Camera(InCamera),
-		TagID(InTagID),
-		TagTransform(InTagTransform)
-	{}
-};
-
-
 
 class ObjectTracker
 {
@@ -35,7 +15,7 @@ public:
 
 	void RegisterTrackedObject(TrackedObject* object);
 
-	void SolveLocations(vector<Affine3d> Cameras, vector<CameraView> Tags);
+	void SolveLocations(vector<Affine3d>& Cameras, vector<CameraView>& Tags);
 
 	void DisplayObjects(viz::Viz3d* visualizer);
 

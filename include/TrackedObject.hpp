@@ -17,6 +17,26 @@ class Camera;
 using namespace std;
 using namespace cv;
 
+struct CameraView
+{
+	int Camera;
+	int TagID;
+	Affine3d TagTransform;
+	double score;
+
+	CameraView()
+		:Camera(0),
+		TagID(0),
+		TagTransform(Affine3d::Identity())
+	{}
+
+	CameraView(int InCamera, int InTagID, Affine3d InTagTransform)
+		:Camera(InCamera),
+		TagID(InTagID),
+		TagTransform(InTagTransform)
+	{}
+};
+
 struct ArucoMarker
 {
 	float sideLength;
@@ -55,24 +75,6 @@ struct ArucoMarker
 	void DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
 };
 
-struct ArucoView
-{
-	Affine3d CameraPosition;
-	Affine3d MarkerPosition;
-	int markerNumber;
-	float score;
-
-	ArucoView()
-	{}
-
-	ArucoView(Affine3d InCameraPosition, Affine3d InMarkerPosition, int InMarkerNumber)
-		:CameraPosition(InCameraPosition),
-		MarkerPosition(InMarkerPosition),
-		markerNumber(InMarkerNumber),
-		score(0.0)
-	{}
-};
-
 class TrackedObject
 {
 public:
@@ -87,7 +89,7 @@ public:
 	TrackedObject()
 	{};
 
-	virtual Affine3d ResolveLocation(vector<ArucoView> views);
+	virtual Affine3d ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views);
 
 	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
 };

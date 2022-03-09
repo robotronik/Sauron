@@ -1,19 +1,11 @@
 #include <iostream> // for standard I/O
 #include <string>   // for strings
-#include <iomanip>  // for controlling float print precision
 #include <sstream>  // string to number conversion
 #include <math.h>
+
+#include <filesystem>
+
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
-#include <opencv2/videoio.hpp>
-#include <opencv2/highgui.hpp>  // OpenCV window I/O
-#include <opencv2/aruco.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
-
-#include <opencv2/core/cuda.hpp>
-#include <opencv2/cudacodec.hpp>
-#include <opencv2/cudaimgproc.hpp>
-
 #include <opencv2/core/ocl.hpp>
 
 #include "GlobalConf.hpp"
@@ -177,7 +169,8 @@ int main(int argc, char** argv )
 	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 	if (parser.has("marker"))
 	{
-		cout << "markers folder must exist before calling this function" << endl;
+		std::filesystem::create_directory("../markers");
+		//mkdir("../markers", 0777);
 		for (int i = 0; i < 100; i++)
 		{
 			UMat markerImage;
@@ -208,7 +201,7 @@ int main(int argc, char** argv )
 		int camIndex = parser.get<int>("calibrate");
 		if (0<= camIndex && camIndex < physicalCameras.size())
 		{
-			docalibration(physicalCameras[0]);
+			docalibration(physicalCameras[camIndex]);
 			exit(EXIT_SUCCESS);
 		}
 		exit(EXIT_FAILURE);
@@ -354,8 +347,9 @@ int main(int argc, char** argv )
 		board3d.showWidget("fps", fpstext);
 		board3d.spinOnce(1, true);
 		if (waitKey(1) == 27 || board3d.wasStopped())
+		{
 			break;
-		
+		}
 	}
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	
