@@ -75,8 +75,10 @@ vector<String> CalibrationImages()
 	vector<String> pathos;
 	for (const auto & entry : fs::directory_iterator(TempImgPath))
     {
-		pathos.push_back(entry.path());
+		pathos.push_back(entry.path().string());
+		cout << entry.path().string() << endl;
 	}
+	return pathos;
 }
 
 int LastIdx(vector<String> Pathes)
@@ -84,7 +86,8 @@ int LastIdx(vector<String> Pathes)
 	int next = -1;
 	for (int i = 0; i < Pathes.size(); i++)
 	{
-		int thatidx = stoi(Pathes[i]);
+		String stripped = Pathes[i].substr(TempImgPath.length()+1, Pathes[i].length() - TempImgPath.length()-1 - String(".png").length());
+		int thatidx = stoi(stripped);
 		next = next < thatidx ? thatidx : next;
 	}
 	return next;
@@ -128,15 +131,18 @@ bool docalibration(Camera* CamToCalib)
 	int nextIdx = LastIdx(pathes) +1;
 
 	FrameCounter fps;
+	FrameCounter readget, drawfps, showimg;
 	while (true)
 	{
 		UMat frame;
+		readget.GetDeltaTime();
 		if (!CamToCalib->Read(0))
 		{
 			//cout<< "read fail" <<endl;
 			continue;
 		}
 		CamToCalib->GetFrame(0, frame);
+		double readgetdelta = readget.GetDeltaTime();
 		//cout << "read success" << endl;
 		//drawChessboardCorners(drawToFrame, CheckerSize, foundPoints, found);
 		char character = waitKey(1);
@@ -159,7 +165,7 @@ bool docalibration(Camera* CamToCalib)
 				
 				if (found)
 				{
-					imwrite(TempImgPath + to_string(nextIdx++), frame);
+					imwrite(TempImgPath + "/" + to_string(nextIdx++) + ".png", frame);
 					/*TermCriteria criteria(TermCriteria::COUNT | TermCriteria::EPS, 30, 0.001);
 	      			cornerSubPix(grayscale, foundPoints, Size(11,11), Size(-1,-1), criteria);
 					Scalar sharpness = estimateChessboardSharpness(frame, CheckerSize, foundPoints);
@@ -200,8 +206,14 @@ bool docalibration(Camera* CamToCalib)
 		default:
 			break;
 		}
+		drawfps.GetDeltaTime();
 		fps.AddFpsToImage(frame, fps.GetDeltaTime());
+		double drawfpsdelta = drawfps.GetDeltaTime();
+		showimg.GetDeltaTime();
 		imshow("Webcam", frame);
+		double showdelta = showimg.GetDeltaTime();
+
+		cout << "get : " << readgetdelta << " drawfps : " << drawfpsdelta << " show : " << showdelta << endl;
 	}
 	return true;
 }

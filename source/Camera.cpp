@@ -8,7 +8,8 @@
 #include <opencv2/cudacodec.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudaimgproc.hpp>
-#include "list-devices.hpp"
+#include "thirdparty/list-devices.hpp"
+//#include "thirdparty/vidcap.h"
 #include "Calibfile.hpp"
 
 using namespace std;
@@ -87,11 +88,18 @@ bool Camera::StartFeed()
 		feed = new VideoCapture();
 		cout << "Opening device at \"" << DevicePath << "\" with API id " << ApiID << endl;
 		feed->open(DevicePath, ApiID);
-		feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
-		feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
-		feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
-		feed->set(CAP_PROP_FPS, fps);
-		feed->set(CAP_PROP_BUFFERSIZE, 1);
+		//feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
+		//feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('Y', 'U', 'Y', 'V'));
+		//feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
+		//feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
+		//feed->set(CAP_PROP_FPS, fps);
+		//feed->set(CAP_PROP_BUFFERSIZE, 1);
+		cout << "Success opening ? " << feed->isOpened() << endl;
+		if (!feed->isOpened())
+		{
+			exit(EXIT_FAILURE);
+		}
+		
 	}
 	
 	connected = true;
@@ -254,14 +262,22 @@ vector<Camera*> autoDetectCameras()
 		//v4l2-ctl --list-formats-ext
 		//gst-launch-1.0 v4l2src device="/dev/video0" io-mode=2 ! "image/jpeg, width=1920, height=1080, framerate=30/1" ! nvjpegdec ! "video/x-raw" ! nvoverlaysink -e
 		//gst-launch-1.0 v4l2src device="/dev/video0" ! "video/x-h264, format=H264, width=1920, height=1080, framerate=30/1" ! h264parse ! omxh264dec ! nvvidconv ! "video/x-raw(memory:NVMM), format=NV12" ! nvoverlaysink -e
+		
+		//gst-launch-1.0 v4l2src device="/dev/video0" io-mode=2 ! "image/jpeg, width=1920, height=1080, framerate=60/1" ! nvdec ! glimagesink -e
+		
 		//nvv4l2decoder ?
 		//string capname = string("v4l2src device=/dev/video") + to_string(i)
 		//+ String(" io-mode=2 do-timestamp=true ! image/jpeg, width=1920, height=1080, framerate=30/2 ! nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink");
 		
+		//jpegdec + videoconvert marche
+
 		if (strstr(device.device_description.c_str(), "4") != NULL)
 		{
-			string capname = String(device.device_paths[0]);
-			int API = CAP_ANY;
+			//string capname = String(device.device_paths[0]);
+			string capname = string("v4l2src device=") + device.device_paths[0] +
+		    String(" io-mode=2 ! image/jpeg, width=1920, height=1080, framerate=60/1 ! nvdec ! glcolorconvert ! gldownload ! video/x-raw, format=BGR ! appsink");
+			cout << "opening with string " << capname << endl;
+			int API = CAP_GSTREAMER;
 			Camera* cam = new Camera(device.device_description, Size(1920, 1080), 30, capname, API, false);
 			//cam->StartFeed();
 			readCameraParameters(String("../calibration/")+device.device_description, cam->CameraMatrix, cam->distanceCoeffs);

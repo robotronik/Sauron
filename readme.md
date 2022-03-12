@@ -1,10 +1,12 @@
 # JetsonMV
 ou comment dire que c'est le code pour la machine vision de la CDFR
 
-## Installation
+# Installation
 Utiliser Ubuntu
 
-Avoir Cuda d'installé
+Avoir Cuda d'installé et dans le PATH
+
+https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#introduction
 
 Installer cmake et Ninja
 
@@ -18,7 +20,7 @@ sudo apt-get install -y python-dev python-numpy python-pip
 sudo apt-get install -y python3-dev python3-numpy python3-pip
 sudo apt-get install -y libxvidcore-dev libx264-dev libgtk-3-dev
 sudo apt-get install -y libtbb2 libtbb-dev libdc1394-22-dev libxine2-dev
-sudo apt-get install -y gstreamer1.0-tools libv4l-dev v4l-utils v4l2ucp  qv4l2 
+sudo apt-get install -y gstreamer1.0-tools libv4l-dev v4l-utils v4l2ucp qv4l2 
 sudo apt-get install -y libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev
 sudo apt-get install -y libavresample-dev libvorbis-dev libxine2-dev libtesseract-dev
 sudo apt-get install -y libfaac-dev libmp3lame-dev libtheora-dev libpostproc-dev
@@ -29,6 +31,8 @@ sudo apt-get install -y libhdf5-dev protobuf-compiler
 sudo apt-get install -y libprotobuf-dev libgoogle-glog-dev libgflags-dev
 ```
 Télécharger opencv et opencv_contrib et les mettre dans home, créer un fichier build dans `~/opencv`
+
+## VTK
 
 Télécharger [libvtk](https://vtk.org/download/), et extraire les sources dans home
 
@@ -45,19 +49,120 @@ sudo ninja install
 
 VTK permet d'avoir le module Viz et Viz3D.
 
+## FFmpeg (OpenCV marche pas avec chez moi, ca sert à rien, mais au cas où je le laisse)
+
+Il faut suivre ça 
+
+https://docs.nvidia.com/video-technologies/video-codec-sdk/ffmpeg-with-nvidia-gpu/
+
+Selon la distro, sauf que il faut utiliser ffmpeg version 4.4 (demande pas pk), et si tu as 
+
+`ERROR: failed checking for nvcc.`, 
+
+rajoute `--nvccflags="-gencode arch=compute_52,code=sm_52 -O2"`
+
+## Compiler le module nvdec pour GStreamer
+
+On va commencer par installer le video codec de NVidia :
+
+[ça se dl ici](https://developer.nvidia.com/nvidia-video-codec-sdk/download)
+
+Il va falloir copier les fichiers pour l'installer.
+D'abord on extrait tout à un endroit, puis on lance un terminal dans le fichier extrait.
+Ensuite :
+```console
+cp Interface/* /usr/local/cuda/include
+cp Lib/linux/stubs/x86_64/* /usr/local/cuda/lib64/stubs
+```
+
+Puis après, il faut trouver la version de gstreamer installée : `gst-launch-1.0 --version`, pour moi c'est 1.16.2
+
+Ensuite, dans un dossier, faire 
+```console
+git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-bad
+cd gst-plugins-bad
+git checkout <version>
+```
+git checkout permet de changer de branche pour prendre la version de gst-plugins-bad qui correspond à notre version de gstreamer, remplacer \<version\> par ce qu'on avait trouvé 3 commandes avant.
+
+Ensuite, on va faire :
+```
+./autogen.sh --disable-gtk-doc --with-cuda-prefix="/usr/local/cuda" --enable-hls=no
+cd sys/nvdec
+make
+sudo make install
+sudo cp .libs/libgstnvdec.so /usr/lib/x86_64-linux-gnu/gstreamer-1.0/
+```
+C'est pas grave si pendant le make il se plaint de libdrm, balec.
+Ensuite on clear le cache de gstreamer : `rm -r ~/.cache/gstreamer-1.0`
+
+Maintenant, `gst-inspect1.0 nvdec` va dire tout plein de trucs si tout est bon
+
+Y'a moyen de faire la même chose sur nvenc si besoin.
+
+## Ok c'est tout
+
 puis une fois tout ca, exécuter InstallOpenCV.sh
 
 `./InstallOpenCV.sh`
 
-## Coder dessus
+# Coder dessus
 Je recommande VisualStudioCode
 
 Avec l'extension CMake, faire un Clean Reconfigure All Projects à chaque fois que un .h et/ou un .cpp est ajouté.
 
 Le code est fait pour des C920, mais ca peut s'adapter.
+Sur mon PC v4l2 est con, c'est à dire qu'il donne plus les noms des webcams, du coup dans Camera.cpp le autodetect est fait pour marcher avec des caméra dans le nom "Video Capture 4"...
 
-## Lancer le code
+Ci dessous je décris tous les modules de mon code.
 
-l'exécutable se trouvera dans le fichier Build
+## Boardviz
+
+C'est un ancien module de visualisation 2D du terrain, utile pour quand j'arrivais pas à avoir VTK, maintenant c'est plus utile mais ca marche et c'est hella fast
+
+## BoardViz3D
+
+Bah y'a une classe, mais en vrai c'est des utilitaires pour viz3d
+
+## Calibrate et Calibfile
+
+Ca permet de calibrer les caméras et stocker les calibrations. Lors de la calibration, (`./Robotronikaruco -c`), ESPACE pour capturer une image, ESC pour quitter, et Entrée pour calculer la calibration. Les images utilisées sont stockées dans `build/TempCalib`.
+La calibration c'est important parceque ca permet de détecter les paramètres genre angle de vue et tout de la caméra, pour transformer les tags aruco dans l'espace.
+Pour calibrer, il faut imprimer un échiquier. Le coder détecte les intersections entre les carrés, et il faut absolument que la feuille avec l'échiquier soit plate, et que la largeur des cotés soit connue. La taille (en intersections) de l'échiquier et du coté des carrés est définie en haut du fichier
+
+## Camera
+
+Ca s'occupe de détecter, démarrer et configurer les caméra (tg ca marche)
+
+## FrameCounter
+
+Une classe qui permet d'afficher les fps, c'est utile
+
+## Globalconf
+
+Une classe de configuration et de boilerplate, pour les tags aruco principalement.
+
+## math3d
+
+Des fonctions de math, en 3D, no shit sherlock.
+
+## ObjectTracker et TrackedObject
+
+Alors ça, j'en suis pas peu fier: 
+TrackedObject est une classe générique qui permet de représenter des objects dans l'espace en fonction des tags aruco. Les tags aruco ont leur position par rapport à leur parent, et nécéssitent d'être enregistrés dans le TrackedObject.
+
+L'ObjectTracker permet de transformer des vues de tags Aruco en position des objets.
+
+## OutputImage
+
+C'est une classe de base qui permet d'afficher des images en mode grille quand la vue est mode direct. C'est le parent de Camera et de boardviz
+
+## position
+
+C'est une système de position 2D utilisé par boardviz. En vrai ca sert à rien.
+
+# Lancer le code
+
+L'exécutable se trouvera dans le fichier Build
 
 `./Robotronikaruco -h` pour avoir l'aide

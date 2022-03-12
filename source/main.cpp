@@ -184,7 +184,7 @@ int main(int argc, char** argv )
 	
 	
 	
-	Tracker3DTest();
+	//Tracker3DTest();
     
 	physicalCameras = autoDetectCameras();
 
@@ -195,7 +195,7 @@ int main(int argc, char** argv )
 	}
 	
 
-	if (parser.has("calibrate"))
+	if (parser.has("calibrate") || true)
 	{
 		cout << "Starting calibration of camera index" << parser.get<int>("calibrate") <<endl;
 		int camIndex = parser.get<int>("calibrate");

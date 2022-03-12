@@ -10,9 +10,12 @@ sudo ldconfig
 cd ~/opencv
 cd build
 
+#-D WITH_NVCUVID=ON \ potetiellement pour cudacodec::VideoCapture
+#-D VIDEOIO_PLUGIN_LIST=ffmpeg,gstreamer \
+
 # run cmake
 cmake -G Ninja \
--D CMAKE_BUILD_TYPE=RELEASE \
+-D CMAKE_BUILD_TYPE=Release \
 -D CMAKE_INSTALL_PREFIX=/usr \
 -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
 -D EIGEN_INCLUDE_PATH=/usr/include/eigen3 \
@@ -22,6 +25,7 @@ cmake -G Ninja \
 -D HAVE_CUDA=ON \
 -D WITH_CUDA=ON \
 -D WITH_CUDNN=OFF \
+-D WITH_NVCUVID=ON \
 -D WITH_CUBLAS=ON \
 -D ENABLE_FAST_MATH=ON \
 -D CUDA_FAST_MATH=ON \
