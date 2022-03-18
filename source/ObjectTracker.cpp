@@ -3,10 +3,12 @@
 ObjectTracker::ObjectTracker(/* args */)
 {
 	ArucoMap = new int[100];
+	ArucoSizes = new float[100];
 
 	for (int i = 0; i < 100; i++)
 	{
 		ArucoMap[i] = -1;
+		ArucoSizes[i] = 0.05;
 	}
 	
 }
@@ -62,12 +64,22 @@ void ObjectTracker::DisplayObjects(viz::Viz3d* visualizer)
 	}
 }
 
+void ObjectTracker::SetArucoSize(int number, float SideLength)
+{
+	ArucoSizes[number] = SideLength;
+}
+
+float ObjectTracker::GetArucoSize(int number)
+{
+	return ArucoSizes[number];
+}
 
 void ObjectTracker::RegisterArucoRecursive(TrackedObject* object, int index)
 {
 	for (int i = 0; i < object->markers.size(); i++)
 	{
 		ArucoMap[object->markers[i].number] = index;
+		ArucoSizes[object->markers[i].number] = object->markers[i].sideLength;
 	}
 	for (int i = 0; i < object->childs.size(); i++)
 	{

@@ -13,6 +13,7 @@
 #include <opencv2/cudawarping.hpp>
 
 #include "OutputImage.hpp"
+#include "CameraView.hpp"
 
 using namespace std;
 using namespace cv;
@@ -27,6 +28,8 @@ enum class CameraStatus
 	ReadBoth
 };
 
+class ObjectTracker;
+
 class BufferedFrame
 {
 
@@ -35,9 +38,13 @@ protected:
 	cuda::GpuMat GPUFrame;
 	CameraStatus Status;
 	bool HasAruco;
+	bool HasViews;
+
+	vector<UMat> rescaledFrames;
 
 	vector<int> markerIDs;
 	vector<vector<Point2f>> markerCorners;
+	vector<CameraView> markerViews;
 
 public:
 
@@ -49,9 +56,18 @@ public:
 
 	bool GetGPUFrame(cuda::GpuMat& OutFrame);
 
+	bool GetRescaledFrame(int index, UMat& OutFrame);
+
 friend class Camera;
 };
 
+enum class CameraStartType
+{
+	ANY,
+	GSTREAMER_CPU,
+	GSTREAMER_NVDEC,
+	CUDA
+};
 
 class Camera : public OutputImage
 {
@@ -68,7 +84,7 @@ public:
 	Affine3d Location;
 private:
 
-	bool CudaCapture;
+	CameraStartType CaptureType;
 
 	//capture
 	VideoCapture* feed;
@@ -88,14 +104,14 @@ public:
 
 public:
 
-	Camera(String InName, Size InCaptureSize, int InFPS, string InDevicePath, int InApiId, bool InCudaCapture = false)
+	Camera(String InName, Size InCaptureSize, int InFPS, string InDevicePath, int InApiId, CameraStartType InCaptureType)
 		:Name(InName),
 		CaptureSize(InCaptureSize),
 		fps(InFPS),
 		DevicePath(InDevicePath),
 		ApiID(InApiId),
 		Location(Affine3d::Identity()),
-		CudaCapture(InCudaCapture),
+		CaptureType(InCaptureType),
 		connected(false),
 		FrameBuffer(),
 		OutputImage()
@@ -106,7 +122,7 @@ public:
 	{
 		if (connected)
 		{
-			if (CudaCapture)
+			if (CaptureType == CameraStartType::CUDA)
 			{
 				delete d_reader;
 			}
@@ -134,7 +150,13 @@ public:
 
 	void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
 
+	void SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry);
+
 	bool GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners);
+
+	int GetCameraViewsSize(int BufferIndex);
+
+	bool GetCameraViews(int BufferIndex, vector<CameraView>& views);
 
 	virtual void GetFrame(int BufferIndex, UMat& frame) override;
 
@@ -142,6 +164,7 @@ public:
 
 };
 
-vector<Camera*> autoDetectCameras();
+
+vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile);
 
 bool StartCameras(vector<Camera*> Cameras);

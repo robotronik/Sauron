@@ -53,28 +53,32 @@ void DetectArucoCameras(vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Pt
 	});
 }
 
-void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
+void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry)
 {
 	int numCams = Cameras.size();
 	for (int i = 0; i < Cameras.size(); i++)
 	{
 		Cameras[i]->Grab(BufferCaptureIdx);
 	}
+	//Range range(0, numCams*Camera::FrameBufferSize);
 	parallel_for_(Range(0, numCams * Camera::FrameBufferSize), [&](const Range& range)
 	{
 		for (int i = range.start; i < range.end; i++)
 		{
 			int BufferIdx = (BufferCaptureIdx + i/numCams) % Camera::FrameBufferSize;
+			int CamIdx = i%numCams;
 			switch (i/numCams)
 			{
 			case 0:
 				// read
-				Cameras[i%numCams]->Read(BufferIdx);
+				Cameras[CamIdx]->Read(BufferIdx);
+				
 				break;
 			
 			case 1:
 				//Detect aruco
-				Cameras[i%numCams]->detectMarkers(BufferIdx, dict, params);
+				Cameras[CamIdx]->detectMarkers(BufferIdx, dict, params);
+				Cameras[CamIdx]->SolveMarkers(BufferIdx, CamIdx, registry);
 				break;
 
 			default:
@@ -90,7 +94,7 @@ void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::
 
 UMat ConcatCameras(int BufferIndex, vector<OutputImage*> Cameras, int NumCams)
 {
-	Size screensize = Size(1920, 1080);
+	Size screensize = GetScreenSize();
 	UMat concatenated(screensize, CV_8UC3, Scalar(0,0,255));
 	int rows = 1, columns = 1;
 	while (rows * rows < NumCams)
@@ -143,7 +147,7 @@ int main(int argc, char** argv )
 	
 	
 	cuda::setDevice(0);
-	ocl::setUseOpenCL(true);
+	//ocl::setUseOpenCL(true);
 	if (parser.has("cuda"))
 	{
 		int cuda_devices_number = cuda::getCudaEnabledDeviceCount();
@@ -186,7 +190,7 @@ int main(int argc, char** argv )
 	
 	//Tracker3DTest();
     
-	physicalCameras = autoDetectCameras();
+	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_NVDEC, "4", "Brio");
 
 	if (physicalCameras.size() == 0)
 	{
@@ -195,7 +199,7 @@ int main(int argc, char** argv )
 	}
 	
 
-	if (parser.has("calibrate") || true)
+	if (parser.has("calibrate"))
 	{
 		cout << "Starting calibration of camera index" << parser.get<int>("calibrate") <<endl;
 		int camIndex = parser.get<int>("calibrate");
@@ -240,14 +244,15 @@ int main(int argc, char** argv )
 	BoardViz3D::SetupTerrain(board3d);
 
 	ObjectTracker tracker;
-	TrackedObject* cube = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0));
+	tracker.SetArucoSize(center.number, center.sideLength);
+	TrackedObject* cube = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
 	tracker.RegisterTrackedObject(cube);
 
 	int lastmarker = 0;
 	for (;;)
 	{
 		fpsPipeline.GetDeltaTime();
-		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters);
+		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters, &tracker);
 		PipelineIdx = (PipelineIdx + 1) % Camera::FrameBufferSize;
 		double TimePipeline = fpsPipeline.GetDeltaTime();
 
@@ -261,62 +266,42 @@ int main(int argc, char** argv )
 		
 		vector<CameraView> views;
 		vector<Affine3d> cameras;
-		cameras.reserve(physicalCameras.size());
+		cameras.resize(physicalCameras.size());
 
-		/*for (int i = 0; i < lastmarker; i++)
+		int viewsize = 0;
+		for (int i = 0; i < physicalCameras.size(); i++)
 		{
-			board3d.removeWidget(String("marker") + to_string(i));
-		}*/
-		lastmarker = 0;
+			viewsize += physicalCameras[i]->GetCameraViewsSize(PipelineIdx);
+		}
+		
+		views.resize(viewsize);
+		int viewsidx = 0;
 
 		for (int i = 0; i < physicalCameras.size(); i++)
 		{
 			Camera* cam = physicalCameras[i];
-			vector<int> MarkerIDs; vector<vector<Point2f>> MarkerCorners;
-			if (!cam->GetMarkerData(PipelineIdx, MarkerIDs, MarkerCorners))
+			vector<CameraView> CameraViews;
+			if (!cam->GetCameraViews(PipelineIdx, CameraViews))
 			{
 				continue;
 			}
 			Affine3d CamTransform = Affine3d::Identity();
 			bool has42 = false;
-			for (int mark = 0; mark < MarkerIDs.size(); mark++)
+			for (int mark = 0; mark < CameraViews.size(); mark++)
 			{
-				int markerid = MarkerIDs[mark];
-				switch (markerid)
+				int markerid = CameraViews[mark].TagID;
+				if (markerid == center.number)
 				{
-				case 42:
-					{
-						CamTransform = GetTransformRelativeToTag(center, MarkerCorners[mark], cam);
-						cam->Location = CamTransform;
-						has42 = true;
-					}
-					break;
-				
-				default:
-					break;
+					CamTransform = center.Pose * CameraViews[mark].TagTransform.inv();
+					cam->Location = CamTransform;
+					has42 = true;
 				}
+				views[viewsidx++] = CameraViews[mark];
+				
 			}
-			cameras.push_back(cam->Location);
+			cameras[i] = cam->Location;
 			BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, cam->Location, has42 ? viz::Color::green() : viz::Color::red());
-			for (int mark = 0; mark < MarkerIDs.size(); mark++)
-			{
-				int markerid = MarkerIDs[mark];
-				switch (markerid)
-				{
-				case 42:
-					continue;
-				
-				default:
-					ArucoMarker markerstruct(0.05, markerid);
-					Affine3d MarkerTransform = GetTagTransform(markerstruct, MarkerCorners[mark], cam);
-					Affine3d MarkerWorld = cam->Location * MarkerTransform;
-					views.push_back(CameraView(i, markerid, MarkerTransform));
-					
-					//viz::WImage3D markerWidget(GetArucoImage(markerid), Size2d(0.05, 0.05));
-					//board3d.showWidget(String("marker") + to_string(lastmarker++), markerWidget, MarkerWorld);
-					break;
-				}
-			}
+			//cout << "Camera" << i << " location : " << cam->Location.translation() << endl;
 			
 		}
 		
@@ -335,7 +320,7 @@ int main(int argc, char** argv )
 			OutputTargets.push_back(board);
 			
 			UMat image = ConcatCameras(PipelineIdx, OutputTargets, OutputTargets.size());
-			//board.GetOutputFrame(0, image, Size(1920,1080));
+			//board.GetOutputFrame(0, image, GetFrameSize());
 			//cout << "Concat OK" <<endl;
 			fps.AddFpsToImage(image, deltaTime);
 			//printf("fps : %f\n", fps);
@@ -343,7 +328,7 @@ int main(int argc, char** argv )
 		}
 		
 		
-		viz::WText fpstext(to_string(1/deltaTime), Point2i(100,100));
+		viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
 		board3d.showWidget("fps", fpstext);
 		board3d.spinOnce(1, true);
 		if (waitKey(1) == 27 || board3d.wasStopped())
@@ -352,6 +337,5 @@ int main(int argc, char** argv )
 		}
 	}
 	// the camera will be deinitialized automatically in VideoCapture destructor
-	
 	return 0;
 }

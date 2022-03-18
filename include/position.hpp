@@ -85,6 +85,11 @@ struct FVector2D
 		return sqrt(x*x + y*y);
 	}
 
+	float TaxicabLength()
+	{
+		return abs(x) + abs(y);
+	}
+
 	float Angle()
 	{
 		return atan2(y, x);

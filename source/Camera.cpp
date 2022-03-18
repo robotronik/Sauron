@@ -8,9 +8,15 @@
 #include <opencv2/cudacodec.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudaimgproc.hpp>
+#include <opencv2/calib3d.hpp>
 #include "thirdparty/list-devices.hpp"
 //#include "thirdparty/vidcap.h"
 #include "Calibfile.hpp"
+#include "TrackedObject.hpp" //CameraView
+#include "ObjectTracker.hpp"
+#include "FrameCounter.hpp"
+#include "GlobalConf.hpp"
+#include "position.hpp"
 
 using namespace std;
 
@@ -48,6 +54,16 @@ bool BufferedFrame::GetGPUFrame(cuda::GpuMat& OutFrame)
 	}
 }
 
+bool BufferedFrame::GetRescaledFrame(int index, UMat& OutFrame)
+{
+	if (0 <= index && index < rescaledFrames.size())
+	{
+		OutFrame = rescaledFrames[index];
+		return true;
+	}
+	return false;
+}
+
 String Camera::GetName()
 {
 	return Name;
@@ -74,7 +90,7 @@ bool Camera::StartFeed()
 		FrameBuffer[i] = BufferedFrame();
 	}
 	
-	if (CudaCapture)
+	if (CaptureType == CameraStartType::CUDA)
 	{
 		d_reader = cudacodec::createVideoReader(DevicePath, {
 			CAP_PROP_FRAME_WIDTH, CaptureSize.width, 
@@ -88,17 +104,20 @@ bool Camera::StartFeed()
 		feed = new VideoCapture();
 		cout << "Opening device at \"" << DevicePath << "\" with API id " << ApiID << endl;
 		feed->open(DevicePath, ApiID);
-		//feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
-		//feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('Y', 'U', 'Y', 'V'));
-		//feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
-		//feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
-		//feed->set(CAP_PROP_FPS, fps);
-		//feed->set(CAP_PROP_BUFFERSIZE, 1);
-		cout << "Success opening ? " << feed->isOpened() << endl;
-		if (!feed->isOpened())
+		if (CaptureType == CameraStartType::ANY)
+		{
+			feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
+			//feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('Y', 'U', 'Y', 'V'));
+			feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
+			feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
+			feed->set(CAP_PROP_FPS, fps);
+			feed->set(CAP_PROP_BUFFERSIZE, 1);
+		}
+		//cout << "Success opening ? " << feed->isOpened() << endl;
+		/*if (!feed->isOpened())
 		{
 			exit(EXIT_FAILURE);
-		}
+		}*/
 		
 	}
 	
@@ -113,7 +132,7 @@ bool Camera::Grab(int BufferIndex)
 		return false;
 	}
 	bool grabsuccess = false;
-	if (CudaCapture)
+	if (CaptureType == CameraStartType::CUDA)
 	{
 		grabsuccess = d_reader->grab();
 	}
@@ -123,7 +142,7 @@ bool Camera::Grab(int BufferIndex)
 	}
 	if (grabsuccess)
 	{
-		FrameBuffer[BufferIndex].Status = CudaCapture ? CameraStatus::GrabbedGPU : CameraStatus::GrabbedCPU;
+		FrameBuffer[BufferIndex].Status = (CaptureType == CameraStartType::CUDA) ? CameraStatus::GrabbedGPU : CameraStatus::GrabbedCPU;
 	}
 	else
 	{
@@ -136,44 +155,60 @@ bool Camera::Grab(int BufferIndex)
 
 bool Camera::Read(int BufferIndex)
 {
+	BufferedFrame& buff = FrameBuffer[BufferIndex];
 	if (!connected)
 	{
 		return false;
 	}
 	bool ReadSuccess = false;
-	if (CudaCapture)
+	if (CaptureType == CameraStartType::CUDA)
 	{
-		if (FrameBuffer[BufferIndex].Status == CameraStatus::GrabbedGPU)
+		if (buff.Status == CameraStatus::GrabbedGPU)
 		{
-			ReadSuccess = d_reader->retrieve(FrameBuffer[BufferIndex].GPUFrame);
+			ReadSuccess = d_reader->retrieve(buff.GPUFrame);
 		}
 		else
 		{
-			ReadSuccess = d_reader->nextFrame(FrameBuffer[BufferIndex].GPUFrame);
+			ReadSuccess = d_reader->nextFrame(buff.GPUFrame);
 		}
 	}
 	else
 	{
-		if (FrameBuffer[BufferIndex].Status == CameraStatus::GrabbedCPU)
+		if (buff.Status == CameraStatus::GrabbedCPU)
 		{
-			ReadSuccess = feed->retrieve(FrameBuffer[BufferIndex].CPUFrame);
+			ReadSuccess = feed->retrieve(buff.CPUFrame);
 		}
 		else
 		{
-			ReadSuccess = feed->read(FrameBuffer[BufferIndex].CPUFrame);
+			ReadSuccess = feed->read(buff.CPUFrame);
 		}
 	}
 	if (ReadSuccess)
 	{
-		FrameBuffer[BufferIndex].Status = CudaCapture ? CameraStatus::ReadGPU : CameraStatus::ReadCPU;
-		FrameBuffer[BufferIndex].HasAruco = false;
+		buff.Status = (CaptureType == CameraStartType::CUDA) ? CameraStatus::ReadGPU : CameraStatus::ReadCPU;
+		buff.HasAruco = false;
+		buff.HasViews = false;
+		buff.GPUFrame.upload(buff.CPUFrame);
+		buff.Status = CameraStatus::ReadBoth;
 	}
 	else
 	{
 		cerr << "Failed to read frame for camera " << Name << " with buffer " << BufferIndex <<endl;
-		FrameBuffer[BufferIndex].Status = CameraStatus::None;
+		buff.Status = CameraStatus::None;
+		buff.rescaledFrames.resize(0);
+		return false;
 	}
-	return ReadSuccess;
+	vector<Size> rescales = GetArucoReductions();
+	buff.rescaledFrames.resize(rescales.size());
+	for (int i = 0; i < rescales.size(); i++)
+	{
+		cuda::GpuMat rescaled, gray;
+		cuda::resize(buff.GPUFrame, rescaled, rescales[i], 0, 0, INTER_LINEAR);
+		cuda::cvtColor(rescaled, gray, COLOR_BGR2GRAY);
+		gray.download(buff.rescaledFrames[i]);
+	}
+	
+	return true;
 }
 
 void Camera::GetFrame(int BufferIndex, UMat& OutFrame)
@@ -218,14 +253,126 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 	cuda::cvtColor(framegpu, framegpu, COLOR_BGR2GRAY);
 	cuda::threshold(framegpu, framegpu, 127, 255, THRESH_BINARY);
 	UMat framethreshed; framegpu.download(framethreshed);*/
-	UMat FrameCPU;
 
-	if(!FrameBuffer[BufferIndex].GetCPUFrame(FrameCPU))
+	BufferedFrame& buff = FrameBuffer[BufferIndex];
+
+	vector<vector<vector<Point2f>>> AllCorners;
+	vector<vector<int>> AllIDs;
+	vector<vector<FVector2D<double>>> Centers;
+	int nbframes = buff.rescaledFrames.size();
+	AllCorners.resize(nbframes);
+	AllIDs.resize(nbframes);
+	Centers.resize(nbframes);
+	Size framesize = GetFrameSize();
+	vector<Size> rescaled = GetArucoReductions();
+
+	UMat framebase, framegray;
+	if (!buff.GetCPUFrame(framebase))
 	{
 		return;
 	}
-	aruco::detectMarkers(FrameCPU, dict, FrameBuffer[BufferIndex].markerCorners, FrameBuffer[BufferIndex].markerIDs, params);
-	FrameBuffer[BufferIndex].HasAruco = true;
+	cvtColor(framebase, framegray, COLOR_BGR2GRAY);
+
+	//Range InRange(0, nbframes);
+	parallel_for_(Range(0,nbframes), [&](const Range InRange)
+	{
+		for (size_t i = InRange.start; i < InRange.end; i++)
+		{
+			vector<vector<Point2f>> corners;
+			vector<int>& IDs = AllIDs[i];
+			UMat frame;
+			if (!buff.GetRescaledFrame(i, frame))
+			{
+				continue;
+			}
+			aruco::detectMarkers(frame, dict, corners, IDs, params);
+
+			//cout << "Height " << i << " found " << corners.size() << " arucos" << endl;
+
+			AllCorners[i].resize(corners.size());
+			Centers[i].resize(corners.size());
+
+			FVector2D scalefactor = FVector2D(framesize)/FVector2D(rescaled[i]);
+
+			for (int j = 0; j < corners.size(); j++)
+			{
+				FVector2D<double> sum = 0;
+				AllCorners[i][j].resize(4);
+				for (size_t k = 0; k < 4; k++)
+				{
+					FVector2D pos = FVector2D(corners[j][k]) * scalefactor;
+					AllCorners[i][j][k] = pos;
+					sum = sum + pos;
+				}
+				Centers[i][j] = sum /4;
+			}
+			
+		}
+	});
+
+	vector<vector<Point2f>> corners;
+	vector<int> markerIDs;
+	vector<float> reductionFactors = GetReductionFactor();
+
+	for (int Lower = 0; Lower < nbframes; Lower++)
+	{
+		for (int ArucoLower = 0; ArucoLower < AllIDs[Lower].size(); ArucoLower++)
+		{
+			markerIDs.push_back(AllIDs[Lower][ArucoLower]);
+			vector<Point2f> cornersTemp = AllCorners[Lower][ArucoLower];
+			Size window = Size(reductionFactors[Lower], reductionFactors[Lower]);
+			cornerSubPix(framegray, cornersTemp, window, Size(-1,-1), TermCriteria(TermCriteria::COUNT | TermCriteria::EPS, 100, 0.01));
+			corners.push_back(cornersTemp);
+			//cout << "Found aruco " << AllIDs[Lower][ArucoLower] << " at height " << Lower << endl;
+
+			for (int Higher = Lower +1; Higher < nbframes; Higher++)
+			{
+				for (int ArucoHigher = 0; ArucoHigher < AllIDs[Higher].size(); ArucoHigher++)
+				{
+					if (AllIDs[Lower][ArucoLower] == AllIDs[Higher][ArucoHigher])
+					{
+						if ((Centers[Lower][ArucoLower] - Centers[Higher][ArucoHigher]).TaxicabLength() < 10)
+						{
+							Centers[Higher].erase(Centers[Higher].begin() + ArucoHigher);
+							AllIDs[Higher].erase(AllIDs[Higher].begin() + ArucoHigher);
+							AllCorners[Higher].erase(AllCorners[Higher].begin() + ArucoHigher);
+							break;
+							ArucoHigher--;
+						}
+						
+					}
+					
+				}
+				
+			}
+			
+		}
+		
+	}
+	
+	buff.markerCorners = corners;
+	buff.markerIDs = markerIDs;
+
+	
+	
+	buff.HasAruco = true;
+}
+
+void Camera::SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry)
+{
+	BufferedFrame& buff = FrameBuffer[BufferIndex];
+	if (!buff.HasAruco)
+	{
+		return;
+	}
+	buff.markerViews.resize(buff.markerIDs.size());
+	for (int i = 0; i < buff.markerIDs.size(); i++)
+	{
+		float sideLength = registry->GetArucoSize(buff.markerIDs[i]);
+		Affine3d TagTransform = GetTagTransform(sideLength, buff.markerCorners[i], this);
+		buff.markerViews[i] = CameraView(CameraIdx, buff.markerIDs[i], TagTransform);
+	}
+	buff.HasViews = true;
 }
 
 bool Camera::GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners)
@@ -239,7 +386,22 @@ bool Camera::GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vecto
 	return true;
 }
 
-vector<Camera*> autoDetectCameras()
+int Camera::GetCameraViewsSize(int BufferIndex)
+{
+	return FrameBuffer[BufferIndex].markerViews.size();
+}
+
+bool Camera::GetCameraViews(int BufferIndex, vector<CameraView>& views)
+{
+	if (!FrameBuffer[BufferIndex].HasViews)
+	{
+		return false;
+	}
+	views = FrameBuffer[BufferIndex].markerViews;
+	return true;
+}
+
+vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile)
 {
 	vector<v4l2::devices::DEVICE_INFO> devices;
 
@@ -270,17 +432,44 @@ vector<Camera*> autoDetectCameras()
 		//+ String(" io-mode=2 do-timestamp=true ! image/jpeg, width=1920, height=1080, framerate=30/2 ! nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink");
 		
 		//jpegdec + videoconvert marche
-
-		if (strstr(device.device_description.c_str(), "4") != NULL)
+		//nvdec ! glcolorconvert ! gldownload
+		if (strstr(device.device_description.c_str(), Filter.c_str()) != NULL)
 		{
-			//string capname = String(device.device_paths[0]);
-			string capname = string("v4l2src device=") + device.device_paths[0] +
-		    String(" io-mode=2 ! image/jpeg, width=1920, height=1080, framerate=60/1 ! nvdec ! glcolorconvert ! gldownload ! video/x-raw, format=BGR ! appsink");
-			cout << "opening with string " << capname << endl;
-			int API = CAP_GSTREAMER;
-			Camera* cam = new Camera(device.device_description, Size(1920, 1080), 30, capname, API, false);
-			//cam->StartFeed();
-			readCameraParameters(String("../calibration/")+device.device_description, cam->CameraMatrix, cam->distanceCoeffs);
+			int api;
+			string path = device.device_paths[0];
+			string capname;
+			switch (Start)
+			{
+			case CameraStartType::GSTREAMER_CPU:
+			case CameraStartType::GSTREAMER_NVDEC:
+				{
+					capname = string("v4l2src device=") + path + String(" io-mode=4 ! image/jpeg, width=") 
+					+ to_string(GetFrameSize().width) + String(", height=") + to_string(GetFrameSize().height) + String(", framerate=")
+					+ to_string(GetCaptureFramerate()) + String("/1, num-buffers=1 ! ");
+					if (Start == CameraStartType::GSTREAMER_CPU)
+					{
+						capname += String("jpegdec ! videoconvert ! ");
+					}
+					else
+					{
+						capname += String("nvdec ! glcolorconvert ! gldownload ! ");
+					}
+					capname += String("video/x-raw, format=BGR ! appsink");
+					api = CAP_GSTREAMER;
+				}
+				break;
+			case CameraStartType::CUDA:
+			case CameraStartType::ANY:
+			default:
+				capname = path;
+				api = CAP_ANY;
+				break;
+			}
+
+			Camera* cam = new Camera(device.device_description, GetFrameSize(), GetCaptureFramerate(), capname, api, Start);
+			readCameraParameters(String("../calibration/") + CalibrationFile, cam->CameraMatrix, cam->distanceCoeffs);
+			cam->CameraMatrix = getOptimalNewCameraMatrix(cam->CameraMatrix, cam->distanceCoeffs, Size(1920,1080), 0, GetFrameSize());
+			//cout << "Camera matrix : " << cam->CameraMatrix << " / Distance coeffs : " << cam->distanceCoeffs << endl;
 			detected.push_back(cam);
 		}
 	}

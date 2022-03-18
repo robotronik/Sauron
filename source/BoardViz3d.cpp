@@ -6,6 +6,7 @@
 #include "GlobalConf.hpp"
 #include "TrackedObject.hpp"
 #include "Camera.hpp"
+#include "math3d.hpp"
 
 const String assetpath = "../assets/";
 
@@ -40,6 +41,8 @@ void BoardViz3D::SetupTerrain(viz::Viz3d& Visualizer)
 	viz::WImage3D tableImg(BoardMat, Size2d(3, 2));
 	//Visualizer.setRenderingProperty("BoardMesh", viz::REPRESENTATION, viz::REPRESENTATION_WIREFRAME);
 	Visualizer.showWidget("BoardMat", tableImg, ImageToWorld());
+	//Visualizer.setFullScreen(true);
+	Visualizer.setViewerPose(Affine3d(MakeRotationFromZX(Vec3d(0,0,-1), Vec3d(1,0,0)), Vec3d(0,0,4)));
 }
 
 void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose, viz::Color color)
@@ -52,6 +55,7 @@ void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferId
 	}
 	else
 	{
+		//CamWidget = viz::WCameraPosition(Vec2d(Camera->CameraMatrix.at<double>(0,0), Camera->CameraMatrix.at<double>(1,1)), 0.2, color);
 		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), 0.2, color);
 	}
 	Visualizer.showWidget(Camera->GetDevicePath(), CamWidget, Pose);

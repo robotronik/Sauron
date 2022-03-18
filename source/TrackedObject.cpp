@@ -22,39 +22,40 @@ Affine3d TrackedObject::ResolveLocation(vector<Affine3d>& Cameras, vector<Camera
 {
 	vector<Affine3d> positions;
 	vector<Vec3d> CameraRays;
-	vector<int> bestViews;
+	vector<int> bestViews; //each element contains the index of a view which is the best for the camera
 	positions.resize(views.size());
 	CameraRays.resize(views.size());
 
-	for (int i = 0; i < views.size(); i++)
+	for (int ViewIdx = 0; ViewIdx < views.size(); ViewIdx++)
 	{
-		for (int j = 0; j < markers.size(); j++)
+		for (int MarkerIdx = 0; MarkerIdx < markers.size(); MarkerIdx++)
 		{
-			if (markers[j].number == views[i].TagID)
+			if (markers[MarkerIdx].number == views[ViewIdx].TagID)
 			{
-				Affine3d MarkerWorld = Cameras[views[i].Camera] * views[i].TagTransform;
-				Affine3d OriginWorld = MarkerWorld * markers[j].Pose.inv();
-				positions[i] = OriginWorld;
-				Vec3d ray = OriginWorld.translation() - Cameras[views[i].Camera].translation();
-				CameraRays[i] = ray;
-				views[i].score = MarkerWorld.rotation().col(3).ddot(-ray);
-				bool replaced = false;
+				Affine3d MarkerWorld = Cameras[views[ViewIdx].Camera] * views[ViewIdx].TagTransform;
+				Affine3d OriginWorld = MarkerWorld * markers[MarkerIdx].Pose.inv();
+				positions[ViewIdx] = OriginWorld;
+				Vec3d ray = OriginWorld.translation() - Cameras[views[ViewIdx].Camera].translation();
+				Vec3d raydir = ray / sqrt(ray.ddot(ray));
+				CameraRays[ViewIdx] = ray;
+				views[ViewIdx].score = MarkerWorld.rotation().col(2).ddot(-raydir);
+				bool HasCameraInBestViews = false;
 				for (int k = 0; k < bestViews.size(); k++)
 				{
-					if (views[bestViews[k]].Camera != views[i].Camera)
+					if (views[bestViews[k]].Camera != views[ViewIdx].Camera)
 					{
 						continue;
 					}
-					if (views[bestViews[k]].score < views[i].score)
+					if (views[bestViews[k]].score < views[ViewIdx].score)
 					{
-						bestViews[k] = i;
+						bestViews[k] = ViewIdx;
 					}
-					replaced = true;
+					HasCameraInBestViews = true;
 					break;
 				}
-				if (!replaced)
+				if (!HasCameraInBestViews)
 				{
-					bestViews.push_back(i);
+					bestViews.push_back(ViewIdx);
 				}
 				break;
 			}
@@ -101,6 +102,8 @@ Affine3d TrackedObject::ResolveLocation(vector<Affine3d>& Cameras, vector<Camera
 	}
 	else
 	{
+		/*cout << "Only one camera sees "<< Name << " so positioning using aruco #" 
+		<< views[bestViews[0]].TagID << " (score " << views[bestViews[0]].score << ")" << endl;*/
 		Location = positions[bestViews[0]];
 	}
 	return Location;
@@ -121,10 +124,10 @@ void TrackedObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocati
 	
 }
 
-TrackerCube::TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize)
+TrackerCube::TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize, String InName)
 {
 	Unique = false;
-	Name = "Cube";
+	Name = InName;
 	vector<Point3d> Locations = {Point3d(CubeSize.x/2.0,0,0), Point3d(0,CubeSize.y/2.0,0), Point3d(-CubeSize.x/2.0,0,0), Point3d(0,-CubeSize.y/2.0,0)};
 	for (int i = 0; i < 4; i++)
 	{
@@ -140,16 +143,23 @@ TrackerCube::~TrackerCube()
 {
 }
 
+void TrackerCube::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
+{
+	viz::WText3D Robotext(Name, (RootLocation*Location).translation(), 0.01);
+	visualizer->showWidget(Name, Robotext);
+	TrackedObject::DisplayRecursive(visualizer, RootLocation, rootName);
+}
+
 vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners)
 {
 	vector<Point2f> newCorners{Corners[0], Corners[1], Corners[2], Corners[3]};
 	return newCorners;
 }
 
-Affine3d GetTagTransform(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam)
+Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Camera* Cam)
 {
 	Mat rvec, tvec;
-	solvePnP(Tag.GetObjectPointsNoOffset(), ReorderMarkerCorners(Corners), Cam->CameraMatrix, Cam->distanceCoeffs, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
+	solvePnP(ArucoMarker::GetObjectPointsNoOffset(SideLength), ReorderMarkerCorners(Corners), Cam->CameraMatrix, Cam->distanceCoeffs, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
 	Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
 	Rodrigues(rvec, rotationMatrix);
 	return Affine3d(rotationMatrix, tvec);
@@ -157,7 +167,7 @@ Affine3d GetTagTransform(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera*
 
 Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam)
 {
-	return Tag.Pose * GetTagTransform(Tag, Corners, Cam).inv();
+	return Tag.Pose * GetTagTransform(Tag.sideLength, Corners, Cam).inv();
 }
 
 void Tracker3DTest()
@@ -165,7 +175,7 @@ void Tracker3DTest()
 	viz::Viz3d env("3D tracker position check");
 	viz::WCoordinateSystem coords(0.1);
 	env.showWidget("coordinate", coords);
-	TrackerCube* cube = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0));
+	TrackerCube* cube = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Cube");
 	cube->DisplayRecursive(&env, Affine3d::Identity(), String());
 	env.spin();
 }

@@ -11,31 +11,12 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/affine.hpp>
 #include <opencv2/viz.hpp>
+#include "CameraView.hpp"
 
 class Camera;
 
 using namespace std;
 using namespace cv;
-
-struct CameraView
-{
-	int Camera;
-	int TagID;
-	Affine3d TagTransform;
-	double score;
-
-	CameraView()
-		:Camera(0),
-		TagID(0),
-		TagTransform(Affine3d::Identity())
-	{}
-
-	CameraView(int InCamera, int InTagID, Affine3d InTagTransform)
-		:Camera(InCamera),
-		TagID(InTagID),
-		TagTransform(InTagTransform)
-	{}
-};
 
 struct ArucoMarker
 {
@@ -43,9 +24,9 @@ struct ArucoMarker
 	int number;
 	Affine3d Pose;
 
-	vector<Point3d> GetObjectPointsNoOffset()
+	static vector<Point3d> GetObjectPointsNoOffset(float SideLength)
 	{
-		float sql2 = sideLength*0.5;
+		float sql2 = SideLength*0.5;
 		return {
 			Point3d(-sql2, sql2, 0.0),
 			Point3d(sql2, sql2, 0.0),
@@ -97,10 +78,12 @@ public:
 class TrackerCube : public TrackedObject
 {
 private:
-	
+
 public:
-	TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize);
+	TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize, String InName);
 	~TrackerCube();
+
+	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName) override;
 };
 
 
@@ -109,7 +92,7 @@ extern ArucoMarker center;
 
 vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners);
 
-Affine3d GetTagTransform(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam);
+Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Camera* Cam);
 
 Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam);
 
