@@ -11,7 +11,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/core/affine.hpp>
 #include <opencv2/viz.hpp>
-#include "CameraView.hpp"
+#include "data/CameraView.hpp"
 
 class Camera;
 

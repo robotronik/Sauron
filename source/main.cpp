@@ -9,49 +9,18 @@
 #include <opencv2/core/ocl.hpp>
 
 #include "GlobalConf.hpp"
-#include "OutputImage.hpp"
+#include "data/OutputImage.hpp"
 #include "Camera.hpp"
 #include "TrackedObject.hpp"
 #include "ObjectTracker.hpp"
 #include "Calibrate.hpp"
-#include "boardviz.hpp"
-#include "BoardViz3d.hpp"
-#include "FrameCounter.hpp"
+#include "visualisation/BoardViz2D.hpp"
+#include "visualisation/BoardViz3D.hpp"
+#include "data/FrameCounter.hpp"
 using namespace std;
 using namespace cv;
 
 vector<Camera*> physicalCameras;
-
-void GrabReadCameras(vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
-{
-	for (int i = 0; i < Cameras.size(); i++)
-	{
-		Cameras[i]->Grab(0);
-	}
-	parallel_for_(Range(0, Cameras.size()), [&](const Range& range)
-	{
-		for (int i = range.start; i < range.end; i++)
-		{
-			if(Cameras[i]->Read(0))
-			{
-				//Cameras[i]->detectMarkers(dict, params);
-			}
-			//cout << "Read camera " << i << endl;
-		}
-	});
-}
-
-void DetectArucoCameras(vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
-{
-	parallel_for_(Range(0, Cameras.size()), [&](const Range& range)
-	{
-		for (int i = range.start; i < range.end; i++)
-		{
-			Cameras[i]->detectMarkers(0, dict, params);
-		}
-		//cout << "Aruco stripe from " << range.start << " to " << range.end << endl;
-	});
-}
 
 void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry)
 {
@@ -233,10 +202,10 @@ int main(int argc, char** argv )
 	FrameCounter fpsRead, fpsDetect;
 	FrameCounter fpsPipeline;
 	int PipelineIdx = 0;
-	boardviz* board = new boardviz(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
+	BoardViz2D* board = new BoardViz2D(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
 	if (direct)
 	{
-		boardviz::InitImages();
+		BoardViz2D::InitImages();
 	}
 	
 	

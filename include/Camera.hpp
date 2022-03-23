@@ -12,8 +12,8 @@
 #include <opencv2/cudacodec.hpp>
 #include <opencv2/cudawarping.hpp>
 
-#include "OutputImage.hpp"
-#include "CameraView.hpp"
+#include "data/OutputImage.hpp"
+#include "data/CameraView.hpp"
 
 using namespace std;
 using namespace cv;

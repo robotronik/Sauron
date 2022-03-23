@@ -11,12 +11,12 @@
 #include <opencv2/calib3d.hpp>
 #include "thirdparty/list-devices.hpp"
 //#include "thirdparty/vidcap.h"
-#include "Calibfile.hpp"
+#include "data/Calibfile.hpp"
 #include "TrackedObject.hpp" //CameraView
 #include "ObjectTracker.hpp"
-#include "FrameCounter.hpp"
+#include "data/FrameCounter.hpp"
 #include "GlobalConf.hpp"
-#include "position.hpp"
+#include "data/FVector2D.hpp"
 
 using namespace std;
 

@@ -1,4 +1,4 @@
-#include "FrameCounter.hpp"
+#include "data/FrameCounter.hpp"
 
 #include <string>
 #include <opencv2/highgui.hpp>

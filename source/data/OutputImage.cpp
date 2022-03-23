@@ -1,4 +1,4 @@
-#include "OutputImage.hpp"
+#include "data/OutputImage.hpp"
 
 OutputImage::OutputImage(/* args */)
 {

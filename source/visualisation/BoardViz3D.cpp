@@ -1,4 +1,4 @@
-#include "BoardViz3d.hpp"
+#include "visualisation/BoardViz3D.hpp"
 #include <opencv2/viz.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>

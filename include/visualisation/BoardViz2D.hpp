@@ -2,8 +2,8 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/cuda.hpp>
-#include "position.hpp"
-#include "OutputImage.hpp"
+#include "data/FVector2D.hpp"
+#include "data/OutputImage.hpp"
 
 using namespace cv;
 
@@ -15,7 +15,7 @@ enum class PaletCouleur
 	bleu=13
 };
 
-class boardviz : public OutputImage
+class BoardViz2D : public OutputImage
 {
 private:
 	static bool ImagesLoaded;
@@ -31,11 +31,11 @@ private:
 
 
 public:
-	boardviz(FVector2D<float> InExtent, FVector2D<float> InCenter)
+	BoardViz2D(FVector2D<float> InExtent, FVector2D<float> InCenter)
 		:Extent(InExtent),
 		Center(InCenter)
 	{}
-	~boardviz()
+	~BoardViz2D()
 	{}
 
 private:

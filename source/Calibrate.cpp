@@ -14,8 +14,8 @@
 
 #include "GlobalConf.hpp"
 #include "Camera.hpp"
-#include "Calibfile.hpp"
-#include "FrameCounter.hpp"
+#include "data/Calibfile.hpp"
+#include "data/FrameCounter.hpp"
 
 using namespace std;
 using namespace cv;

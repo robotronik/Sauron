@@ -36,7 +36,8 @@ Affine3d TrackedObject::ResolveLocation(vector<Affine3d>& Cameras, vector<Camera
 				Affine3d OriginWorld = MarkerWorld * markers[MarkerIdx].Pose.inv();
 				positions[ViewIdx] = OriginWorld;
 				Vec3d ray = OriginWorld.translation() - Cameras[views[ViewIdx].Camera].translation();
-				Vec3d raydir = ray / sqrt(ray.ddot(ray));
+				double raylength = sqrt(ray.ddot(ray));
+				Vec3d raydir = ray / raylength;
 				CameraRays[ViewIdx] = ray;
 				views[ViewIdx].score = MarkerWorld.rotation().col(2).ddot(-raydir);
 				bool HasCameraInBestViews = false;

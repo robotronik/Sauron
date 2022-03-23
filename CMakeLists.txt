@@ -26,8 +26,10 @@ include_directories(
     ./include
     )
 
-file(GLOB SOURCES "source/*.cpp")
+file(GLOB_RECURSE SOURCES "source/*.cpp")
 add_executable(Robotronikaruco ${SOURCES})
+
+message(STATUS "Sources found : ${SOURCES}")
 
 # Link your application with OpenCV libraries
 target_link_libraries(Robotronikaruco PRIVATE ${OpenCV_LIBS} stdc++fs)
