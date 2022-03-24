@@ -17,6 +17,7 @@
 #include "visualisation/BoardViz2D.hpp"
 #include "visualisation/BoardViz3D.hpp"
 #include "data/FrameCounter.hpp"
+#include "SerialSender.hpp"
 using namespace std;
 using namespace cv;
 
@@ -40,12 +41,13 @@ void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::
 			{
 			case 0:
 				// read
-				Cameras[CamIdx]->Read(BufferIdx);
+				
 				
 				break;
 			
 			case 1:
 				//Detect aruco
+				Cameras[CamIdx]->Read(BufferIdx);
 				Cameras[CamIdx]->detectMarkers(BufferIdx, dict, params);
 				Cameras[CamIdx]->SolveMarkers(BufferIdx, CamIdx, registry);
 				break;
@@ -64,14 +66,14 @@ void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::
 int main(int argc, char** argv )
 {
 	const string keys = 
-		"{help h usage ? |      | print this message   }"
-		"{direct d       |      | show direct camera output }"
-		"{build b        |      | print build information   }"
-		"{calibrate c    |      | start camera calibration wizard   }"
-		"{marker m       |      | print out markers               }"
-		"{cuda           |      | print cuda info         }"
-		"{board          |      | runs boardview test }"
-		"{viz3d          |      | runs viz3d test }"
+		"{help h usage ? |      | print this message}"
+		"{direct d       |      | show direct camera output}"
+		"{build b        |      | print build information}"
+		"{calibrate c    |      | start camera calibration wizard}"
+		"{marker m       |      | print out markers}"
+		"{cuda           |      | print cuda info}"
+		"{board          |      | runs boardview test}"
+		"{viz3d          |      | runs viz3d test}"
         ;
 	CommandLineParser parser(argc, argv, keys);
 
@@ -96,8 +98,8 @@ int main(int argc, char** argv )
 		if (cuda_devices_number > 0)
 		{
 			cuda::DeviceInfo _deviceInfo;
-			bool _isd_evice_compatible = _deviceInfo.isCompatible();
-			cout << "CUDA Device(s) Compatible: " << _isd_evice_compatible << endl;
+			bool _is_device_compatible = _deviceInfo.isCompatible();
+			cout << "CUDA Device(s) Compatible: " << _is_device_compatible << endl;
 			cuda::printShortCudaDeviceInfo(cuda::getDevice());
 		}
 	}
@@ -109,6 +111,7 @@ int main(int argc, char** argv )
 	if (parser.has("viz3d"))
 	{
 		TestViz3D();
+		Tracker3DTest();
 		exit(EXIT_SUCCESS);
 	}
 	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
@@ -126,12 +129,8 @@ int main(int argc, char** argv )
 		}
 		exit(EXIT_SUCCESS);
 	}
-	
-	
-	
-	//Tracker3DTest();
     
-	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_NVDEC, "4", "Brio");
+	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "4", "Brio");
 
 	if (physicalCameras.size() == 0)
 	{
@@ -186,8 +185,15 @@ int main(int argc, char** argv )
 
 	ObjectTracker tracker;
 	tracker.SetArucoSize(center.number, center.sideLength);
-	TrackedObject* cube = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
-	tracker.RegisterTrackedObject(cube);
+	serialib* bridge = new serialib();
+	SerialSender sender(bridge);
+	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
+	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot2");
+	tracker.RegisterTrackedObject(robot1);
+	tracker.RegisterTrackedObject(robot2);
+
+	sender.RegisterRobot(robot1);
+	sender.RegisterRobot(robot2);
 
 	int lastmarker = 0;
 	for (;;)
@@ -272,6 +278,9 @@ int main(int argc, char** argv )
 		viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
 		board3d.showWidget("fps", fpstext);
 		board3d.spinOnce(1, true);
+
+		sender.SendPacket();
+		
 		if (waitKey(1) == 27 || board3d.wasStopped())
 		{
 			break;

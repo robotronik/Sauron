@@ -1,5 +1,7 @@
 #include "data/SerialPacket.hpp"
 #include <memory.h>
+#include <stdio.h>
+#include <iostream>
 
 SerialPacketOut::SerialPacketOut()
 {
@@ -44,4 +46,25 @@ void* SerialPacketOut::ToBuffer()
 	copyptr += NumRobots * sizeof(RobotPacket);
 	memcpy(copyptr, palets.data(), NumPalets * sizeof(PaletPacket));
 	return reinterpret_cast<void*>(buffer);
+}
+
+bool SerialPacketOut::FromBuffer(void* buffer)
+{
+	try
+	{
+		char* buffptr = reinterpret_cast<char*>(buffer);
+		memcpy(this, buffptr, GetSizeNoVector());
+		buffptr += GetSizeNoVector();
+		robots.resize(NumRobots);
+		palets.resize(NumPalets);
+		memcpy(robots.data(), buffptr, NumRobots * sizeof(RobotPacket));
+		buffptr += NumRobots * sizeof(RobotPacket);
+		memcpy(palets.data(), buffptr, NumPalets * sizeof(PaletPacket));
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		return false;
+	}
+	return true;
 }

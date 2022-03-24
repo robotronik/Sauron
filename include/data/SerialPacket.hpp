@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <time.h>
 #include <stdint.h>
@@ -38,4 +40,5 @@ public:
 	uint32_t GetSizeNoVector() const;
 	uint32_t GetPacketSize() const;
 	void* ToBuffer();
+	bool FromBuffer(void* buffer);
 };

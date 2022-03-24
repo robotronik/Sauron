@@ -66,6 +66,14 @@ Matx31d GetAxis(Matx33d rotation, int i)
 	return rotation.col(i);
 }
 
+double GetRotZ(Matx33d rotation)
+{
+	Matx31d Xaxis = GetAxis(rotation, 0);
+	Xaxis(2,0) = 0; //project on XY
+	Xaxis /= sqrt(Xaxis.ddot(Xaxis));
+	return atan2(Xaxis(1,0), Xaxis(0,0));
+}
+
 bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Vec3d Line2Dir, Vec3d &Line1Point, Vec3d &Line2Point)
 {
 	/*https://math.stackexchange.com/questions/846054/closest-points-on-two-line-segments*/

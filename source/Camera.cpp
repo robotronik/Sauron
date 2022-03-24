@@ -188,8 +188,6 @@ bool Camera::Read(int BufferIndex)
 		buff.Status = (CaptureType == CameraStartType::CUDA) ? CameraStatus::ReadGPU : CameraStatus::ReadCPU;
 		buff.HasAruco = false;
 		buff.HasViews = false;
-		buff.GPUFrame.upload(buff.CPUFrame);
-		buff.Status = CameraStatus::ReadBoth;
 	}
 	else
 	{
@@ -200,12 +198,33 @@ bool Camera::Read(int BufferIndex)
 	}
 	vector<Size> rescales = GetArucoReductions();
 	buff.rescaledFrames.resize(rescales.size());
+	bool GPUconvert = false;
+	cuda::GpuMat GPUFrame; UMat CPUFrame;
+	if (GPUconvert)
+	{
+		buff.GetGPUFrame(GPUFrame);
+	}
+	else
+	{
+		buff.GetCPUFrame(CPUFrame);
+	}
+	
+	
 	for (int i = 0; i < rescales.size(); i++)
 	{
-		cuda::GpuMat rescaled, gray;
-		cuda::resize(buff.GPUFrame, rescaled, rescales[i], 0, 0, INTER_LINEAR);
-		cuda::cvtColor(rescaled, gray, COLOR_BGR2GRAY);
-		gray.download(buff.rescaledFrames[i]);
+		if (GPUconvert)
+		{
+			cuda::GpuMat rescaled, gray;
+			cuda::resize(GPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
+			cuda::cvtColor(rescaled, gray, COLOR_BGR2GRAY);
+			gray.download(buff.rescaledFrames[i]);
+		}
+		else
+		{
+			UMat rescaled;
+			resize(CPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
+			cvtColor(rescaled, buff.rescaledFrames[i], COLOR_BGR2GRAY);
+		}
 	}
 	
 	return true;

@@ -61,7 +61,9 @@ Selon la distro, sauf que il faut utiliser ffmpeg version 4.4 (demande pas pk), 
 
 rajoute `--nvccflags="-gencode arch=compute_52,code=sm_52 -O2"`
 
-## Compiler le module nvdec pour GStreamer
+## Compiler le module nvdec pour GStreamer (ca sert pas non plus)
+
+Ca sert pas non plus parceque nvdec permet de décoder qu'un seul stream à la fois.
 
 On va commencer par installer le video codec de NVidia :
 
