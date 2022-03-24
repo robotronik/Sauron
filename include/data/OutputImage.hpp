@@ -2,6 +2,7 @@
 
 #include <opencv2/core.hpp>
 
+using namespace std;
 using namespace cv;
 
 class OutputImage
@@ -17,3 +18,5 @@ public:
 
 	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize);
 };
+
+UMat ConcatCameras(int BufferIndex, vector<OutputImage*> Cameras, int NumCams);
