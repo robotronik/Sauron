@@ -196,6 +196,13 @@ bool Camera::Read(int BufferIndex)
 		buff.rescaledFrames.resize(0);
 		return false;
 	}
+	
+	return true;
+}
+
+void Camera::RescaleFrames(int BufferIdx)
+{
+	BufferedFrame& buff = FrameBuffer[BufferIdx];
 	vector<Size> rescales = GetArucoReductions();
 	buff.rescaledFrames.resize(rescales.size());
 	bool GPUconvert = false;
@@ -207,6 +214,7 @@ bool Camera::Read(int BufferIndex)
 	else
 	{
 		buff.GetCPUFrame(CPUFrame);
+		
 	}
 	
 	
@@ -226,8 +234,6 @@ bool Camera::Read(int BufferIndex)
 			cvtColor(rescaled, buff.rescaledFrames[i], COLOR_BGR2GRAY);
 		}
 	}
-	
-	return true;
 }
 
 void Camera::GetFrame(int BufferIndex, UMat& OutFrame)

@@ -25,4 +25,6 @@ public:
 
 	void SendPacket();
 
+	static vector<String> autoDetectTTYUSB();
+
 };

@@ -148,6 +148,8 @@ public:
 
 	bool Read(int BufferIndex);
 
+	void RescaleFrames(int BufferIdx);
+
 	void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
 
 	void SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry);

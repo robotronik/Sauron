@@ -1,6 +1,8 @@
 #include "SerialSender.hpp"
 #include "math3d.hpp"
+#include "filesystem"
 
+namespace fs = std::filesystem;
 
 SerialSender::SerialSender(serialib* InBridge)
 {
@@ -48,4 +50,22 @@ void SerialSender::SendPacket()
 	
 	
 	Bridge->writeBytes(buff, buffsize);
+}
+
+vector<String> SerialSender::autoDetectTTYUSB()
+{
+	vector<String> USBtities;
+	String target = "ttyUSB";
+	for (const auto& entry : fs::directory_iterator("/dev"))
+	{
+		auto filename = entry.path().filename();
+		String filenamestr = filename.string();
+		int location = filenamestr.find(target);
+		//cout << filename << "@" << location << endl;
+		if (location != string::npos)
+		{
+			USBtities.push_back(entry.path().string());
+		}
+	}
+	return USBtities;
 }
