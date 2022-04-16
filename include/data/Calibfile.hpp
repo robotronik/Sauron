@@ -29,8 +29,10 @@ static void writeCameraParameters(std::string filename, Mat camMatrix, Mat distC
 	cv::FileStorage fs(filename, cv::FileStorage::WRITE);
 	if (!fs.isOpened())
 		return;
-	Matx12d resmat(Resolution.width, Resolution.height);
-	fs.write("resolution", Mat(resmat));
+	Mat1i resmat(1,2);
+	resmat.at<int>(0,0) = Resolution.width;
+	resmat.at<int>(0,1) = Resolution.height;
+	fs.write("resolution", resmat);
 	fs.write("camera_matrix", camMatrix);
 	fs.write("distortion_coefficients", distCoeffs);
 }

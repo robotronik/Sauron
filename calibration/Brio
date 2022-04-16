@@ -3,8 +3,8 @@
 resolution: !!opencv-matrix
    rows: 1
    cols: 2
-   dt: d
-   data: [ 1920., 1080. ]
+   dt: i
+   data: [ 1920, 1080 ]
 camera_matrix: !!opencv-matrix
    rows: 3
    cols: 3
