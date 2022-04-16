@@ -3,7 +3,9 @@
 #include <vector>
 #include <time.h>
 #include <stdint.h>
+#include <opencv2/core.hpp>
 using namespace std;
+using namespace cv;
 
 struct RobotPacket
 {
@@ -11,6 +13,8 @@ struct RobotPacket
 	float X;
 	float Y;
 	float rotation; //-pi to pi
+
+	String ToCSV();
 };
 
 struct PaletPacket //palets sur l'arène uniquement

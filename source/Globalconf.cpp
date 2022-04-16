@@ -20,7 +20,7 @@ Ptr<aruco::DetectorParameters> GetArucoParams()
 	if (parameters.empty())
 	{
 		parameters = aruco::DetectorParameters::create();
-		parameters->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
+		parameters->cornerRefinementMethod = aruco::CORNER_REFINE_CONTOUR;
 		//parameters->adaptiveThreshWinSizeMin = 5;
 		//parameters->adaptiveThreshWinSizeMax = 5;
 		//parameters->adaptiveThreshWinSizeStep = 10;
@@ -45,7 +45,7 @@ int GetCaptureFramerate()
 
 vector<float> GetReductionFactor()
 {
-	return {2};
+	return {1};
 }
 
 vector<Size> GetArucoReductions()

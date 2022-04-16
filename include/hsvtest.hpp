@@ -5,4 +5,4 @@
 using namespace cv;
 using namespace std;
 
-void CDFRExternalMain(bool direct);
+void hsvtest();

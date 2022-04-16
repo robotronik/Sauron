@@ -1,7 +1,7 @@
 #pragma once
 
 #include <opencv2/core.hpp>
-#include "TrackedObject.hpp"
+#include "TrackedObjects/TrackedObject.hpp"
 
 
 class ObjectTracker

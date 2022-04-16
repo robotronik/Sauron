@@ -213,6 +213,7 @@ public:
 
 
 private:
+
     // Read a string (no timeout)
     int             readStringNoTimeOut  (char *String,char FinalChar,unsigned int MaxNbBytes);
 

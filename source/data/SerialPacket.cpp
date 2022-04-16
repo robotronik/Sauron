@@ -2,6 +2,15 @@
 #include <memory.h>
 #include <stdio.h>
 #include <iostream>
+#include <sstream>
+
+String RobotPacket::ToCSV()
+{
+	ostringstream fab; 
+	fab << (int)numero
+	<< ", " << X << ", " << Y << ", " << rotation*180/CV_PI;
+	return fab.str();
+}
 
 SerialPacketOut::SerialPacketOut()
 {
@@ -14,7 +23,7 @@ SerialPacketOut::SerialPacketOut()
 
 SerialPacketOut::~SerialPacketOut()
 {
-	if (buffer)
+	if (buffer != NULL)
 	{
 		delete buffer;
 	}
@@ -34,7 +43,7 @@ uint32_t SerialPacketOut::GetPacketSize() const
 void* SerialPacketOut::ToBuffer()
 {
 	uint32_t buffsize = GetPacketSize();
-	if (buffer)
+	if (buffer != NULL)
 	{
 		delete buffer;
 	}

@@ -66,6 +66,7 @@ enum class CameraStartType
 	ANY,
 	GSTREAMER_CPU,
 	GSTREAMER_NVDEC,
+	GSTREAMER_JETSON,
 	CUDA
 };
 

@@ -11,7 +11,7 @@
 #include "GlobalConf.hpp"
 #include "data/OutputImage.hpp"
 #include "Camera.hpp"
-#include "TrackedObject.hpp"
+#include "TrackedObjects/TrackedObject.hpp"
 #include "ObjectTracker.hpp"
 #include "Calibrate.hpp"
 #include "visualisation/BoardViz2D.hpp"
@@ -19,6 +19,8 @@
 #include "data/FrameCounter.hpp"
 #include "SerialSender.hpp"
 #include "Scenarios/CDFRExternal.hpp"
+
+#include "hsvtest.hpp"
 using namespace std;
 using namespace cv;
 
@@ -117,7 +119,7 @@ int main(int argc, char** argv )
 
 	bool direct = parser.has("direct");
 	
-	
+	//hsvtest();
 	CDFRExternalMain(direct);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor

@@ -12,7 +12,7 @@
 #include "thirdparty/list-devices.hpp"
 //#include "thirdparty/vidcap.h"
 #include "data/Calibfile.hpp"
-#include "TrackedObject.hpp" //CameraView
+#include "TrackedObjects/TrackedObject.hpp" //CameraView
 #include "ObjectTracker.hpp"
 #include "data/FrameCounter.hpp"
 #include "GlobalConf.hpp"
@@ -229,7 +229,7 @@ void Camera::RescaleFrames(int BufferIdx)
 		}
 		else
 		{
-			UMat rescaled;
+			UMat rescaled, hsv;
 			resize(CPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
 			cvtColor(rescaled, buff.rescaledFrames[i], COLOR_BGR2GRAY);
 		}
@@ -297,6 +297,8 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 		return;
 	}
 	cvtColor(framebase, framegray, COLOR_BGR2GRAY);
+	
+	
 
 	//Range InRange(0, nbframes);
 	parallel_for_(Range(0,nbframes), [&](const Range InRange)
@@ -346,7 +348,7 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 			markerIDs.push_back(AllIDs[Lower][ArucoLower]);
 			vector<Point2f> cornersTemp = AllCorners[Lower][ArucoLower];
 			Size window = Size(reductionFactors[Lower], reductionFactors[Lower]);
-			cornerSubPix(framegray, cornersTemp, window, Size(-1,-1), TermCriteria(TermCriteria::COUNT | TermCriteria::EPS, 100, 0.01));
+			//cornerSubPix(framegray, cornersTemp, window, Size(-1,-1), TermCriteria(TermCriteria::COUNT | TermCriteria::EPS, 100, 0.01));
 			corners.push_back(cornersTemp);
 			//cout << "Found aruco " << AllIDs[Lower][ArucoLower] << " at height " << Lower << endl;
 
@@ -458,7 +460,7 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 		
 		//jpegdec + videoconvert marche
 		//nvdec ! glcolorconvert ! gldownload
-		if (strstr(device.device_description.c_str(), Filter.c_str()) != NULL)
+		if (device.device_description.find(Filter) != String::npos)
 		{
 			int api;
 			string path = device.device_paths[0];
@@ -468,18 +470,24 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 			case CameraStartType::GSTREAMER_CPU:
 			case CameraStartType::GSTREAMER_NVDEC:
 				{
-					capname = string("v4l2src device=") + path + String(" io-mode=4 ! image/jpeg, width=") 
-					+ to_string(GetFrameSize().width) + String(", height=") + to_string(GetFrameSize().height) + String(", framerate=")
-					+ to_string(GetCaptureFramerate()) + String("/1, num-buffers=1 ! ");
+					ostringstream capnamestream;
+					capnamestream << "v4l2src device=" << path << " io-mode=4 ! image/jpeg, width=" 
+					<< GetFrameSize().width << ", height=" << GetFrameSize().height << ", framerate="
+					<< GetCaptureFramerate() << "/1, num-buffers=1 ! ";
 					if (Start == CameraStartType::GSTREAMER_CPU)
 					{
-						capname += String("jpegdec ! videoconvert ! ");
+						capnamestream << "jpegdec ! videoconvert ! ";
 					}
-					else
+					else if (Start == CameraStartType::GSTREAMER_JETSON)
 					{
-						capname += String("nvdec ! glcolorconvert ! gldownload ! ");
+						capnamestream << "nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! ";
 					}
-					capname += String("video/x-raw, format=BGR ! appsink");
+					else if(Start == CameraStartType::CUDA)
+					{
+						capnamestream << "nvdec ! glcolorconvert ! gldownload ! ";
+					}
+					capnamestream << "video/x-raw, format=BGR ! appsink";
+					capname = capnamestream.str();
 					api = CAP_GSTREAMER;
 				}
 				break;
@@ -507,7 +515,7 @@ bool StartCameras(vector<Camera*> Cameras)
 	{
 		if(!Cameras[i]->StartFeed())
 		{
-			cout << "ERROR! Unable to open camera " << Cameras[i]->GetName();
+			cerr << "ERROR! Unable to open camera " << Cameras[i]->GetName();
 		}
 	}
 	return true;

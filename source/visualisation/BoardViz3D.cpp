@@ -4,7 +4,7 @@
 #include <opencv2/core/affine.hpp>
 
 #include "GlobalConf.hpp"
-#include "TrackedObject.hpp"
+#include "TrackedObjects/TrackedObject.hpp"
 #include "Camera.hpp"
 #include "math3d.hpp"
 

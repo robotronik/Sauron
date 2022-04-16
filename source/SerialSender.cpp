@@ -32,11 +32,8 @@ void SerialSender::SendPacket()
 	packet.palets.resize(packet.NumPalets);
 	for (size_t i = 0; i < packet.NumRobots; i++)
 	{
-		RobotPacket robot;
-		robot.X = Robots[i]->Location.translation()[0];
-		robot.Y = Robots[i]->Location.translation()[1];
-		robot.rotation = GetRotZ(Robots[i]->Location.rotation());
-		robot.numero = i; //TODO : difference between friendly and ennemy ?
+		RobotPacket robot = Robots[i]->ToPacket(i);
+		packet.robots.push_back(robot);
 	}
 	
 	uint32_t buffsize = packet.GetPacketSize();
@@ -50,6 +47,37 @@ void SerialSender::SendPacket()
 	
 	
 	Bridge->writeBytes(buff, buffsize);
+}
+
+void SerialSender::PrintCSVHeader(ofstream &file)
+{
+	file << "ms" << ", ";
+	for (size_t i = 0; i < Robots.size(); i++)
+	{
+		file << "num robot, X , Y, rot(deg)";
+		if (i != Robots.size() -1)
+		{
+			file << ", ";
+		}
+		
+	}
+	file << endl;
+}
+
+void SerialSender::PrintCSV(ofstream &file)
+{
+	uint32_t ms = (getTickCount() - StartTick) *1000 / getTickFrequency();
+	file << ms << ", ";
+	for (size_t i = 0; i < Robots.size(); i++)
+	{
+		file << Robots[i]->ToPacket(i).ToCSV();
+		if (i != Robots.size() -1)
+		{
+			file << ", ";
+		}
+		
+	}
+	file << endl;
 }
 
 vector<String> SerialSender::autoDetectTTYUSB()

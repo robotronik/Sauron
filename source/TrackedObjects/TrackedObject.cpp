@@ -1,4 +1,4 @@
-#include "TrackedObject.hpp"
+#include "TrackedObjects/TrackedObject.hpp"
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 #include <opencv2/calib3d.hpp>
@@ -7,6 +7,7 @@
 #include "math3d.hpp"
 #include "Camera.hpp"
 #include "GlobalConf.hpp"
+#include "data/SerialPacket.hpp"
 
 ArucoMarker center(0.1, 42, Affine3d(Vec3d::all(0), Vec3d(0, -0.25, 0)));
 
@@ -142,6 +143,16 @@ TrackerCube::TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSi
 
 TrackerCube::~TrackerCube()
 {
+}
+
+RobotPacket TrackerCube::ToPacket(int RobotId)
+{
+	RobotPacket robot;
+	robot.X = Location.translation()[0];
+	robot.Y = Location.translation()[1];
+	robot.rotation = GetRotZ(Location.rotation());
+	robot.numero = RobotId;
+	return robot;
 }
 
 void TrackerCube::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)

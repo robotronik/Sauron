@@ -1,8 +1,7 @@
-#include "Scenarios/CDFRExternal.hpp"
+#include "Scenarios/CDFRInternal.hpp"
 #include "Scenarios/CDFRCommon.hpp"
-#include "visualisation/BoardViz2D.hpp"
 
-void CDFRExternalMain(bool direct)
+void CDFRInternalMain(bool direct)
 {
     vector<Camera*> physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "4", "Brio");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
@@ -15,15 +14,18 @@ void CDFRExternalMain(bool direct)
 	
 	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
 	FrameCounter fps;
-	FrameCounter fpsRead, fpsDetect;
-	FrameCounter fpsPipeline;
 	int PipelineIdx = 0;
-	BoardViz2D* board = new BoardViz2D(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
+	
+	vector<OutputImage*> OutputTargets;
 	if (direct)
 	{
         namedWindow("Cameras", WINDOW_NORMAL);
 		setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
-		BoardViz2D::InitImages();
+		
+		for (int i = 0; i < physicalCameras.size(); i++)
+		{
+			OutputTargets.push_back(physicalCameras[i]);
+		}
 	}
 	
 	viz::Viz3d board3d("3D board");
@@ -68,18 +70,10 @@ void CDFRExternalMain(bool direct)
 	int lastmarker = 0;
 	for (;;)
 	{
-		fpsPipeline.GetDeltaTime();
 		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters, &tracker);
 		PipelineIdx = (PipelineIdx + 1) % Camera::FrameBufferSize;
-		double TimePipeline = fpsPipeline.GetDeltaTime();
 
 		//cout << "Pipeline took " << TimePipeline << "s to run" << endl;
-
-		if (direct)
-		{
-			board->CreateBackground(Size(1500, 1000));
-			board->OverlayImage(board->GetPalet(PaletCouleur::autre), FVector2D<float>(1), 0, FVector2D<float>(0.1));
-		}
 		
 		vector<CameraView> views;
 		vector<Affine3d> cameras;
@@ -129,13 +123,6 @@ void CDFRExternalMain(bool direct)
 
 		if (direct)
 		{
-			vector<OutputImage*> OutputTargets;
-			for (int i = 0; i < physicalCameras.size(); i++)
-			{
-				OutputTargets.push_back(physicalCameras[i]);
-			}
-			OutputTargets.push_back(board);
-			
 			UMat image = ConcatCameras(PipelineIdx, OutputTargets, OutputTargets.size());
 			//board.GetOutputFrame(0, image, GetFrameSize());
 			//cout << "Concat OK" <<endl;
@@ -158,9 +145,7 @@ void CDFRExternalMain(bool direct)
 				printf("Received from serial : %*s", out, rcvbuff);
 			}
 		}*/
-		
-		
-		
+
 		if (waitKey(1) == 27 || board3d.wasStopped())
 		{
 			break;
