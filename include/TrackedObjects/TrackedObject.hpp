@@ -2,14 +2,8 @@
 
 #include <iostream> // for standard I/O
 #include <string>   // for strings
-#include <iomanip>  // for controlling float print precision
 #include <sstream>  // string to number conversion
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
-#include <opencv2/videoio.hpp>
-#include <opencv2/highgui.hpp>  // OpenCV window I/O
-#include <opencv2/aruco.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/core/affine.hpp>
 #include <opencv2/viz.hpp>
 #include "data/CameraView.hpp"
 
@@ -74,19 +68,6 @@ public:
 	virtual Affine3d ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views);
 
 	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
-};
-
-class TrackerCube : public TrackedObject
-{
-private:
-
-public:
-	TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize, String InName);
-	~TrackerCube();
-
-	RobotPacket ToPacket(int RobotId);
-
-	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName) override;
 };
 
 

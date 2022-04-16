@@ -9,16 +9,13 @@
 #include <opencv2/core/ocl.hpp>
 
 #include "GlobalConf.hpp"
-#include "data/OutputImage.hpp"
 #include "Camera.hpp"
-#include "TrackedObjects/TrackedObject.hpp"
 #include "ObjectTracker.hpp"
 #include "Calibrate.hpp"
 #include "visualisation/BoardViz2D.hpp"
 #include "visualisation/BoardViz3D.hpp"
-#include "data/FrameCounter.hpp"
-#include "SerialSender.hpp"
 #include "Scenarios/CDFRExternal.hpp"
+#include "Scenarios/CDFRInternal.hpp"
 
 #include "hsvtest.hpp"
 using namespace std;
@@ -95,12 +92,11 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "4", "Brio");
+	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "4", "Brio", false);
 
 	if (physicalCameras.size() == 0)
 	{
 		cerr << "No cameras detected" << endl;
-		exit(EXIT_FAILURE);
 	}
 	
 
@@ -113,14 +109,26 @@ int main(int argc, char** argv )
 			docalibration(physicalCameras[camIndex]);
 			exit(EXIT_SUCCESS);
 		}
+		else
+		{
+			docalibration(NULL);
+			exit(EXIT_SUCCESS);
+		}
+		
 		exit(EXIT_FAILURE);
 		
 	}
 
 	bool direct = parser.has("direct");
+
+	if (physicalCameras.size() == 0)
+	{
+		exit(EXIT_FAILURE);
+	}
+	
 	
 	//hsvtest();
-	CDFRExternalMain(direct);
+	CDFRInternalMain(direct);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

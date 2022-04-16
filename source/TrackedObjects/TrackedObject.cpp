@@ -1,13 +1,14 @@
 #include "TrackedObjects/TrackedObject.hpp"
+#include "TrackedObjects/TrackerCube.hpp" // for the test env
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/viz.hpp>
 
+
 #include "math3d.hpp"
 #include "Camera.hpp"
 #include "GlobalConf.hpp"
-#include "data/SerialPacket.hpp"
 
 ArucoMarker center(0.1, 42, Affine3d(Vec3d::all(0), Vec3d(0, -0.25, 0)));
 
@@ -124,42 +125,6 @@ void TrackedObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocati
 		childs[i]->DisplayRecursive(visualizer, worldlocation, rootName + "/" + Name);
 	}
 	
-}
-
-TrackerCube::TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize, String InName)
-{
-	Unique = false;
-	Name = InName;
-	vector<Point3d> Locations = {Point3d(CubeSize.x/2.0,0,0), Point3d(0,CubeSize.y/2.0,0), Point3d(-CubeSize.x/2.0,0,0), Point3d(0,-CubeSize.y/2.0,0)};
-	for (int i = 0; i < 4; i++)
-	{
-		Matx33d markerrot = MakeRotationFromZY(Locations[i], Vec3d(0,0,1));
-		Affine3d markertransform = Affine3d(markerrot, Locations[i]);
-		ArucoMarker marker(MarkerSize, MarkerIdx[i], markertransform);
-		markers.push_back(marker);
-	}
-	
-}
-
-TrackerCube::~TrackerCube()
-{
-}
-
-RobotPacket TrackerCube::ToPacket(int RobotId)
-{
-	RobotPacket robot;
-	robot.X = Location.translation()[0];
-	robot.Y = Location.translation()[1];
-	robot.rotation = GetRotZ(Location.rotation());
-	robot.numero = RobotId;
-	return robot;
-}
-
-void TrackerCube::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
-{
-	viz::WText3D Robotext(Name, (RootLocation*Location).translation(), 0.01);
-	visualizer->showWidget(Name, Robotext);
-	TrackedObject::DisplayRecursive(visualizer, RootLocation, rootName);
 }
 
 vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners)

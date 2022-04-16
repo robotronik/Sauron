@@ -79,6 +79,11 @@ String Camera::GetDevicePath()
 	return DevicePath;
 }
 
+Size Camera::GetCaptureSize()
+{
+	return CaptureSize;
+}
+
 bool Camera::StartFeed()
 {
 	if (connected)
@@ -428,22 +433,25 @@ bool Camera::GetCameraViews(int BufferIndex, vector<CameraView>& views)
 	return true;
 }
 
-vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile)
+vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile, bool silent)
 {
 	vector<v4l2::devices::DEVICE_INFO> devices;
 
     v4l2::devices::list(devices);
 
-    for (const auto & device : devices) 
-    {
-    
-        cout << device.device_description <<  " at " << device.bus_info << " is attached to\n";
+	if (!silent)
+	{
+		for (const auto & device : devices) 
+		{
+		
+			cout << device.device_description <<  " at " << device.bus_info << " is attached to\n";
 
-        for (const auto & path : device.device_paths) {
-            cout << path << "\n";
-        }
-        
-    }
+			for (const auto & path : device.device_paths) {
+				cout << path << "\n";
+			}
+			
+		}
+	}
 
     vector<Camera*> detected;
 	for (const auto & device : devices)
@@ -500,8 +508,7 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 			}
 
 			Camera* cam = new Camera(device.device_description, GetFrameSize(), GetCaptureFramerate(), capname, api, Start);
-			readCameraParameters(String("../calibration/") + CalibrationFile, cam->CameraMatrix, cam->distanceCoeffs);
-			cam->CameraMatrix = getOptimalNewCameraMatrix(cam->CameraMatrix, cam->distanceCoeffs, Size(1920,1080), 0, GetFrameSize());
+			readCameraParameters(String("../calibration/") + CalibrationFile, cam->CameraMatrix, cam->distanceCoeffs, cam->GetCaptureSize());
 			//cout << "Camera matrix : " << cam->CameraMatrix << " / Distance coeffs : " << cam->distanceCoeffs << endl;
 			detected.push_back(cam);
 		}

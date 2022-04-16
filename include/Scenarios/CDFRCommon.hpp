@@ -1,7 +1,10 @@
+#pragma once
+
 #include "GlobalConf.hpp"
 #include "data/FrameCounter.hpp"
 #include "Camera.hpp"
 #include "visualisation/BoardViz3D.hpp"
+#include "TrackedObjects/TrackerCube.hpp"
 #include "ObjectTracker.hpp"
 #include "thirdparty/serialib.h"
 #include "SerialSender.hpp"

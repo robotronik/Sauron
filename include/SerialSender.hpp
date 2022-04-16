@@ -7,6 +7,7 @@
 #include "thirdparty/serialib.h"
 #include "data/SerialPacket.hpp"
 #include "TrackedObjects/TrackedObject.hpp"
+#include "TrackedObjects/TrackerCube.hpp"
 
 using namespace std;
 using namespace cv;

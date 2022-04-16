@@ -95,16 +95,20 @@ int LastIdx(vector<String> Pathes)
 	return next;
 }
 
-void ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients)
+Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients)
 {
 	vector<String> pathes = CalibrationImages();
+	size_t numpathes = pathes.size();
 	vector<vector<Point2f>> savedPoints;
-	savedPoints.resize(pathes.size());
-	parallel_for_(Range(0, pathes.size()), [&](const Range InRange)
+	savedPoints.resize(numpathes);
+	vector<Size> resolutions;
+	resolutions.resize(numpathes);
+	parallel_for_(Range(0, numpathes), [&](const Range InRange)
 	{
 		for (size_t i = InRange.start; i < InRange.end; i++)
 		{
 			Mat frame = imread(pathes[i], IMREAD_GRAYSCALE);
+			resolutions[i] = frame.size();
 			vector<Point2f> foundPoints;
 			bool found = findChessboardCorners(frame, CheckerSize, foundPoints, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE | CALIB_CB_FAST_CHECK);
 			if (found)
@@ -121,8 +125,45 @@ void ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients)
 			
 		}
 	});
-	CameraCalibration(savedPoints, CheckerSize, CalibrationSquareEdge, CameraMatrix, DistanceCoefficients);
-	cout << "Calibration done ! Matrix : " << CameraMatrix << " / Distance Coefficients : " << DistanceCoefficients << endl;
+	bool multires = false;
+	vector<Size> sizes;
+	for (size_t i = 0; i < numpathes; i++)
+	{
+		bool hasres = false;
+		for (size_t j = 0; j < sizes.size(); j++)
+		{
+			if (sizes[j] == resolutions[i])
+			{
+				hasres = true;
+				break;
+			}
+		}
+		if (!hasres)
+		{
+			sizes.push_back(resolutions[i]);
+		}
+	}
+	
+	if (sizes.size() == 1)
+	{
+		CameraCalibration(savedPoints, CheckerSize, CalibrationSquareEdge, CameraMatrix, DistanceCoefficients);
+		cout << "Calibration done ! Matrix : " << CameraMatrix << " / Distance Coefficients : " << DistanceCoefficients << endl;
+		return sizes[0];
+	}
+	else
+	{
+		cerr << "ERROR : " << sizes.size() << " different resolutions were used in the calibration. That's fixable but fuck you." << endl;
+		cerr << "-Cordialement, le trez 2021/2022 Robotronik (Gabriel Zerbib)" << endl;
+		for (size_t i = 0; i < sizes.size(); i++)
+		{
+			cerr << "@" << sizes[i] <<endl;
+			for (size_t j = 0; j < numpathes; j++)
+			{
+				cerr << " -" << pathes[j] <<endl;
+			}
+		}
+		return Size(0,0);
+	}
 }
 
 bool docalibration(Camera* CamToCalib)
@@ -132,9 +173,19 @@ bool docalibration(Camera* CamToCalib)
 	Mat distanceCoefficients;
 
 	bool ShowUndistorted = false;
-	CamToCalib->StartFeed();
-
+	
 	fs::create_directory(TempImgPath);
+
+	bool HasCamera = CamToCalib != NULL;
+
+	if (!HasCamera)
+	{
+		cout << "No camera was found, calibrating from saved images" << endl;
+		Size framesize = ReadAndCalibrate(CameraMatrix, distanceCoefficients);
+		writeCameraParameters("NoCam", CameraMatrix, distanceCoefficients, framesize);
+		return true;
+	}
+	CamToCalib->StartFeed();
 
 	namedWindow("Webcam", WINDOW_NORMAL);
 	setWindowProperty("Webcam", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
@@ -200,7 +251,7 @@ bool docalibration(Camera* CamToCalib)
 			else
 			{
 				ReadAndCalibrate(CameraMatrix, distanceCoefficients);
-				writeCameraParameters(CamToCalib->GetName(), CameraMatrix, distanceCoefficients);
+				writeCameraParameters(CamToCalib->GetName(), CameraMatrix, distanceCoefficients, CamToCalib->GetCaptureSize());
 				distanceCoefficients = Mat::zeros(8, 1, CV_64F);
 				ShowUndistorted = true;
 			}

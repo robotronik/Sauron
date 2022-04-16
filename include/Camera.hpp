@@ -143,6 +143,8 @@ public:
 
 	String GetDevicePath();
 
+	Size GetCaptureSize();
+
 	bool StartFeed();
 
 	bool Grab(int BufferIndex);
@@ -168,6 +170,6 @@ public:
 };
 
 
-vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile);
+vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile, bool silent = true);
 
 bool StartCameras(vector<Camera*> Cameras);
