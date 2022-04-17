@@ -3,8 +3,11 @@
 
 void CDFRInternalMain(bool direct)
 {
-    vector<Camera*> physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "4", "Brio");
+    vector<Camera*> physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "", "Brio");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
+	
+	viz::Viz3d board3d("local robot");
+	BoardViz3D::SetupRobot(board3d);
 
     StartCameras(physicalCameras);
 
@@ -27,9 +30,6 @@ void CDFRInternalMain(bool direct)
 			OutputTargets.push_back(physicalCameras[i]);
 		}
 	}
-	
-	viz::Viz3d board3d("3D board");
-	BoardViz3D::SetupTerrain(board3d);
 
 	ObjectTracker tracker;
 	tracker.SetArucoSize(center.number, center.sideLength);

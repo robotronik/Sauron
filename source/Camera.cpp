@@ -248,18 +248,17 @@ void Camera::GetFrame(int BufferIndex, UMat& OutFrame)
 
 void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
-	cuda::GpuMat resizedgpu, framegpu;
-	if (!FrameBuffer[BufferIndex].GetGPUFrame(framegpu))
+	UMat frame;
+	if (!FrameBuffer[BufferIndex].GetCPUFrame(frame))
 	{
 		return;
 	}
 
-	double fx = framegpu.cols / winsize.width;
-	double fy = framegpu.rows / winsize.height;
+	double fx = frame.cols / winsize.width;
+	double fy = frame.rows / winsize.height;
 	double fz = max(fx, fy);
 
-	cuda::resize(framegpu, resizedgpu, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
-	resizedgpu.download(OutFrame);
+	resize(frame, OutFrame, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
 	//cout << "Resize OK" <<endl;
 	if (FrameBuffer[BufferIndex].HasAruco)
 	{

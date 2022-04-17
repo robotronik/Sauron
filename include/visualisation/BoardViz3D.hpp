@@ -14,7 +14,7 @@ class BoardViz3D
 {
 private:
 	static bool MeshesLoaded;
-	static viz::Mesh BoardMesh, RobotMesh;
+	static viz::Mesh BoardMesh, RobotMesh, CameraMesh;
 	static Mat BoardMat;
 public:
 	BoardViz3D();
@@ -23,6 +23,8 @@ public:
 	static void LoadMeshes();
 
 	static void SetupTerrain(viz::Viz3d& Visualizer);
+
+	static void SetupRobot(viz::Viz3d& Visualizer);
 
 	static void ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose, viz::Color color);
 

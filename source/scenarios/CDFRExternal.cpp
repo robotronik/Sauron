@@ -4,7 +4,7 @@
 
 void CDFRExternalMain(bool direct)
 {
-    vector<Camera*> physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "4", "Brio");
+    vector<Camera*> physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "", "Brio");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
     StartCameras(physicalCameras);

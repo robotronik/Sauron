@@ -123,7 +123,7 @@ int main(int argc, char** argv )
 
 	if (physicalCameras.size() == 0)
 	{
-		exit(EXIT_FAILURE);
+		//exit(EXIT_FAILURE);
 	}
 	
 	

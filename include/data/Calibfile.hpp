@@ -1,6 +1,7 @@
 #include <string>
 #include <opencv2/core.hpp>
 #include <fstream>
+#include <iostream>
 
 
 static bool readCameraParameters(std::string filename, Mat& camMatrix, Mat& distCoeffs, Size Resolution)
@@ -17,10 +18,13 @@ static bool readCameraParameters(std::string filename, Mat& camMatrix, Mat& dist
 	fs["camera_matrix"] >> calibmatrix;
 	fs["distortion_coefficients"] >> distCoeffs;
 	Mat scalingMatrix = Mat::zeros(3,3, CV_64F);
-	scalingMatrix.at<double>(0,0) = Resolution.width / CalibRes.width;
-	scalingMatrix.at<double>(1,1) = Resolution.height / CalibRes.height;
+	scalingMatrix.at<double>(0,0) = (double)Resolution.width / CalibRes.width;
+	scalingMatrix.at<double>(1,1) = (double)Resolution.height / CalibRes.height;
 	scalingMatrix.at<double>(2,2) = 1;
 	camMatrix = scalingMatrix * calibmatrix;
+	//cout << "Calibration file resolution = " << CalibRes << endl;
+	//cout << "Reading at resolution " <<Resolution << endl;
+	//cout << scalingMatrix << " * " << calibmatrix << " = " << camMatrix << endl;
 	return (camMatrix.size() == cv::Size(3,3));
 }
 

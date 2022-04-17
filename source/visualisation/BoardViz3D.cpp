@@ -4,6 +4,7 @@
 #include <opencv2/core/affine.hpp>
 
 #include "GlobalConf.hpp"
+#include "data/Calibfile.hpp"
 #include "TrackedObjects/TrackedObject.hpp"
 #include "Camera.hpp"
 #include "math3d.hpp"
@@ -11,7 +12,7 @@
 const String assetpath = "../assets/";
 
 bool BoardViz3D::MeshesLoaded;
-viz::Mesh BoardViz3D::BoardMesh, BoardViz3D::RobotMesh;
+viz::Mesh BoardViz3D::BoardMesh, BoardViz3D::RobotMesh, BoardViz3D::CameraMesh;
 Mat BoardViz3D::BoardMat;
 
 BoardViz3D::BoardViz3D()
@@ -27,6 +28,8 @@ void BoardViz3D::LoadMeshes()
 	if (!MeshesLoaded)
 	{
 		BoardMesh = viz::Mesh::load(assetpath + "board.obj", viz::Mesh::LOAD_OBJ);
+		RobotMesh = viz::Mesh::load(assetpath + "robot.obj", viz::Mesh::LOAD_OBJ);
+		CameraMesh = viz::Mesh::load(assetpath + "BRIO.obj", viz::Mesh::LOAD_OBJ);
 		BoardMat = imread(assetpath + "VisuelTable.png");
 		MeshesLoaded = true;
 	}
@@ -45,6 +48,19 @@ void BoardViz3D::SetupTerrain(viz::Viz3d& Visualizer)
 	Visualizer.setViewerPose(Affine3d(MakeRotationFromZX(Vec3d(0,0,-1), Vec3d(1,0,0)), Vec3d(0,0,4)));
 }
 
+void BoardViz3D::SetupRobot(viz::Viz3d& Visualizer)
+{
+	LoadMeshes();
+	Visualizer.showWidget("axis", viz::WCoordinateSystem(0.25));
+	Visualizer.showWidget("Robot", viz::WMesh(RobotMesh));
+	Affine3d CamTransform(MakeRotationFromZY(Vec3d(1,0,0), Vec3d(0,0,-1)), Vec3d(0.06375, 0, 0.330));
+	Visualizer.showWidget("CameraFront", viz::WMesh(CameraMesh), CamTransform);
+	Mat CamMatrix, distCoeffs;
+	readCameraParameters(String("../calibration/Brio"), CamMatrix, distCoeffs, GetFrameSize());
+	Visualizer.showWidget("CamFrustrum", viz::WCameraPosition((Matx33d)CamMatrix, 0.2), CamTransform);
+	Visualizer.spin();
+}
+
 void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose, viz::Color color)
 {
 	viz::WCameraPosition CamWidget;
@@ -59,6 +75,7 @@ void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferId
 		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), 0.2, color);
 	}
 	Visualizer.showWidget(Camera->GetDevicePath(), CamWidget, Pose);
+	Visualizer.showWidget(Camera->GetDevicePath() + "axis", viz::WCoordinateSystem(0.1), Pose);
 	return;
 }
 
