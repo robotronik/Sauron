@@ -22,13 +22,14 @@ TrackerCube::~TrackerCube()
 {
 }
 
-RobotPacket TrackerCube::ToPacket(int RobotId)
+PositionPacket TrackerCube::ToPacket(int RobotId)
 {
-	RobotPacket robot;
+	PositionPacket robot;
+	robot.type = PacketType::Robot;
 	robot.X = Location.translation()[0];
 	robot.Y = Location.translation()[1];
 	robot.rotation = GetRotZ(Location.rotation());
-	robot.numero = RobotId;
+	robot.numeral = RobotId;
 	return robot;
 }
 

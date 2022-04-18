@@ -8,6 +8,7 @@
 #include "ObjectTracker.hpp"
 #include "thirdparty/serialib.h"
 #include "SerialSender.hpp"
+#include "data/SerialPacket.hpp"
 
 #include <fstream>
 #include <iostream>

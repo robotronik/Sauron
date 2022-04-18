@@ -3,46 +3,59 @@
 #include <vector>
 #include <time.h>
 #include <stdint.h>
-#include <opencv2/core.hpp>
+#include <string>
+#include <cstring>
+
 using namespace std;
-using namespace cv;
 
-struct RobotPacket
+enum class PacketType : uint8_t
 {
-	uint8_t numero;
+	Null = 0,
+	Robot = 1,
+	Puck = 3,
+	Reference = 7
+};
+
+struct PositionPacket //palets sur l'arène uniquement
+{
+	PacketType type;
+	uint8_t numeral;
 	float X;
 	float Y;
 	float rotation; //-pi to pi
 
-	String ToCSV();
+	PositionPacket()
+	:type(PacketType::Null),
+	numeral(UINT8_MAX), X(0), Y(0), rotation(0)
+	{};
+
+	PositionPacket(PacketType InType, uint8_t InNumber, float InX, float InY, float InRotation)
+	:type(InType), numeral(InNumber), X(InX), Y(InY), rotation(InRotation)
+	{};
+
+	string ToCSV();
 };
 
-struct PaletPacket //palets sur l'arène uniquement
-{
-	uint8_t TagID;
-	float X;
-	float Y;
-	float rotation; //-pi to pi
-};
-
-struct SerialPacketOut
+struct SerialTransmission
 {
 public:
-	uint8_t NumRobots;
-	uint8_t NumPalets;
+	uint8_t NumPositions;
 	uint16_t score; //score visuel, inclue uniquement les palets
 	uint32_t ms; //enough for 49 days
-	vector<RobotPacket> robots;
-	vector<PaletPacket> palets;
+	vector<PositionPacket> PositionPackets;
+
+	const static uint64_t BaudRate;
+	const static string StartFlag, StopFlag;
+	
 private:
 	char* buffer;
 
 public:
-	SerialPacketOut();
-	~SerialPacketOut();
+	SerialTransmission();
+	~SerialTransmission();
 
 	uint32_t GetSizeNoVector() const;
 	uint32_t GetPacketSize() const;
 	void* ToBuffer();
-	bool FromBuffer(void* buffer);
+	bool FromBuffer(void* buffer, size_t length);
 };

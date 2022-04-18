@@ -43,7 +43,7 @@ void CDFRInternalMain(bool direct)
 	serialib* bridge = new serialib();
     if (SerialPorts.size() > 0)
     {
-        int success = bridge->openDevice(SerialPorts[0].c_str(), 115200);
+        int success = bridge->openDevice(SerialPorts[0].c_str(), SerialTransmission::BaudRate);
         cout << "Result opening serial bridge : " << success << endl;
 		if (success != 1)
 		{
@@ -67,7 +67,7 @@ void CDFRInternalMain(bool direct)
 
 	sender.PrintCSVHeader(printfile);
 	
-	int lastmarker = 0;
+	int hassent = 0;
 	for (;;)
 	{
 		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters, &tracker);
@@ -136,7 +136,16 @@ void CDFRInternalMain(bool direct)
 		board3d.showWidget("fps", fpstext);
 		board3d.spinOnce(1, true);
 		sender.PrintCSV(printfile);
-		/*sender.SendPacket();
+
+		const size_t rcvbuffsize = 1<<20;
+		char rcvbuff[rcvbuffsize];
+		if (!hassent)
+		{
+			hassent = 1;
+			sender.SendPacket();
+		}
+		
+		
 		if (bridge->available() > 0)
 		{
 			int out = bridge->readString(rcvbuff, '\n', rcvbuffsize, 1);
@@ -144,7 +153,7 @@ void CDFRInternalMain(bool direct)
 			{
 				printf("Received from serial : %*s", out, rcvbuff);
 			}
-		}*/
+		}
 
 		if (waitKey(1) == 27 || board3d.wasStopped())
 		{

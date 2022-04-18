@@ -58,7 +58,7 @@ void BoardViz3D::SetupRobot(viz::Viz3d& Visualizer)
 	Mat CamMatrix, distCoeffs;
 	readCameraParameters(String("../calibration/Brio"), CamMatrix, distCoeffs, GetFrameSize());
 	Visualizer.showWidget("CamFrustrum", viz::WCameraPosition((Matx33d)CamMatrix, 0.2), CamTransform);
-	Visualizer.spin();
+	//Visualizer.spin();
 }
 
 void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose, viz::Color color)

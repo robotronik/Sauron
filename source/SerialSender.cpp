@@ -23,30 +23,34 @@ void SerialSender::RegisterRobot(TrackerCube* tracker)
 void SerialSender::SendPacket()
 {
 	uint32_t ms = (getTickCount() - StartTick) *1000 / getTickFrequency();
-	SerialPacketOut packet;
-	packet.NumRobots = Robots.size();
-	packet.NumPalets = 0; //TODO : track palets
+	SerialTransmission packet;
+	packet.NumPositions = Robots.size();
 	packet.score = 0; // TODO : compute score
 	packet.ms = ms;
-	packet.robots.resize(packet.NumRobots);
-	packet.palets.resize(packet.NumPalets);
-	for (size_t i = 0; i < packet.NumRobots; i++)
+	packet.PositionPackets.resize(packet.NumPositions);
+	for (size_t i = 0; i < packet.NumPositions; i++)
 	{
-		RobotPacket robot = Robots[i]->ToPacket(i);
-		packet.robots.push_back(robot);
+		PositionPacket robot = Robots[i]->ToPacket(i);
+		packet.PositionPackets[i] = robot;
 	}
 	
 	uint32_t buffsize = packet.GetPacketSize();
+	/*cout << "Sending packet of size " << buffsize 
+	<< ", total size " 
+	<< buffsize + SerialTransmission::StartFlag.size() + SerialTransmission::StopFlag.size()
+	<< endl;*/
+
 	void* buff = packet.ToBuffer();
 	if (!Bridge->isDeviceOpen())
 	{
-		cerr << "Serial bridge not open, cannot send serial data" << endl;
+		//cerr << "Serial bridge not open, cannot send serial data" << endl;
 		return;
 	}
 
 	
-	
+	Bridge->writeBytes(SerialTransmission::StartFlag.data(), SerialTransmission::StartFlag.size());
 	Bridge->writeBytes(buff, buffsize);
+	Bridge->writeBytes(SerialTransmission::StopFlag.data(), SerialTransmission::StopFlag.size());
 }
 
 void SerialSender::PrintCSVHeader(ofstream &file)

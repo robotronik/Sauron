@@ -1,27 +1,30 @@
 #include "data/SerialPacket.hpp"
-#include <memory.h>
 #include <stdio.h>
 #include <iostream>
 #include <sstream>
+#include <math.h>
 
-String RobotPacket::ToCSV()
+string PositionPacket::ToCSV()
 {
 	ostringstream fab; 
-	fab << (int)numero
-	<< ", " << X << ", " << Y << ", " << rotation*180/CV_PI;
+	fab << (int)type << ", " << (int)numeral
+	<< ", " << X << ", " << Y << ", " << rotation*180/M_PI;
 	return fab.str();
 }
 
-SerialPacketOut::SerialPacketOut()
+const uint64_t SerialTransmission::BaudRate = 115200;
+const string SerialTransmission::StartFlag = string("robotronik");
+const string SerialTransmission::StopFlag = string("meilleurclub");
+
+SerialTransmission::SerialTransmission()
 {
-	NumRobots = 0;
-	NumPalets = 0;
+	NumPositions = 0;
 	score = 0;
 	ms = 0;
 	buffer = NULL;
 }
 
-SerialPacketOut::~SerialPacketOut()
+SerialTransmission::~SerialTransmission()
 {
 	if (buffer != NULL)
 	{
@@ -29,18 +32,18 @@ SerialPacketOut::~SerialPacketOut()
 	}
 }
 
-uint32_t SerialPacketOut::GetSizeNoVector() const
+uint32_t SerialTransmission::GetSizeNoVector() const
 {
-	return sizeof(SerialPacketOut) - sizeof(robots) - sizeof(palets) - sizeof(buffer);
+	return sizeof(SerialTransmission) - sizeof(PositionPackets) - sizeof(buffer);
 }
 
-uint32_t SerialPacketOut::GetPacketSize() const
+uint32_t SerialTransmission::GetPacketSize() const
 {
 	return GetSizeNoVector()
-	+ NumRobots * sizeof(RobotPacket) + NumPalets * sizeof(PaletPacket);
+	+ NumPositions * sizeof(PositionPacket);
 }
 
-void* SerialPacketOut::ToBuffer()
+void* SerialTransmission::ToBuffer()
 {
 	uint32_t buffsize = GetPacketSize();
 	if (buffer != NULL)
@@ -51,24 +54,39 @@ void* SerialPacketOut::ToBuffer()
 	char* copyptr = buffer;
 	memcpy(copyptr, this, GetSizeNoVector());
 	copyptr += GetSizeNoVector();
-	memcpy(copyptr, robots.data(), NumRobots * sizeof(RobotPacket));
-	copyptr += NumRobots * sizeof(RobotPacket);
-	memcpy(copyptr, palets.data(), NumPalets * sizeof(PaletPacket));
+	memcpy(copyptr, &PositionPackets[0], NumPositions * sizeof(PositionPacket));
+	/*for (size_t i = 0; i < NumPositions; i++)
+	{
+		cout << PositionPackets[i].ToCSV() << endl;
+	}
+	for (size_t i = 0; i < buffsize; i++)
+	{
+		printf("%02hhx ", buffer[i]);
+	}
+	printf("\r\n");*/
 	return reinterpret_cast<void*>(buffer);
 }
 
-bool SerialPacketOut::FromBuffer(void* buffer)
+bool SerialTransmission::FromBuffer(void* buffer, size_t length)
 {
 	try
 	{
+		size_t length_so_far = GetSizeNoVector();
+		if (length < length_so_far)
+		{
+			return false;
+		}
+		
 		char* buffptr = reinterpret_cast<char*>(buffer);
 		memcpy(this, buffptr, GetSizeNoVector());
 		buffptr += GetSizeNoVector();
-		robots.resize(NumRobots);
-		palets.resize(NumPalets);
-		memcpy(robots.data(), buffptr, NumRobots * sizeof(RobotPacket));
-		buffptr += NumRobots * sizeof(RobotPacket);
-		memcpy(palets.data(), buffptr, NumPalets * sizeof(PaletPacket));
+		length_so_far += NumPositions * sizeof(PositionPacket);
+		if (length < length_so_far)
+		{
+			return false;
+		}
+		PositionPackets.resize(NumPositions);
+		memcpy(&PositionPackets[0], buffptr, NumPositions * sizeof(PositionPacket));
 	}
 	catch(const std::exception& e)
 	{

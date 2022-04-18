@@ -8,7 +8,7 @@
 #include "data/CameraView.hpp"
 
 class Camera;
-struct RobotPacket;
+struct PositionPacket;
 
 using namespace std;
 using namespace cv;

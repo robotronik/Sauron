@@ -41,7 +41,7 @@ void CDFRExternalMain(bool direct)
 	serialib* bridge = new serialib();
     if (SerialPorts.size() > 0)
     {
-        int success = bridge->openDevice(SerialPorts[0].c_str(), 115200);
+        int success = bridge->openDevice(SerialPorts[0].c_str(), SerialTransmission::BaudRate);
         cout << "Result opening serial bridge : " << success << endl;
 		if (success != 1)
 		{
