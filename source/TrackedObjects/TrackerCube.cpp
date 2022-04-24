@@ -22,15 +22,15 @@ TrackerCube::~TrackerCube()
 {
 }
 
-PositionPacket TrackerCube::ToPacket(int RobotId)
+vector<PositionPacket> TrackerCube::ToPacket(int BaseNumeral)
 {
 	PositionPacket robot;
 	robot.type = PacketType::Robot;
 	robot.X = Location.translation()[0];
 	robot.Y = Location.translation()[1];
 	robot.rotation = GetRotZ(Location.rotation());
-	robot.numeral = RobotId;
-	return robot;
+	robot.numeral = BaseNumeral;
+	return {robot};
 }
 
 void TrackerCube::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)

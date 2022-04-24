@@ -15,7 +15,7 @@ using namespace cv;
 class SerialSender
 {
 private:
-	vector<TrackerCube*> Robots;
+	vector<TrackedObject*> SerialObjects;
 	serialib* Bridge;
 
 	int64 StartTick;
@@ -23,6 +23,8 @@ private:
 public:
 	SerialSender(serialib* InBridge);
 	~SerialSender();
+
+	void RegisterTrackedObject(TrackedObject* object);
 
 	void RegisterRobot(TrackerCube* tracker);
 

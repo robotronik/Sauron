@@ -68,6 +68,8 @@ public:
 	virtual Affine3d ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views);
 
 	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
+
+	virtual vector<PositionPacket> ToPacket(int BaseNumeral);
 };
 
 

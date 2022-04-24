@@ -15,24 +15,29 @@ SerialSender::~SerialSender()
 	delete Bridge;
 }
 
+void RegisterTrackedObject(TrackedObject* object)
+{
+
+}
+
 void SerialSender::RegisterRobot(TrackerCube* tracker)
 {
-	Robots.push_back(tracker);
+	SerialObjects.push_back(tracker);
 }
 
 void SerialSender::SendPacket()
 {
 	uint32_t ms = (getTickCount() - StartTick) *1000 / getTickFrequency();
 	SerialTransmission packet;
-	packet.NumPositions = Robots.size();
 	packet.score = 0; // TODO : compute score
 	packet.ms = ms;
-	packet.PositionPackets.resize(packet.NumPositions);
+	packet.PositionPackets.resize(0);
 	for (size_t i = 0; i < packet.NumPositions; i++)
 	{
-		PositionPacket robot = Robots[i]->ToPacket(i);
-		packet.PositionPackets[i] = robot;
+		vector<PositionPacket> positions = SerialObjects[i]->ToPacket(i);
+		packet.PositionPackets.insert(packet.PositionPackets.end(), positions.begin(), positions.end());
 	}
+	packet.NumPositions = packet.PositionPackets.size();
 	
 	uint32_t buffsize = packet.GetPacketSize();
 	/*cout << "Sending packet of size " << buffsize 
@@ -56,10 +61,10 @@ void SerialSender::SendPacket()
 void SerialSender::PrintCSVHeader(ofstream &file)
 {
 	file << "ms" << ", ";
-	for (size_t i = 0; i < Robots.size(); i++)
+	for (size_t i = 0; i < SerialObjects.size(); i++)
 	{
-		file << "num robot, X , Y, rot(deg)";
-		if (i != Robots.size() -1)
+		file << "numeral, X , Y, rot(deg)";
+		if (i != SerialObjects.size() -1)
 		{
 			file << ", ";
 		}
@@ -72,14 +77,17 @@ void SerialSender::PrintCSV(ofstream &file)
 {
 	uint32_t ms = (getTickCount() - StartTick) *1000 / getTickFrequency();
 	file << ms << ", ";
-	for (size_t i = 0; i < Robots.size(); i++)
+	for (size_t i = 0; i < SerialObjects.size(); i++)
 	{
-		file << Robots[i]->ToPacket(i).ToCSV();
-		if (i != Robots.size() -1)
+		vector<PositionPacket> packets = SerialObjects[i]->ToPacket(i);
+		for (size_t j = 0; j < packets.size(); j++)
 		{
-			file << ", ";
+			file << packets[j].ToCSV();
+			if ((i != SerialObjects.size() -1) || (j != packets.size() -1))
+			{
+				file << ", ";
+			}
 		}
-		
 	}
 	file << endl;
 }

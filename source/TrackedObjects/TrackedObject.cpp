@@ -127,6 +127,12 @@ void TrackedObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocati
 	
 }
 
+vector<PositionPacket> TrackedObject::ToPacket(int BaseNumeral)
+{
+	cerr << "WARNING: Call to base TrackedObject::ToPacket function. That function is uninplemented. Override it." <<endl;
+	return {};
+}
+
 vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners)
 {
 	vector<Point2f> newCorners{Corners[0], Corners[1], Corners[2], Corners[3]};
