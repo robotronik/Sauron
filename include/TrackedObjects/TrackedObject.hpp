@@ -9,6 +9,7 @@
 
 class Camera;
 struct PositionPacket;
+class BoardViz2D;
 
 using namespace std;
 using namespace cv;
@@ -66,6 +67,8 @@ public:
 	{};
 
 	virtual Affine3d ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views);
+
+	virtual void DisplayRecursive2D(BoardViz2D visualizer, Affine3d RootLocation, String rootName);
 
 	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
 

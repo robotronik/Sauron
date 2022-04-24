@@ -12,6 +12,7 @@
 #include <opencv2/viz.hpp>
 
 #include "data/FrameCounter.hpp"
+#include "math3d.hpp"
 
 using namespace cv;
 
@@ -119,6 +120,15 @@ void BoardViz2D::OverlayImage(cuda::GpuMat& ImageToOverlay, FVector2D<float> pos
 	cuda::alphaComp(cuda::GpuMat(OverlayRotated, ROIrobot), cuda::GpuMat(image, ROIImage), cuda::GpuMat(image, ROIImage), cuda::ALPHA_OVER);
 
 	//cuda::alphaComp(OverlayRotated, image, image, cuda::ALPHA_OVER);
+}
+
+void BoardViz2D::OverlayImage(cuda::GpuMat& ImageToOverlay, Affine3d position, FVector2D<float> ImageSize)
+{
+	Vec3d translation3d;
+	position.translation(translation3d);
+	FVector2D<float> translation2d(translation3d[0], translation3d[1]);
+	float rot = GetRotZ(position.rotation());
+	OverlayImage(ImageToOverlay, translation2d, rot, ImageSize);
 }
 
 FVector2D<float> BoardViz2D::GetExtent()

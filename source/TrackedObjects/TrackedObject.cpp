@@ -9,6 +9,8 @@
 #include "math3d.hpp"
 #include "Camera.hpp"
 #include "GlobalConf.hpp"
+#include "data/SerialPacket.hpp"
+#include "visualisation/BoardViz2D.hpp"
 
 ArucoMarker center(0.1, 42, Affine3d(Vec3d::all(0), Vec3d(0, -0.25, 0)));
 
@@ -110,6 +112,16 @@ Affine3d TrackedObject::ResolveLocation(vector<Affine3d>& Cameras, vector<Camera
 		Location = positions[bestViews[0]];
 	}
 	return Location;
+}
+
+void TrackedObject::DisplayRecursive2D(BoardViz2D visualizer, Affine3d RootLocation, String rootName)
+{
+	Affine3d worldlocation = RootLocation * Location;
+
+	for (int i = 0; i < childs.size(); i++)
+	{
+		childs[i]->DisplayRecursive2D(visualizer, worldlocation, rootName + "/" + Name);
+	}
 }
 
 void TrackedObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)

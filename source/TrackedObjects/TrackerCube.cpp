@@ -13,7 +13,10 @@ TrackerCube::TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSi
 		Matx33d markerrot = MakeRotationFromZY(Locations[i], Vec3d(0,0,1));
 		Affine3d markertransform = Affine3d(markerrot, Locations[i]);
 		ArucoMarker marker(MarkerSize, MarkerIdx[i], markertransform);
-		markers.push_back(marker);
+		if (marker.number >= 0)
+		{
+			markers.push_back(marker);
+		}
 	}
 	
 }
