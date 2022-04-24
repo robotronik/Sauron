@@ -69,7 +69,7 @@ void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Siz
 	CameraMatrix = Mat::eye(3, 3, CV_64F);
 	DistanceCoefficients = Mat::zeros(8, 1, CV_64F);
 	CameraMatrix = initCameraMatrix2D(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, FrameSize);
-	//calibrateCamera(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, BoardSize, CameraMatrix, DistanceCoefficients, rVectors, tVectors, CALIB_FIX_FOCAL_LENGTH);
+	calibrateCamera(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, BoardSize, CameraMatrix, DistanceCoefficients, rVectors, tVectors, CALIB_FIX_FOCAL_LENGTH);
 }
 
 vector<String> CalibrationImages()
@@ -251,7 +251,7 @@ bool docalibration(Camera* CamToCalib)
 			else
 			{
 				ReadAndCalibrate(CameraMatrix, distanceCoefficients);
-				writeCameraParameters(CamToCalib->GetName(), CameraMatrix, distanceCoefficients, CamToCalib->GetCaptureSize());
+				writeCameraParameters(CamToCalib->GetCameraSettings().DeviceInfo.device_description, CameraMatrix, distanceCoefficients, CamToCalib->GetCameraSettings().Resolution);
 				distanceCoefficients = Mat::zeros(8, 1, CV_64F);
 				ShowUndistorted = true;
 			}

@@ -3,20 +3,20 @@
 #include <iostream>
 #include <string>   // for strings
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
-#include <opencv2/core/affine.hpp>
-#include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
-#include <opencv2/imgproc.hpp>
 
 #include <opencv2/cudacodec.hpp>
 #include <opencv2/cudawarping.hpp>
+
+#include "thirdparty/list-devices.hpp"
 
 #include "data/OutputImage.hpp"
 #include "data/CameraView.hpp"
 
 using namespace std;
 using namespace cv;
+using namespace v4l2::devices;
 
 enum class CameraStatus
 {
@@ -27,6 +27,39 @@ enum class CameraStatus
 	ReadGPU,
 	ReadBoth
 };
+
+enum class CameraStartType
+{
+	ANY,
+	GSTREAMER_CPU,
+	GSTREAMER_NVDEC,
+	GSTREAMER_JETSON,
+	CUDA
+};
+
+struct CameraSettings
+{
+	//which api should be used ?
+	CameraStartType StartType;
+
+	//General data
+	//Resolution of the frame to be captured
+	Size Resolution;
+	//Framerate
+	uint8_t Framerate;
+	//Framerate divider : you can set 60fps but only sample 1 of 2 frames to have less latency and less computation
+	uint8_t FramerateDivider;
+	//Size of the camera frame buffer, to pipeline opencv computations
+	uint8_t BufferSize;
+	//data from v4l2 about the device
+	DEVICE_INFO DeviceInfo;
+
+	//Initialisation string
+	String StartPath;
+	//API to be used for opening
+	int ApiID;
+};
+
 
 class ObjectTracker;
 
@@ -61,38 +94,24 @@ public:
 friend class Camera;
 };
 
-enum class CameraStartType
-{
-	ANY,
-	GSTREAMER_CPU,
-	GSTREAMER_NVDEC,
-	GSTREAMER_JETSON,
-	CUDA
-};
-
 class Camera : public OutputImage
 {
-public:
-	static const int FrameBufferSize = 2;
 private:
 	//config
-	String Name;
-	Size CaptureSize;
-	int fps;
-	string DevicePath;
-	int ApiID;
+	CameraSettings Settings;
+
 public:
 	Affine3d Location;
+
 private:
-
-	CameraStartType CaptureType;
-
-	//capture
+	//capture using classic api
 	VideoCapture* feed;
 
+	//capture using cuda
 	Ptr<cudacodec::VideoReader> d_reader;
 
-	BufferedFrame FrameBuffer[FrameBufferSize];
+	//frame buffer, increases fps but also latency
+	vector<BufferedFrame> FrameBuffer;
 
 public:
 	//calibration
@@ -105,14 +124,9 @@ public:
 
 public:
 
-	Camera(String InName, Size InCaptureSize, int InFPS, string InDevicePath, int InApiId, CameraStartType InCaptureType)
-		:Name(InName),
-		CaptureSize(InCaptureSize),
-		fps(InFPS),
-		DevicePath(InDevicePath),
-		ApiID(InApiId),
+	Camera(CameraSettings InSettings)
+		:Settings(InSettings),
 		Location(Affine3d::Identity()),
-		CaptureType(InCaptureType),
 		connected(false),
 		FrameBuffer(),
 		OutputImage()
@@ -123,7 +137,7 @@ public:
 	{
 		if (connected)
 		{
-			if (CaptureType == CameraStartType::CUDA)
+			if (Settings.StartType == CameraStartType::CUDA)
 			{
 				delete d_reader;
 			}
@@ -137,13 +151,11 @@ public:
 		
 	}
 
-	String GetName();
+	CameraSettings GetCameraSettings();
+
+	bool SetCameraSetting(CameraSettings InSettings);
 
 	CameraStatus GetStatus(int BufferIndex);
-
-	String GetDevicePath();
-
-	Size GetCaptureSize();
 
 	bool StartFeed();
 

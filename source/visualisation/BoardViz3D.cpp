@@ -74,8 +74,8 @@ void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferId
 		//CamWidget = viz::WCameraPosition(Vec2d(Camera->CameraMatrix.at<double>(0,0), Camera->CameraMatrix.at<double>(1,1)), 0.2, color);
 		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), 0.2, color);
 	}
-	Visualizer.showWidget(Camera->GetDevicePath(), CamWidget, Pose);
-	Visualizer.showWidget(Camera->GetDevicePath() + "axis", viz::WCoordinateSystem(0.1), Pose);
+	Visualizer.showWidget(Camera->GetCameraSettings().DeviceInfo.device_paths[0], CamWidget, Pose);
+	Visualizer.showWidget(Camera->GetCameraSettings().DeviceInfo.device_paths[0] + "axis", viz::WCoordinateSystem(0.1), Pose);
 	return;
 }
 

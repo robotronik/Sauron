@@ -70,7 +70,7 @@ void CDFRExternalMain(bool direct)
 	{
 		fpsPipeline.GetDeltaTime();
 		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters, &tracker);
-		PipelineIdx = (PipelineIdx + 1) % Camera::FrameBufferSize;
+		PipelineIdx = (PipelineIdx + 1) % 2;
 		double TimePipeline = fpsPipeline.GetDeltaTime();
 
 		//cout << "Pipeline took " << TimePipeline << "s to run" << endl;

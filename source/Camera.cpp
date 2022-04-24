@@ -64,24 +64,24 @@ bool BufferedFrame::GetRescaledFrame(int index, UMat& OutFrame)
 	return false;
 }
 
-String Camera::GetName()
+CameraSettings Camera::GetCameraSettings()
 {
-	return Name;
+	return Settings;
+}
+
+bool Camera::SetCameraSetting(CameraSettings InSettings)
+{
+	if (connected)
+	{
+		cerr << "WARNING: Tried to set camera settings, but camera is already started ! Settings have not been applied." << endl;
+		return false;
+	}
+	
 }
 
 CameraStatus Camera::GetStatus(int BufferIndex)
 {
 	return FrameBuffer[BufferIndex].Status;
-}
-
-String Camera::GetDevicePath()
-{
-	return DevicePath;
-}
-
-Size Camera::GetCaptureSize()
-{
-	return CaptureSize;
 }
 
 bool Camera::StartFeed()
@@ -90,32 +90,71 @@ bool Camera::StartFeed()
 	{
 		return false;
 	}
-	for (int i = 0; i < FrameBufferSize; i++)
+	FrameBuffer.resize(Settings.BufferSize);
+	for (int i = 0; i < Settings.BufferSize; i++)
 	{
 		FrameBuffer[i] = BufferedFrame();
 	}
 	
-	if (CaptureType == CameraStartType::CUDA)
+	if (Settings.StartType == CameraStartType::CUDA)
 	{
-		d_reader = cudacodec::createVideoReader(DevicePath, {
-			CAP_PROP_FRAME_WIDTH, CaptureSize.width, 
-			CAP_PROP_FRAME_HEIGHT, CaptureSize.height, 
-			CAP_PROP_FPS, fps,
+		Settings.StartPath = Settings.DeviceInfo.device_paths[0];
+		Settings.ApiID = CAP_ANY;
+
+		d_reader = cudacodec::createVideoReader(Settings.DeviceInfo.device_paths[0], {
+			CAP_PROP_FRAME_WIDTH, Settings.Resolution.width, 
+			CAP_PROP_FRAME_HEIGHT, Settings.Resolution.height, 
+			CAP_PROP_FPS, Settings.Framerate/Settings.FramerateDivider,
 			CAP_PROP_BUFFERSIZE, 1});
 
 	}
 	else
 	{
+		switch (Settings.StartType)
+		{
+		case CameraStartType::GSTREAMER_CPU:
+		case CameraStartType::GSTREAMER_NVDEC:
+		case CameraStartType::GSTREAMER_JETSON:
+			{
+				ostringstream capnamestream;
+				capnamestream << "v4l2src device=" << Settings.DeviceInfo.device_paths[0] << " io-mode=4 ! image/jpeg, width=" 
+				<< Settings.Resolution.width << ", height=" << Settings.Resolution.height << ", framerate="
+				<< Settings.Framerate << "/" << Settings.FramerateDivider << ", num-buffers=1 ! ";
+				if (Settings.StartType == CameraStartType::GSTREAMER_CPU)
+				{
+					capnamestream << "jpegdec ! videoconvert ! ";
+				}
+				else if (Settings.StartType == CameraStartType::GSTREAMER_JETSON)
+				{
+					capnamestream << "nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! ";
+				}
+				else if(Settings.StartType == CameraStartType::CUDA)
+				{
+					capnamestream << "nvdec ! glcolorconvert ! gldownload ! ";
+				}
+				capnamestream << "video/x-raw, format=BGR ! appsink";
+				Settings.StartPath = capnamestream.str();
+				Settings.ApiID = CAP_GSTREAMER;
+			}
+			break;
+		case CameraStartType::CUDA:
+		case CameraStartType::ANY:
+		default:
+			Settings.StartPath = Settings.DeviceInfo.device_paths[0];
+			Settings.ApiID = CAP_ANY;
+			break;
+		}
+
 		feed = new VideoCapture();
-		cout << "Opening device at \"" << DevicePath << "\" with API id " << ApiID << endl;
-		feed->open(DevicePath, ApiID);
-		if (CaptureType == CameraStartType::ANY)
+		cout << "Opening device at \"" << Settings.StartPath << "\" with API id " << Settings.ApiID << endl;
+		feed->open(Settings.StartPath, Settings.ApiID);
+		if (Settings.StartType == CameraStartType::ANY)
 		{
 			feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('M', 'J', 'P', 'G'));
 			//feed->set(CAP_PROP_FOURCC, VideoWriter::fourcc('Y', 'U', 'Y', 'V'));
-			feed->set(CAP_PROP_FRAME_WIDTH, CaptureSize.width);
-			feed->set(CAP_PROP_FRAME_HEIGHT, CaptureSize.height);
-			feed->set(CAP_PROP_FPS, fps);
+			feed->set(CAP_PROP_FRAME_WIDTH, Settings.Resolution.width);
+			feed->set(CAP_PROP_FRAME_HEIGHT, Settings.Resolution.height);
+			feed->set(CAP_PROP_FPS, Settings.Framerate/Settings.FramerateDivider);
 			feed->set(CAP_PROP_BUFFERSIZE, 1);
 		}
 		//cout << "Success opening ? " << feed->isOpened() << endl;
@@ -134,10 +173,11 @@ bool Camera::Grab(int BufferIndex)
 {
 	if (!connected)
 	{
+		
 		return false;
 	}
 	bool grabsuccess = false;
-	if (CaptureType == CameraStartType::CUDA)
+	if (Settings.StartType == CameraStartType::CUDA)
 	{
 		grabsuccess = d_reader->grab();
 	}
@@ -147,11 +187,11 @@ bool Camera::Grab(int BufferIndex)
 	}
 	if (grabsuccess)
 	{
-		FrameBuffer[BufferIndex].Status = (CaptureType == CameraStartType::CUDA) ? CameraStatus::GrabbedGPU : CameraStatus::GrabbedCPU;
+		FrameBuffer[BufferIndex].Status = (Settings.StartType == CameraStartType::CUDA) ? CameraStatus::GrabbedGPU : CameraStatus::GrabbedCPU;
 	}
 	else
 	{
-		cerr << "Failed to grab frame for camera " << Name << " with buffer " << BufferIndex <<endl;
+		cerr << "Failed to grab frame for camera " << Settings.DeviceInfo.device_description << " with buffer " << BufferIndex <<endl;
 		FrameBuffer[BufferIndex].Status = CameraStatus::None;
 	}
 	
@@ -166,7 +206,7 @@ bool Camera::Read(int BufferIndex)
 		return false;
 	}
 	bool ReadSuccess = false;
-	if (CaptureType == CameraStartType::CUDA)
+	if (Settings.StartType == CameraStartType::CUDA)
 	{
 		if (buff.Status == CameraStatus::GrabbedGPU)
 		{
@@ -190,13 +230,13 @@ bool Camera::Read(int BufferIndex)
 	}
 	if (ReadSuccess)
 	{
-		buff.Status = (CaptureType == CameraStartType::CUDA) ? CameraStatus::ReadGPU : CameraStatus::ReadCPU;
+		buff.Status = (Settings.StartType == CameraStartType::CUDA) ? CameraStatus::ReadGPU : CameraStatus::ReadCPU;
 		buff.HasAruco = false;
 		buff.HasViews = false;
 	}
 	else
 	{
-		cerr << "Failed to read frame for camera " << Name << " with buffer " << BufferIndex <<endl;
+		cerr << "Failed to read frame for camera " << Settings.DeviceInfo.device_description << " with buffer " << BufferIndex <<endl;
 		buff.Status = CameraStatus::None;
 		buff.rescaledFrames.resize(0);
 		return false;
@@ -469,45 +509,19 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 		//nvdec ! glcolorconvert ! gldownload
 		if (device.device_description.find(Filter) != String::npos)
 		{
-			int api;
-			string path = device.device_paths[0];
-			string capname;
-			switch (Start)
-			{
-			case CameraStartType::GSTREAMER_CPU:
-			case CameraStartType::GSTREAMER_NVDEC:
-				{
-					ostringstream capnamestream;
-					capnamestream << "v4l2src device=" << path << " io-mode=4 ! image/jpeg, width=" 
-					<< GetFrameSize().width << ", height=" << GetFrameSize().height << ", framerate="
-					<< GetCaptureFramerate() << "/1, num-buffers=1 ! ";
-					if (Start == CameraStartType::GSTREAMER_CPU)
-					{
-						capnamestream << "jpegdec ! videoconvert ! ";
-					}
-					else if (Start == CameraStartType::GSTREAMER_JETSON)
-					{
-						capnamestream << "nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! ";
-					}
-					else if(Start == CameraStartType::CUDA)
-					{
-						capnamestream << "nvdec ! glcolorconvert ! gldownload ! ";
-					}
-					capnamestream << "video/x-raw, format=BGR ! appsink";
-					capname = capnamestream.str();
-					api = CAP_GSTREAMER;
-				}
-				break;
-			case CameraStartType::CUDA:
-			case CameraStartType::ANY:
-			default:
-				capname = path;
-				api = CAP_ANY;
-				break;
-			}
+			CameraSettings settings;
+			settings.Resolution = GetFrameSize();
+			settings.Framerate = GetCaptureFramerate();
+			settings.FramerateDivider = 1;
+			settings.DeviceInfo = device;
+			settings.BufferSize = 2;
+			settings.StartType = Start;
 
-			Camera* cam = new Camera(device.device_description, GetFrameSize(), GetCaptureFramerate(), capname, api, Start);
-			readCameraParameters(String("../calibration/") + CalibrationFile, cam->CameraMatrix, cam->distanceCoeffs, cam->GetCaptureSize());
+			settings.StartPath = "";
+			settings.ApiID = -1;
+
+			Camera* cam = new Camera(settings);
+			readCameraParameters(String("../calibration/") + CalibrationFile, cam->CameraMatrix, cam->distanceCoeffs, settings.Resolution);
 			//cout << "Camera matrix : " << cam->CameraMatrix << " / Distance coeffs : " << cam->distanceCoeffs << endl;
 			detected.push_back(cam);
 		}
@@ -521,7 +535,7 @@ bool StartCameras(vector<Camera*> Cameras)
 	{
 		if(!Cameras[i]->StartFeed())
 		{
-			cerr << "ERROR! Unable to open camera " << Cameras[i]->GetName();
+			cerr << "ERROR! Unable to open camera " << Cameras[i]->GetCameraSettings().DeviceInfo.device_description;
 		}
 	}
 	return true;
