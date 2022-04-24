@@ -151,32 +151,46 @@ public:
 		
 	}
 
+	//Get the settings used to start this camera
 	CameraSettings GetCameraSettings();
 
+	//Set the settings to used for this camera
 	bool SetCameraSetting(CameraSettings InSettings);
 
+	//Get the status of a buffer (read, aruco'ed, 3D-ed...)
 	CameraStatus GetStatus(int BufferIndex);
 
+	//Start the camera
 	bool StartFeed();
 
+	//Lock a frame to be capture at this time
+	//This allow for simultaneous capture
 	bool Grab(int BufferIndex);
 
+	//Retrieve or read a frame
 	bool Read(int BufferIndex);
-
-	void RescaleFrames(int BufferIdx);
-
-	void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
-
-	void SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry);
-
-	bool GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners);
-
-	int GetCameraViewsSize(int BufferIndex);
-
-	bool GetCameraViews(int BufferIndex, vector<CameraView>& views);
 
 	virtual void GetFrame(int BufferIndex, UMat& frame) override;
 
+	//Create lower-resolution copies of the frame to be used in aruco detection
+	void RescaleFrames(int BufferIdx);
+
+	//detect markers using the lower resolutions and improve accuracy using the higher-resolution image
+	void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
+
+	//Gather detected markers in screen space
+	bool GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners);
+
+	//convert corner pixel location into 3D space relative to camera
+	//Arco tags must be registered into the registry beforehand to have correct depth
+	void SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry);
+
+	int GetCameraViewsSize(int BufferIndex);
+
+	//Gather detected markers in 3D space relative to the camera
+	bool GetCameraViews(int BufferIndex, vector<CameraView>& views);
+
+	//Get frame with marker data and everything for the required resolution
 	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize) override;
 
 };

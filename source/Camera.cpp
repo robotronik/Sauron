@@ -76,7 +76,8 @@ bool Camera::SetCameraSetting(CameraSettings InSettings)
 		cerr << "WARNING: Tried to set camera settings, but camera is already started ! Settings have not been applied." << endl;
 		return false;
 	}
-	
+	Settings = InSettings;
+	return true;
 }
 
 CameraStatus Camera::GetStatus(int BufferIndex)
@@ -294,11 +295,11 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 		return;
 	}
 
-	double fx = frame.cols / winsize.width;
-	double fy = frame.rows / winsize.height;
-	double fz = max(fx, fy);
+	double fx = (double)winsize.width / frame.cols;
+	double fy = (double)winsize.height / frame.rows;
+	double fz = min(fx, fy);
 
-	resize(frame, OutFrame, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
+	resize(frame, OutFrame, Size(), fz, fz, INTER_AREA);
 	//cout << "Resize OK" <<endl;
 	if (FrameBuffer[BufferIndex].HasAruco)
 	{
@@ -308,7 +309,7 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 			vector<Point2f> marker;
 			for (int j = 0; j < FrameBuffer[BufferIndex].markerCorners[i].size(); j++)
 			{
-				marker.push_back(FrameBuffer[BufferIndex].markerCorners[i][j]/fz);
+				marker.push_back(FrameBuffer[BufferIndex].markerCorners[i][j]*fz);
 			}
 			raruco.push_back(marker);
 		}
@@ -325,8 +326,15 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
 
+	//the first vectors is for each resolution
+	//the second vector is for each tag
+	//all the positions are in pixels of the base frame
+
+	//corners of the tags, in pixel position
 	vector<vector<vector<Point2f>>> AllCorners;
+	//ids of the tags
 	vector<vector<int>> AllIDs;
+	//centers of the tags, in pixel position
 	vector<vector<FVector2D<double>>> Centers;
 	int nbframes = buff.rescaledFrames.size();
 	AllCorners.resize(nbframes);
@@ -335,12 +343,7 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 	Size framesize = GetFrameSize();
 	vector<Size> rescaled = GetArucoReductions();
 
-	UMat framebase, framegray;
-	if (!buff.GetCPUFrame(framebase))
-	{
-		return;
-	}
-	cvtColor(framebase, framegray, COLOR_BGR2GRAY);
+
 	
 	
 
@@ -385,30 +388,50 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 	vector<int> markerIDs;
 	vector<float> reductionFactors = GetReductionFactor();
 
-	for (int Lower = 0; Lower < nbframes; Lower++)
+	if (rescaled[0] == Settings.Resolution && nbframes == 1) //fast path for running at native res
 	{
-		for (int ArucoLower = 0; ArucoLower < AllIDs[Lower].size(); ArucoLower++)
+		buff.markerCorners = AllCorners[0];
+		buff.markerIDs = AllIDs[0];
+	}
+	else
+	{
+		UMat framebase, framegray;
+		if (!buff.GetCPUFrame(framebase))
 		{
-			markerIDs.push_back(AllIDs[Lower][ArucoLower]);
-			vector<Point2f> cornersTemp = AllCorners[Lower][ArucoLower];
-			Size window = Size(reductionFactors[Lower], reductionFactors[Lower]);
-			//cornerSubPix(framegray, cornersTemp, window, Size(-1,-1), TermCriteria(TermCriteria::COUNT | TermCriteria::EPS, 100, 0.01));
-			corners.push_back(cornersTemp);
-			//cout << "Found aruco " << AllIDs[Lower][ArucoLower] << " at height " << Lower << endl;
+			return;
+		}
+		cvtColor(framebase, framegray, COLOR_BGR2GRAY);
 
-			for (int Higher = Lower +1; Higher < nbframes; Higher++)
+		//Lower resolution processing to increase accuracy while keeping speed
+		for (int Lower = 0; Lower < nbframes; Lower++)
+		{
+			for (int ArucoLower = 0; ArucoLower < AllIDs[Lower].size(); ArucoLower++)
 			{
-				for (int ArucoHigher = 0; ArucoHigher < AllIDs[Higher].size(); ArucoHigher++)
+				markerIDs.push_back(AllIDs[Lower][ArucoLower]);
+				vector<Point2f> cornersTemp = AllCorners[Lower][ArucoLower];
+				Size window = Size(reductionFactors[Lower], reductionFactors[Lower]);
+				cornerSubPix(framegray, cornersTemp, window, Size(-1,-1), TermCriteria(TermCriteria::COUNT | TermCriteria::EPS, 100, 0.01));
+				corners.push_back(cornersTemp);
+				//cout << "Found aruco " << AllIDs[Lower][ArucoLower] << " at height " << Lower << endl;
+
+				//If there are lower-resolution appearances of this tag, remove them as they'll have a lower accuracy
+				for (int Higher = Lower +1; Higher < nbframes; Higher++)
 				{
-					if (AllIDs[Lower][ArucoLower] == AllIDs[Higher][ArucoHigher])
+					for (int ArucoHigher = 0; ArucoHigher < AllIDs[Higher].size(); ArucoHigher++)
 					{
-						if ((Centers[Lower][ArucoLower] - Centers[Higher][ArucoHigher]).TaxicabLength() < 10)
+						//check same id
+						if (AllIDs[Lower][ArucoLower] == AllIDs[Higher][ArucoHigher])
 						{
-							Centers[Higher].erase(Centers[Higher].begin() + ArucoHigher);
-							AllIDs[Higher].erase(AllIDs[Higher].begin() + ArucoHigher);
-							AllCorners[Higher].erase(AllCorners[Higher].begin() + ArucoHigher);
-							break;
-							ArucoHigher--;
+							//check they are not too far apart on the frame
+							if ((Centers[Lower][ArucoLower] - Centers[Higher][ArucoHigher]).TaxicabLength() < 10)
+							{
+								Centers[Higher].erase(Centers[Higher].begin() + ArucoHigher);
+								AllIDs[Higher].erase(AllIDs[Higher].begin() + ArucoHigher);
+								AllCorners[Higher].erase(AllCorners[Higher].begin() + ArucoHigher);
+								break;
+								ArucoHigher--;
+							}
+							
 						}
 						
 					}
@@ -419,14 +442,23 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 			
 		}
 		
+		buff.markerCorners = corners;
+		buff.markerIDs = markerIDs;
 	}
-	
-	buff.markerCorners = corners;
-	buff.markerIDs = markerIDs;
-
 	
 	
 	buff.HasAruco = true;
+}
+
+bool Camera::GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners)
+{
+	if (!FrameBuffer[BufferIndex].HasAruco)
+	{
+		return false;
+	}
+	markerIDs = FrameBuffer[BufferIndex].markerIDs;
+	markerCorners = FrameBuffer[BufferIndex].markerCorners;
+	return true;
 }
 
 void Camera::SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry)
@@ -444,17 +476,6 @@ void Camera::SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registr
 		buff.markerViews[i] = CameraView(CameraIdx, buff.markerIDs[i], TagTransform);
 	}
 	buff.HasViews = true;
-}
-
-bool Camera::GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners)
-{
-	if (!FrameBuffer[BufferIndex].HasAruco)
-	{
-		return false;
-	}
-	markerIDs = FrameBuffer[BufferIndex].markerIDs;
-	markerCorners = FrameBuffer[BufferIndex].markerCorners;
-	return true;
 }
 
 int Camera::GetCameraViewsSize(int BufferIndex)
@@ -517,6 +538,7 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 			settings.BufferSize = 2;
 			settings.StartType = Start;
 
+			//these only get populated when StartFeed is called
 			settings.StartPath = "";
 			settings.ApiID = -1;
 

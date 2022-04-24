@@ -20,7 +20,7 @@ Ptr<aruco::DetectorParameters> GetArucoParams()
 	if (parameters.empty())
 	{
 		parameters = aruco::DetectorParameters::create();
-		parameters->cornerRefinementMethod = aruco::CORNER_REFINE_CONTOUR;
+		parameters->cornerRefinementMethod = GetArucoReductions()[0] == GetFrameSize() ? aruco::CORNER_REFINE_CONTOUR : aruco::CORNER_REFINE_NONE;
 		//parameters->adaptiveThreshWinSizeMin = 5;
 		//parameters->adaptiveThreshWinSizeMax = 5;
 		//parameters->adaptiveThreshWinSizeStep = 10;
