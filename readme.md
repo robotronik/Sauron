@@ -8,7 +8,9 @@ Avoir Cuda d'installé et dans le PATH
 
 https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#introduction
 
-Installer cmake et Ninja
+Por les dépendences, y'a soit un script `./InstallRequirement.sh`, soit la version manuelle (qui suit) :
+
+Installer cmake et Ninja (`ninja-build`)
 
 Installer tout ca, si une ligne marche pas supprimez les trucs qui veulent pas
 ```console
