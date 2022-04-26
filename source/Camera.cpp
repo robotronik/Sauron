@@ -113,6 +113,17 @@ bool Camera::StartFeed()
 	{
 		switch (Settings.StartType)
 		{
+		case CameraStartType::GSTREAMER_NVARGUS:
+			{
+				ostringstream capnamestream;
+				capnamestream << "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=" << Settings.Resolution.width
+				<< ", height=" << Settings.Resolution.height << ", format=NV12, framerate="
+				<< Settings.Framerate << "/" << Settings.FramerateDivider 
+				<< " !  nvvidconv ! videoconvert ! video/x-raw, format=BGR ! appsink";
+				Settings.StartPath = capnamestream.str();
+				Settings.ApiID = CAP_GSTREAMER;
+			}
+			break;
 		case CameraStartType::GSTREAMER_CPU:
 		case CameraStartType::GSTREAMER_NVDEC:
 		case CameraStartType::GSTREAMER_JETSON:
