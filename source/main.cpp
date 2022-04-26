@@ -92,7 +92,7 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio", false);
+	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_NVARGUS, "!HD User Facing", "Brio", false);
 
 	if (physicalCameras.size() == 0)
 	{

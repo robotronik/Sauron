@@ -116,10 +116,10 @@ bool Camera::StartFeed()
 		case CameraStartType::GSTREAMER_NVARGUS:
 			{
 				ostringstream capnamestream;
-				capnamestream << "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=" << Settings.Resolution.width
+				capnamestream << "nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=" << Settings.Resolution.width
 				<< ", height=" << Settings.Resolution.height << ", format=NV12, framerate="
-				<< Settings.Framerate << "/" << Settings.FramerateDivider 
-				<< " !  nvvidconv ! videoconvert ! video/x-raw, format=BGR ! appsink";
+				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider 
+				<< "' !  nvvidconv ! 'video/x-raw, format=BGRx' ! videoconvert ! 'video/x-raw, format=BGR' ! appsink";
 				Settings.StartPath = capnamestream.str();
 				Settings.ApiID = CAP_GSTREAMER;
 			}
@@ -131,7 +131,7 @@ bool Camera::StartFeed()
 				ostringstream capnamestream;
 				capnamestream << "v4l2src device=" << Settings.DeviceInfo.device_paths[0] << " io-mode=4 ! image/jpeg, width=" 
 				<< Settings.Resolution.width << ", height=" << Settings.Resolution.height << ", framerate="
-				<< Settings.Framerate << "/" << Settings.FramerateDivider << ", num-buffers=1 ! ";
+				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider << ", num-buffers=1 ! ";
 				if (Settings.StartType == CameraStartType::GSTREAMER_CPU)
 				{
 					capnamestream << "jpegdec ! videoconvert ! ";
