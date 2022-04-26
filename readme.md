@@ -32,11 +32,13 @@ sudo apt-get install -y liblapack-dev liblapacke-dev libeigen3-dev gfortran
 sudo apt-get install -y libhdf5-dev protobuf-compiler
 sudo apt-get install -y libprotobuf-dev libgoogle-glog-dev libgflags-dev
 ```
-Télécharger opencv et opencv_contrib et les mettre dans home, créer un fichier build dans `~/opencv`
+Télécharger opencv, renommer le ficher extrait en `opencv` et opencv_contrib en `opencv_contrib` et les mettre dans home, créer un fichier build dans `~/opencv`
 
 ## VTK
 
 Télécharger [libvtk](https://vtk.org/download/), et extraire les sources dans home
+OpenCV 4.5.5 marche pas avec VTK 8.2.
+VTK 9.1 requiert un CMake supérieur à 3.12, sur Ubuntu 2.18 il est possible que le cmake soit pas à jour, si c'est la cas, suivre [ce tuto](https://askubuntu.com/questions/355565/how-do-i-install-the-latest-version-of-cmake-from-the-command-line)
 
 Créer un fichier pour le build de vtk : `mkdir buildvtk`
 
@@ -106,6 +108,8 @@ Y'a moyen de faire la même chose sur nvenc si besoin.
 
 ## Ok c'est tout
 
+Juste avant d'executer le script, il va falloir le modifier un peu : 
+Aux alentours de la ligne 53, y'a `CUDA_ARCH_BIN = un truc` : il faut modifier le `un truc` en fonction de ce que ta carte graphique dispose, (ce lien te dit le niveau de compute
 puis une fois tout ca, exécuter InstallOpenCV.sh
 
 `./InstallOpenCV.sh`

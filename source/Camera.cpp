@@ -102,11 +102,11 @@ bool Camera::StartFeed()
 		Settings.StartPath = Settings.DeviceInfo.device_paths[0];
 		Settings.ApiID = CAP_ANY;
 
-		d_reader = cudacodec::createVideoReader(Settings.DeviceInfo.device_paths[0], {
-			CAP_PROP_FRAME_WIDTH, Settings.Resolution.width, 
-			CAP_PROP_FRAME_HEIGHT, Settings.Resolution.height, 
-			CAP_PROP_FPS, Settings.Framerate/Settings.FramerateDivider,
-			CAP_PROP_BUFFERSIZE, 1});
+		//d_reader = cudacodec::createVideoReader(Settings.DeviceInfo.device_paths[0], {
+		//	CAP_PROP_FRAME_WIDTH, Settings.Resolution.width, 
+		//	CAP_PROP_FRAME_HEIGHT, Settings.Resolution.height, 
+		//	CAP_PROP_FPS, Settings.Framerate/Settings.FramerateDivider,
+		//	CAP_PROP_BUFFERSIZE, 1});
 
 	}
 	else
