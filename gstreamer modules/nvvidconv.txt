@@ -1,0 +1,113 @@
+Factory Details:
+  Rank                     primary (256)
+  Long-name                NvVidConv Plugin
+  Klass                    Filter/Converter/Video/Scaler
+  Description              Converts video from one colorspace to another & Resizes
+  Author                   amit pandya <apandya@nvidia.com>
+
+Plugin Details:
+  Name                     nvvidconv
+  Description              video Colorspace conversion & scaler
+  Filename                 /usr/lib/aarch64-linux-gnu/gstreamer-1.0/libgstnvvidconv.so
+  Version                  1.2.3
+  License                  Proprietary
+  Source module            gstreamer-nvvconv-plugin
+  Binary package           GStreamer nvvconv Plugin
+  Origin URL               http://nvidia.com/
+
+GObject
+ +----GInitiallyUnowned
+       +----GstObject
+             +----GstElement
+                   +----GstBaseTransform
+                         +----Gstnvvconv
+
+Pad Templates:
+  SRC template: 'src'
+    Availability: Always
+    Capabilities:
+      video/x-raw(memory:NVMM)
+                 format: { (string)I420, (string)I420_10LE, (string)P010_10LE, (string)UYVY, (string)YUY2, (string)YVYU, (string)NV12, (string)NV16, (string)NV24, (string)GRAY8, (string)BGRx, (string)RGBA, (string)Y42B }
+                  width: [ 1, 2147483647 ]
+                 height: [ 1, 2147483647 ]
+              framerate: [ 0/1, 2147483647/1 ]
+      video/x-raw
+                 format: { (string)I420, (string)UYVY, (string)YUY2, (string)YVYU, (string)NV12, (string)NV16, (string)NV24, (string)GRAY8, (string)BGRx, (string)RGBA, (string)Y42B }
+                  width: [ 1, 2147483647 ]
+                 height: [ 1, 2147483647 ]
+              framerate: [ 0/1, 2147483647/1 ]
+  
+  SINK template: 'sink'
+    Availability: Always
+    Capabilities:
+      video/x-raw(memory:NVMM)
+                 format: { (string)I420, (string)I420_10LE, (string)P010_10LE, (string)I420_12LE, (string)UYVY, (string)YUY2, (string)YVYU, (string)NV12, (string)NV16, (string)NV24, (string)GRAY8, (string)BGRx, (string)RGBA, (string)Y42B }
+                  width: [ 1, 2147483647 ]
+                 height: [ 1, 2147483647 ]
+              framerate: [ 0/1, 2147483647/1 ]
+      video/x-raw
+                 format: { (string)I420, (string)UYVY, (string)YUY2, (string)YVYU, (string)NV12, (string)NV16, (string)NV24, (string)P010_10LE, (string)GRAY8, (string)BGRx, (string)RGBA, (string)Y42B }
+                  width: [ 1, 2147483647 ]
+                 height: [ 1, 2147483647 ]
+              framerate: [ 0/1, 2147483647/1 ]
+
+Element has no clocking capabilities.
+Element has no URI handling capabilities.
+
+Pads:
+  SINK: 'sink'
+    Pad Template: 'sink'
+  SRC: 'src'
+    Pad Template: 'src'
+
+Element Properties:
+  name                : The name of the object
+                        flags: readable, writable
+                        String. Default: "nvvconv0"
+  parent              : The parent of the object
+                        flags: readable, writable
+                        Object of type "GstObject"
+  qos                 : Handle Quality-of-Service events
+                        flags: readable, writable
+                        Boolean. Default: false
+  silent              : Produce verbose output ?
+                        flags: readable, writable
+                        Boolean. Default: false
+  flip-method         : video flip methods
+                        flags: readable, writable, controllable
+                        Enum "GstNvVideoFlipMethod" Default: 0, "none"
+                           (0): none             - Identity (no rotation)
+                           (1): counterclockwise - Rotate counter-clockwise 90 degrees
+                           (2): rotate-180       - Rotate 180 degrees
+                           (3): clockwise        - Rotate clockwise 90 degrees
+                           (4): horizontal-flip  - Flip horizontally
+                           (5): upper-right-diagonal - Flip across upper right/lower left diagonal
+                           (6): vertical-flip    - Flip vertically
+                           (7): upper-left-diagonal - Flip across upper left/lower right diagonal
+  output-buffers      : number of output buffers
+                        flags: readable, writable, changeable in NULL, READY, PAUSED or PLAYING state
+                        Unsigned Integer. Range: 1 - 4294967295 Default: 4 
+  interpolation-method: Set interpolation methods
+                        flags: readable, writable, controllable
+                        Enum "GstInterpolationMethod" Default: 0, "Nearest"
+                           (0): Nearest          - Nearest
+                           (1): Bilinear         - Bilinear
+                           (2): 5-Tap            - 5-Tap
+                           (3): 10-Tap           - 10-Tap
+                           (4): Smart            - Smart
+                           (5): Nicest           - Nicest
+  left                : Pixels to crop at left
+                        flags: readable, writable
+                        Integer. Range: 0 - 2147483647 Default: 0 
+  right               : Pixels to crop at right
+                        flags: readable, writable
+                        Integer. Range: 0 - 2147483647 Default: 0 
+  top                 : Pixels to crop at top
+                        flags: readable, writable
+                        Integer. Range: 0 - 2147483647 Default: 0 
+  bottom              : Pixels to crop at bottom
+                        flags: readable, writable
+                        Integer. Range: 0 - 2147483647 Default: 0 
+  bl-output           : Blocklinear output, applicable only for memory:NVMM NV12 format output buffer
+                        flags: readable, writable
+                        Boolean. Default: true
