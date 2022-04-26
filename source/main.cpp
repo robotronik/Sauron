@@ -92,7 +92,7 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "4", "Brio", false);
+	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio", false);
 
 	if (physicalCameras.size() == 0)
 	{
@@ -128,7 +128,7 @@ int main(int argc, char** argv )
 	
 	
 	//hsvtest();
-	CDFRInternalMain(direct);
+	CDFRExternalMain(direct);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

@@ -512,6 +512,13 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 			
 		}
 	}
+	bool invertedFilter = false;
+	if (Filter[0] == '!')
+	{
+		invertedFilter = true;
+		Filter = Filter.substr(1);
+	}
+	
 
     vector<Camera*> detected;
 	for (const auto & device : devices)
@@ -528,7 +535,7 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 		
 		//jpegdec + videoconvert marche
 		//nvdec ! glcolorconvert ! gldownload
-		if (device.device_description.find(Filter) != String::npos)
+		if ((device.device_description.find(Filter) != String::npos) ^ invertedFilter)
 		{
 			CameraSettings settings;
 			settings.Resolution = GetFrameSize();

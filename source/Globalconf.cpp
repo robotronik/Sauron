@@ -35,19 +35,19 @@ Size GetScreenSize()
 
 Size GetFrameSize()
 {
-	return Size(1280,720);
+	//return Size(720,480);
 	return Size(1920,1080);
 }
 
 int GetCaptureFramerate()
 {
-	return 30;
+	//return 30;
 	return 60;
 }
 
 vector<float> GetReductionFactor()
 {
-	return {1};
+	return {2};
 }
 
 vector<Size> GetArucoReductions()
