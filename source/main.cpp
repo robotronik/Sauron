@@ -17,11 +17,8 @@
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRInternal.hpp"
 
-#include "hsvtest.hpp"
 using namespace std;
 using namespace cv;
-
-vector<Camera*> physicalCameras;
 
 
 
@@ -92,9 +89,9 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio", false);
+	vector<CameraSettings> CamSettings = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio", false);
 
-	if (physicalCameras.size() == 0)
+	if (CamSettings.size() == 0)
 	{
 		cerr << "No cameras detected" << endl;
 	}
@@ -104,14 +101,14 @@ int main(int argc, char** argv )
 	{
 		cout << "Starting calibration of camera index" << parser.get<int>("calibrate") <<endl;
 		int camIndex = parser.get<int>("calibrate");
-		if (0<= camIndex && camIndex < physicalCameras.size())
+		if (0<= camIndex && camIndex < CamSettings.size())
 		{
-			docalibration(physicalCameras[camIndex]);
+			docalibration(CamSettings[camIndex]);
 			exit(EXIT_SUCCESS);
 		}
 		else
 		{
-			docalibration(NULL);
+			docalibration(CameraSettings());
 			exit(EXIT_SUCCESS);
 		}
 		
@@ -120,11 +117,6 @@ int main(int argc, char** argv )
 	}
 
 	bool direct = parser.has("direct");
-
-	if (physicalCameras.size() == 0)
-	{
-		//exit(EXIT_FAILURE);
-	}
 	
 	
 	//hsvtest();

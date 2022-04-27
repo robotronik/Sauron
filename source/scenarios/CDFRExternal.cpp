@@ -4,10 +4,10 @@
 
 void CDFRExternalMain(bool direct)
 {
-    vector<Camera*> physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio");
+    vector<CameraSettings> CameraSettings = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
-    StartCameras(physicalCameras);
+    vector<Camera*> physicalCameras = StartCameras<Camera>(CameraSettings);
 
 	cout << "Start grabbing " << physicalCameras.size() << " physical" << endl
 		<< "Press ESC to terminate" << endl;

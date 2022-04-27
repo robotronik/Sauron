@@ -1,3 +1,3 @@
 #include "Camera.hpp"
 
-bool docalibration(Camera* CamToCalib);
+bool docalibration(CameraSettings CamSett);

@@ -3,13 +3,14 @@
 
 void CDFRInternalMain(bool direct)
 {
-    vector<Camera*> physicalCameras = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "", "Brio");
+    vector<CameraSettings> CameraSettings = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
+
+    vector<Camera*> physicalCameras = StartCameras<Camera>(CameraSettings);
 	
 	viz::Viz3d board3d("local robot");
 	BoardViz3D::SetupRobot(board3d);
 
-    StartCameras(physicalCameras);
 
 	cout << "Start grabbing " << physicalCameras.size() << " physical" << endl
 		<< "Press ESC to terminate" << endl;

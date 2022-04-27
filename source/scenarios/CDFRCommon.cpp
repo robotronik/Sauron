@@ -36,6 +36,7 @@ void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::
 			case 1:
 				//Detect aruco
 				cam->Read(BufferIdx);
+				cam->Undistort(BufferIdx);
 				cam->RescaleFrames(BufferIdx);
 				cam->detectMarkers(BufferIdx, dict, params);
 				cam->SolveMarkers(BufferIdx, CamIdx, registry);

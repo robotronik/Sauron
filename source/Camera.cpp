@@ -20,50 +20,6 @@
 
 using namespace std;
 
-bool BufferedFrame::GetCPUFrame(UMat& OutFrame)
-{
-	switch (Status)
-	{
-	case CameraStatus::ReadGPU :
-		GPUFrame.download(CPUFrame);
-		Status = CameraStatus::ReadBoth;
-	case CameraStatus::ReadCPU :
-	case CameraStatus::ReadBoth :
-		OutFrame = CPUFrame;
-		return true;
-	default:
-		return false;
-		break;
-	}
-}
-
-bool BufferedFrame::GetGPUFrame(cuda::GpuMat& OutFrame)
-{
-	switch (Status)
-	{
-	case CameraStatus::ReadCPU :
-		GPUFrame.upload(CPUFrame);
-		Status = CameraStatus::ReadBoth;
-	case CameraStatus::ReadGPU :
-	case CameraStatus::ReadBoth :
-		OutFrame = GPUFrame;
-		return true;
-	default:
-		return false;
-		break;
-	}
-}
-
-bool BufferedFrame::GetRescaledFrame(int index, UMat& OutFrame)
-{
-	if (0 <= index && index < rescaledFrames.size())
-	{
-		OutFrame = rescaledFrames[index];
-		return true;
-	}
-	return false;
-}
-
 CameraSettings Camera::GetCameraSettings()
 {
 	return Settings;
@@ -80,7 +36,7 @@ bool Camera::SetCameraSetting(CameraSettings InSettings)
 	return true;
 }
 
-CameraStatus Camera::GetStatus(int BufferIndex)
+BufferStatus Camera::GetStatus(int BufferIndex)
 {
 	return FrameBuffer[BufferIndex].Status;
 }
@@ -203,12 +159,12 @@ bool Camera::Grab(int BufferIndex)
 	}
 	if (grabsuccess)
 	{
-		FrameBuffer[BufferIndex].Status = (Settings.StartType == CameraStartType::CUDA) ? CameraStatus::GrabbedGPU : CameraStatus::GrabbedCPU;
+		FrameBuffer[BufferIndex].Status.HasGrabbed = true;
 	}
 	else
 	{
 		cerr << "Failed to grab frame for camera " << Settings.DeviceInfo.device_description << " with buffer " << BufferIndex <<endl;
-		FrameBuffer[BufferIndex].Status = CameraStatus::None;
+		FrameBuffer[BufferIndex].Status = BufferStatus();
 	}
 	
 	return grabsuccess;
@@ -224,41 +180,50 @@ bool Camera::Read(int BufferIndex)
 	bool ReadSuccess = false;
 	if (Settings.StartType == CameraStartType::CUDA)
 	{
-		if (buff.Status == CameraStatus::GrabbedGPU)
+		if (buff.Status.HasGrabbed)
 		{
-			ReadSuccess = d_reader->retrieve(buff.GPUFrame);
+			ReadSuccess = d_reader->retrieve(buff.FrameRaw.GPUFrame);
 		}
 		else
 		{
-			ReadSuccess = d_reader->nextFrame(buff.GPUFrame);
+			ReadSuccess = d_reader->nextFrame(buff.FrameRaw.GPUFrame);
 		}
+		buff.FrameRaw.HasGPU = ReadSuccess;
 	}
 	else
 	{
-		if (buff.Status == CameraStatus::GrabbedCPU)
+		if (buff.Status.HasGrabbed)
 		{
-			ReadSuccess = feed->retrieve(buff.CPUFrame);
+			ReadSuccess = feed->retrieve(buff.FrameRaw.CPUFrame);
 		}
 		else
 		{
-			ReadSuccess = feed->read(buff.CPUFrame);
+			ReadSuccess = feed->read(buff.FrameRaw.CPUFrame);
 		}
+		buff.FrameRaw.HasCPU = ReadSuccess;
 	}
 	if (ReadSuccess)
 	{
-		buff.Status = (Settings.StartType == CameraStartType::CUDA) ? CameraStatus::ReadGPU : CameraStatus::ReadCPU;
-		buff.HasAruco = false;
-		buff.HasViews = false;
+		buff.Status = BufferStatus();
+		buff.Status.HasCaptured = true;
 	}
 	else
 	{
 		cerr << "Failed to read frame for camera " << Settings.DeviceInfo.device_description << " with buffer " << BufferIndex <<endl;
-		buff.Status = CameraStatus::None;
+		buff.Status = BufferStatus();
+		buff.FrameRaw = MixedFrame();
+		buff.FrameUndistorted = MixedFrame();
 		buff.rescaledFrames.resize(0);
 		return false;
 	}
 	
 	return true;
+}
+
+void Camera::Undistort(int BufferIdx)
+{
+	BufferedFrame& buff = FrameBuffer[BufferIdx];
+	buff.FrameUndistorted = buff.FrameRaw;
 }
 
 void Camera::RescaleFrames(int BufferIdx)
@@ -270,11 +235,11 @@ void Camera::RescaleFrames(int BufferIdx)
 	cuda::GpuMat GPUFrame; UMat CPUFrame;
 	if (GPUconvert)
 	{
-		buff.GetGPUFrame(GPUFrame);
+		buff.FrameUndistorted.GetGPUFrame(GPUFrame);
 	}
 	else
 	{
-		buff.GetCPUFrame(CPUFrame);
+		buff.FrameUndistorted.GetCPUFrame(CPUFrame);
 		
 	}
 	
@@ -285,27 +250,30 @@ void Camera::RescaleFrames(int BufferIdx)
 		{
 			cuda::GpuMat rescaled, gray;
 			cuda::resize(GPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
-			cuda::cvtColor(rescaled, gray, COLOR_BGR2GRAY);
-			gray.download(buff.rescaledFrames[i]);
+			cuda::cvtColor(rescaled, buff.rescaledFrames[i].GPUFrame, COLOR_BGR2GRAY);
+			buff.rescaledFrames[i].HasGPU = true;
+			buff.rescaledFrames[i].HasCPU = false;
 		}
 		else
 		{
 			UMat rescaled, hsv;
 			resize(CPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
-			cvtColor(rescaled, buff.rescaledFrames[i], COLOR_BGR2GRAY);
+			cvtColor(rescaled, buff.rescaledFrames[i].CPUFrame, COLOR_BGR2GRAY);
+			buff.rescaledFrames[i].HasCPU = true;
+			buff.rescaledFrames[i].HasGPU = false;
 		}
 	}
 }
 
 void Camera::GetFrame(int BufferIndex, UMat& OutFrame)
 {
-	FrameBuffer[BufferIndex].GetCPUFrame(OutFrame);
+	FrameBuffer[BufferIndex].FrameRaw.GetCPUFrame(OutFrame);
 }
 
 void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
 	UMat frame;
-	if (!FrameBuffer[BufferIndex].GetCPUFrame(frame))
+	if (!FrameBuffer[BufferIndex].FrameUndistorted.GetCPUFrame(frame))
 	{
 		return;
 	}
@@ -316,7 +284,7 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 
 	resize(frame, OutFrame, Size(), fz, fz, INTER_AREA);
 	//cout << "Resize OK" <<endl;
-	if (FrameBuffer[BufferIndex].HasAruco)
+	if (FrameBuffer[BufferIndex].Status.HasAruco)
 	{
 		vector<vector<Point2f>> raruco;
 		for (int i = 0; i < FrameBuffer[BufferIndex].markerCorners.size(); i++)
@@ -369,11 +337,13 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 		{
 			vector<vector<Point2f>> corners;
 			vector<int>& IDs = AllIDs[i];
+			MixedFrame frameM;
 			UMat frame;
-			if (!buff.GetRescaledFrame(i, frame))
+			if (!buff.GetRescaledFrame(i, frameM))
 			{
 				continue;
 			}
+			frameM.GetCPUFrame(frame);
 			aruco::detectMarkers(frame, dict, corners, IDs, params);
 
 			//cout << "Height " << i << " found " << corners.size() << " arucos" << endl;
@@ -411,7 +381,7 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 	else
 	{
 		UMat framebase, framegray;
-		if (!buff.GetCPUFrame(framebase))
+		if (!buff.FrameUndistorted.GetCPUFrame(framebase))
 		{
 			return;
 		}
@@ -462,12 +432,12 @@ void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aru
 	}
 	
 	
-	buff.HasAruco = true;
+	buff.Status.HasAruco = true;
 }
 
 bool Camera::GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners)
 {
-	if (!FrameBuffer[BufferIndex].HasAruco)
+	if (!FrameBuffer[BufferIndex].Status.HasAruco)
 	{
 		return false;
 	}
@@ -479,7 +449,7 @@ bool Camera::GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vecto
 void Camera::SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
-	if (!buff.HasAruco)
+	if (!buff.Status.HasAruco)
 	{
 		return;
 	}
@@ -490,7 +460,7 @@ void Camera::SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registr
 		Affine3d TagTransform = GetTagTransform(sideLength, buff.markerCorners[i], this);
 		buff.markerViews[i] = CameraView(CameraIdx, buff.markerIDs[i], TagTransform);
 	}
-	buff.HasViews = true;
+	buff.Status.HasViews = true;
 }
 
 int Camera::GetCameraViewsSize(int BufferIndex)
@@ -500,7 +470,7 @@ int Camera::GetCameraViewsSize(int BufferIndex)
 
 bool Camera::GetCameraViews(int BufferIndex, vector<CameraView>& views)
 {
-	if (!FrameBuffer[BufferIndex].HasViews)
+	if (!FrameBuffer[BufferIndex].Status.HasViews)
 	{
 		return false;
 	}
@@ -508,7 +478,7 @@ bool Camera::GetCameraViews(int BufferIndex, vector<CameraView>& views)
 	return true;
 }
 
-vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile, bool silent)
+vector<CameraSettings> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile, bool silent)
 {
 	vector<v4l2::devices::DEVICE_INFO> devices;
 
@@ -535,7 +505,7 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 	}
 	
 
-    vector<Camera*> detected;
+    vector<CameraSettings> detected;
 	for (const auto & device : devices)
 	{
 		//v4l2-ctl --list-formats-ext
@@ -564,23 +534,10 @@ vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String C
 			settings.StartPath = "";
 			settings.ApiID = -1;
 
-			Camera* cam = new Camera(settings);
-			readCameraParameters(String("../calibration/") + CalibrationFile, cam->CameraMatrix, cam->distanceCoeffs, settings.Resolution);
+			readCameraParameters(String("../calibration/") + CalibrationFile, settings.CameraMatrix, settings.distanceCoeffs, settings.Resolution);
 			//cout << "Camera matrix : " << cam->CameraMatrix << " / Distance coeffs : " << cam->distanceCoeffs << endl;
-			detected.push_back(cam);
+			detected.push_back(settings);
 		}
 	}
     return detected;
-}
-
-bool StartCameras(vector<Camera*> Cameras)
-{
-	for (int i = 0; i < Cameras.size(); i++)
-	{
-		if(!Cameras[i]->StartFeed())
-		{
-			cerr << "ERROR! Unable to open camera " << Cameras[i]->GetCameraSettings().DeviceInfo.device_description;
-		}
-	}
-	return true;
 }

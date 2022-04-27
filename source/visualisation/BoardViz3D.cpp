@@ -67,12 +67,12 @@ void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferId
 	if (BufferIdx != -1 && false)
 	{
 		UMat Frame;Camera->GetOutputFrame(BufferIdx, Frame, Size(640,480));
-		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), Frame, 1.0, color);
+		CamWidget = viz::WCameraPosition((Matx33d)(Camera->GetCameraSettings().CameraMatrix), Frame, 1.0, color);
 	}
 	else
 	{
 		//CamWidget = viz::WCameraPosition(Vec2d(Camera->CameraMatrix.at<double>(0,0), Camera->CameraMatrix.at<double>(1,1)), 0.2, color);
-		CamWidget = viz::WCameraPosition((Matx33d)(Camera->CameraMatrix), 0.2, color);
+		CamWidget = viz::WCameraPosition((Matx33d)(Camera->GetCameraSettings().CameraMatrix), 0.2, color);
 	}
 	Visualizer.showWidget(Camera->GetCameraSettings().DeviceInfo.device_paths[0], CamWidget, Pose);
 	Visualizer.showWidget(Camera->GetCameraSettings().DeviceInfo.device_paths[0] + "axis", viz::WCoordinateSystem(0.1), Pose);

@@ -13,87 +13,11 @@
 
 #include "data/OutputImage.hpp"
 #include "data/CameraView.hpp"
+#include "data/ImageTypes.hpp"
 
 using namespace std;
 using namespace cv;
 using namespace v4l2::devices;
-
-enum class CameraStatus
-{
-	None,
-	GrabbedCPU,
-	GrabbedGPU,
-	ReadCPU,
-	ReadGPU,
-	ReadBoth
-};
-
-enum class CameraStartType
-{
-	ANY,
-	GSTREAMER_CPU,
-	GSTREAMER_NVDEC,
-	GSTREAMER_JETSON,
-	GSTREAMER_NVARGUS,
-	CUDA
-};
-
-struct CameraSettings
-{
-	//which api should be used ?
-	CameraStartType StartType;
-
-	//General data
-	//Resolution of the frame to be captured
-	Size Resolution;
-	//Framerate
-	uint8_t Framerate;
-	//Framerate divider : you can set 60fps but only sample 1 of 2 frames to have less latency and less computation
-	uint8_t FramerateDivider;
-	//Size of the camera frame buffer, to pipeline opencv computations
-	uint8_t BufferSize;
-	//data from v4l2 about the device
-	DEVICE_INFO DeviceInfo;
-
-	//Initialisation string
-	String StartPath;
-	//API to be used for opening
-	int ApiID;
-};
-
-
-class ObjectTracker;
-
-class BufferedFrame
-{
-
-protected:
-	UMat CPUFrame;
-	cuda::GpuMat GPUFrame;
-	CameraStatus Status;
-	bool HasAruco;
-	bool HasViews;
-
-	vector<UMat> rescaledFrames;
-
-	vector<int> markerIDs;
-	vector<vector<Point2f>> markerCorners;
-	vector<CameraView> markerViews;
-
-public:
-
-	BufferedFrame()
-		:Status(CameraStatus::None)
-	{}
-
-	bool GetCPUFrame(UMat& OutFrame);
-
-	bool GetGPUFrame(cuda::GpuMat& OutFrame);
-
-	bool GetRescaledFrame(int index, UMat& OutFrame);
-
-friend class Camera;
-};
 
 class Camera : public OutputImage
 {
@@ -116,8 +40,6 @@ private:
 
 public:
 	//calibration
-	Mat CameraMatrix;
-	Mat distanceCoeffs;
 
 public:
 	//status
@@ -153,43 +75,45 @@ public:
 	}
 
 	//Get the settings used to start this camera
-	CameraSettings GetCameraSettings();
+	virtual CameraSettings GetCameraSettings();
 
 	//Set the settings to used for this camera
-	bool SetCameraSetting(CameraSettings InSettings);
+	virtual bool SetCameraSetting(CameraSettings InSettings);
 
 	//Get the status of a buffer (read, aruco'ed, 3D-ed...)
-	CameraStatus GetStatus(int BufferIndex);
+	virtual BufferStatus GetStatus(int BufferIndex);
 
 	//Start the camera
-	bool StartFeed();
+	virtual bool StartFeed();
 
 	//Lock a frame to be capture at this time
 	//This allow for simultaneous capture
-	bool Grab(int BufferIndex);
+	virtual bool Grab(int BufferIndex);
 
 	//Retrieve or read a frame
-	bool Read(int BufferIndex);
+	virtual bool Read(int BufferIndex);
 
 	virtual void GetFrame(int BufferIndex, UMat& frame) override;
 
+	virtual void Undistort(int BufferIdx);
+
 	//Create lower-resolution copies of the frame to be used in aruco detection
-	void RescaleFrames(int BufferIdx);
+	virtual void RescaleFrames(int BufferIdx);
 
 	//detect markers using the lower resolutions and improve accuracy using the higher-resolution image
-	void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
+	virtual void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
 
 	//Gather detected markers in screen space
-	bool GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners);
+	virtual bool GetMarkerData(int BufferIndex, vector<int>& markerIDs, vector<vector<Point2f>>& markerCorners);
 
 	//convert corner pixel location into 3D space relative to camera
 	//Arco tags must be registered into the registry beforehand to have correct depth
-	void SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry);
+	virtual void SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry);
 
-	int GetCameraViewsSize(int BufferIndex);
+	virtual int GetCameraViewsSize(int BufferIndex);
 
 	//Gather detected markers in 3D space relative to the camera
-	bool GetCameraViews(int BufferIndex, vector<CameraView>& views);
+	virtual bool GetCameraViews(int BufferIndex, vector<CameraView>& views);
 
 	//Get frame with marker data and everything for the required resolution
 	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize) override;
@@ -197,6 +121,20 @@ public:
 };
 
 
-vector<Camera*> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile, bool silent = true);
+vector<CameraSettings> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile, bool silent = true);
 
-bool StartCameras(vector<Camera*> Cameras);
+template<class CameraClass>
+vector<CameraClass*> StartCameras(vector<CameraSettings> CameraSettings)
+{
+	vector<CameraClass*> Cameras;
+	for (int i = 0; i < CameraSettings.size(); i++)
+	{
+		Camera* cam = new CameraClass(CameraSettings[i]);
+		Cameras.push_back(cam);
+		if(!Cameras[i]->StartFeed())
+		{
+			cerr << "ERROR! Unable to open camera " << Cameras[i]->GetCameraSettings().DeviceInfo.device_description;
+		}
+	}
+	return Cameras;
+}

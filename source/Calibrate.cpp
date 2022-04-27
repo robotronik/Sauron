@@ -196,8 +196,11 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients)
 	}
 }
 
-bool docalibration(Camera* CamToCalib)
+bool docalibration(CameraSettings CamSett)
 {
+	Camera* CamToCalib = new Camera(CamSett);
+
+	CamToCalib->StartFeed();
 
 	Mat CameraMatrix;
 	Mat distanceCoefficients;
