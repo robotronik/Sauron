@@ -111,16 +111,20 @@ bool Camera::StartFeed()
 	}
 	else
 	{
+		ostringstream sizestream;
+		sizestream << "width=(int)" << Settings.Resolution.width
+				<< ", height=(int)" << Settings.Resolution.height;
 		switch (Settings.StartType)
 		{
 		case CameraStartType::GSTREAMER_NVARGUS:
 			{
-				ostringstream capnamestream;
-				capnamestream << "nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=" << Settings.Resolution.width
-				<< ", height=" << Settings.Resolution.height << ", format=NV12, framerate="
+				Settings.StartPath = "nvarguscamerasrc ! nvvidconv ! videoconvert ! appsink";
+				/*ostringstream capnamestream;
+				capnamestream << "nvarguscamerasrc ! video/x-raw(memory:NVMM), " 
+				<< sizestream.str() << ", framerate=(fraction)"
 				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider 
-				<< "' !  nvvidconv ! 'video/x-raw, format=BGRx' ! videoconvert ! 'video/x-raw, format=BGR' ! appsink";
-				Settings.StartPath = capnamestream.str();
+				<< " !  nvvidconv ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! videoconvert ! appsink";
+				Settings.StartPath = capnamestream.str();*/
 				Settings.ApiID = CAP_GSTREAMER;
 			}
 			break;

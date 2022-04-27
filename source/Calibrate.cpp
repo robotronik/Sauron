@@ -229,6 +229,7 @@ bool docalibration(Camera* CamToCalib)
 	int nextIdx = LastIdx(pathes) +1;
 
 	FrameCounter fps;
+	int failed = 0;
 	while (true)
 	{
 		UMat frame;
@@ -237,6 +238,12 @@ bool docalibration(Camera* CamToCalib)
 		if (!CamToCalib->Read(0))
 		{
 			//cout<< "read fail" <<endl;
+			failed++;
+			if (failed >10)
+			{
+				break;
+			}
+			
 			continue;
 		}
 		CamToCalib->GetFrame(0, frame);

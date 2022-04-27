@@ -1,29 +1,3 @@
-Factory Details:
-  Rank                     none (0)
-  Long-name                Colorspace converter
-  Klass                    Filter/Converter/Video
-  Description              Converts video from one colorspace to another
-  Author                   GStreamer maintainers <gstreamer-devel@lists.freedesktop.org>
-
-Plugin Details:
-  Name                     videoconvert
-  Description              Colorspace conversion
-  Filename                 /usr/lib/aarch64-linux-gnu/gstreamer-1.0/libgstvideoconvert.so
-  Version                  1.14.5
-  License                  LGPL
-  Source module            gst-plugins-base
-  Source release date      2019-05-29
-  Binary package           GStreamer Base Plugins (Ubuntu)
-  Origin URL               https://launchpad.net/distros/ubuntu/+source/gst-plugins-base1.0
-
-GObject
- +----GInitiallyUnowned
-       +----GstObject
-             +----GstElement
-                   +----GstBaseTransform
-                         +----GstVideoFilter
-                               +----GstVideoConvert
-
 Pad Templates:
   SRC template: 'src'
     Availability: Always
