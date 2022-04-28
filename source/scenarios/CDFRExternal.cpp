@@ -60,10 +60,17 @@ void CDFRExternalMain(bool direct)
 	sender.RegisterRobot(robot1);
 	sender.RegisterRobot(robot2);
 
-	ofstream printfile;
-	printfile.open("logpos.csv", ios::out);
+	//ofstream printfile;
+	//printfile.open("logpos.csv", ios::out);
 
-	sender.PrintCSVHeader(printfile);
+	//sender.PrintCSVHeader(printfile);
+
+	vector<OutputImage*> OutputTargets;
+	for (int i = 0; i < physicalCameras.size(); i++)
+	{
+		OutputTargets.push_back(physicalCameras[i]);
+	}
+	//OutputTargets.push_back(board);
 	
 	int lastmarker = 0;
 	for (;;)
@@ -129,12 +136,6 @@ void CDFRExternalMain(bool direct)
 
 		if (direct)
 		{
-			vector<OutputImage*> OutputTargets;
-			for (int i = 0; i < physicalCameras.size(); i++)
-			{
-				OutputTargets.push_back(physicalCameras[i]);
-			}
-			OutputTargets.push_back(board);
 			
 			UMat image = ConcatCameras(PipelineIdx, OutputTargets, OutputTargets.size());
 			//board.GetOutputFrame(0, image, GetFrameSize());
@@ -148,7 +149,7 @@ void CDFRExternalMain(bool direct)
 		viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
 		board3d.showWidget("fps", fpstext);
 		board3d.spinOnce(1, true);
-		sender.PrintCSV(printfile);
+		//sender.PrintCSV(printfile);
 		/*sender.SendPacket();
 		if (bridge->available() > 0)
 		{

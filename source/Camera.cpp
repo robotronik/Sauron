@@ -36,6 +36,13 @@ bool Camera::SetCameraSetting(CameraSettings InSettings)
 	return true;
 }
 
+bool Camera::SetCalibrationSetting(Mat CameraMatrix, Mat DistanceCoefficients)
+{
+	Settings.CameraMatrix = CameraMatrix;
+	Settings.distanceCoeffs = DistanceCoefficients;
+	return true;
+}
+
 BufferStatus Camera::GetStatus(int BufferIndex)
 {
 	return FrameBuffer[BufferIndex].Status;
@@ -178,6 +185,7 @@ bool Camera::Read(int BufferIndex)
 		return false;
 	}
 	bool ReadSuccess = false;
+	buff.FrameRaw.HasCPU = false; buff.FrameRaw.HasGPU = false;
 	if (Settings.StartType == CameraStartType::CUDA)
 	{
 		if (buff.Status.HasGrabbed)
@@ -220,10 +228,25 @@ bool Camera::Read(int BufferIndex)
 	return true;
 }
 
+bool Camera::InjectImage(int BufferIndex, UMat& frame)
+{
+	BufferedFrame& buff = FrameBuffer[BufferIndex];
+	buff.FrameRaw.CPUFrame = frame;
+	buff.FrameRaw.HasCPU = true;
+	buff.FrameRaw.HasGPU = false;
+	buff.Status = BufferStatus();
+	buff.Status.HasCaptured = true;
+	return true;
+}
+
 void Camera::Undistort(int BufferIdx)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIdx];
-	buff.FrameUndistorted = buff.FrameRaw;
+	buff.FrameRaw.MakeCPUAvailable();
+	undistort(buff.FrameRaw.CPUFrame, buff.FrameUndistorted.CPUFrame, Settings.CameraMatrix, Settings.distanceCoeffs);
+	buff.Status.HasUndistorted = true;
+	buff.FrameUndistorted.HasGPU = false;
+	buff.FrameUndistorted.HasCPU = true;
 }
 
 void Camera::RescaleFrames(int BufferIdx)
@@ -298,6 +321,15 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 		}
 		aruco::drawDetectedMarkers(OutFrame, raruco, FrameBuffer[BufferIndex].markerIDs);
 	}
+}
+
+void Camera::Calibrate(vector<vector<Point3f>> objectPoints,
+	vector<vector<Point2f>> imagePoints, Size imageSize,
+	Mat& cameraMatrix, Mat& distCoeffs,
+	OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs)
+{
+	calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, 
+	CALIB_RATIONAL_MODEL, TermCriteria(TermCriteria::COUNT, 50, DBL_EPSILON));
 }
 
 void Camera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
@@ -534,7 +566,7 @@ vector<CameraSettings> autoDetectCameras(CameraStartType Start, String Filter, S
 			settings.StartPath = "";
 			settings.ApiID = -1;
 
-			readCameraParameters(String("../calibration/") + CalibrationFile, settings.CameraMatrix, settings.distanceCoeffs, settings.Resolution);
+			readCameraParameters(settings.DeviceInfo.device_description/*String("../calibration/") + CalibrationFile*/, settings.CameraMatrix, settings.distanceCoeffs, settings.Resolution);
 			//cout << "Camera matrix : " << cam->CameraMatrix << " / Distance coeffs : " << cam->distanceCoeffs << endl;
 			detected.push_back(settings);
 		}

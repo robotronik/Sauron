@@ -14,6 +14,7 @@
 
 #include "GlobalConf.hpp"
 #include "Camera.hpp"
+#include "FisheyeCamera.hpp"
 #include "data/Calibfile.hpp"
 #include "data/FrameCounter.hpp"
 
@@ -59,7 +60,7 @@ void GetChessboardCorners(vector<UMat> images, vector<vector<Point2f>>& corners,
 	
 }
 
-void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Size BoardSize, float SquareEdgeLength, Mat& CameraMatrix, Mat& DistanceCoefficients, UMat ImageToUndistort)
+void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Size BoardSize, float SquareEdgeLength, Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamToCalibrate)
 {
 	vector<vector<Point3f>> WorldSpaceCornerPoints(1);
 	CreateKnownBoardPos(BoardSize, SquareEdgeLength, WorldSpaceCornerPoints[0]);
@@ -72,16 +73,8 @@ void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Siz
 	CameraMatrix = initCameraMatrix2D(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, FrameSize);
 	cout << "Camera matrix at start : " << CameraMatrix << endl;
 	UMat undistorted;
-	fisheye::calibrate(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, FrameSize, CameraMatrix, DistanceCoefficients, 
-		rVectors, tVectors, fisheye::CALIB_RECOMPUTE_EXTRINSIC | fisheye::CALIB_CHECK_COND | fisheye::CALIB_FIX_SKEW);
-	/*calibrateCamera(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, BoardSize, CameraMatrix, DistanceCoefficients, rVectors, tVectors, 
-		CALIB_FIX_FOCAL_LENGTH | CALIB_USE_INTRINSIC_GUESS, TermCriteria(TermCriteria::COUNT, 4, DBL_EPSILON));*/
-	Mat map1, map2;
-	fisheye::initUndistortRectifyMap(CameraMatrix, DistanceCoefficients, Mat::eye(3,3, CV_64F), CameraMatrix, FrameSize, CV_16SC2, map1, map2);
-	remap(ImageToUndistort, undistorted, map1, map2, INTER_LINEAR);
-	//undistort(ImageToUndistort, undistorted, CameraMatrix, DistanceCoefficients);
-	imshow(CalibWindowName, undistorted);
-	waitKey(0);
+	CamToCalibrate->Calibrate(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, FrameSize, CameraMatrix, DistanceCoefficients, 
+		rVectors, tVectors);
 }
 
 vector<String> CalibrationImages()
@@ -107,7 +100,7 @@ int LastIdx(vector<String> Pathes)
 	return next;
 }
 
-Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients)
+Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamToCalibrate)
 {
 	vector<String> pathes = CalibrationImages();
 	size_t numpathes = pathes.size();
@@ -176,7 +169,7 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients)
 	if (sizes.size() == 1)
 	{
 		UMat image = imread(pathes[0], IMREAD_COLOR).getUMat(AccessFlag::ACCESS_READ);
-		CameraCalibration(savedPoints, CheckerSize, CalibrationSquareEdge, CameraMatrix, DistanceCoefficients, image);
+		CameraCalibration(savedPoints, CheckerSize, CalibrationSquareEdge, CameraMatrix, DistanceCoefficients, CamToCalibrate);
 		cout << "Calibration done ! Matrix : " << CameraMatrix << " / Distance Coefficients : " << DistanceCoefficients << endl;
 		return sizes[0];
 	}
@@ -198,29 +191,40 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients)
 
 bool docalibration(CameraSettings CamSett)
 {
-	Camera* CamToCalib = new Camera(CamSett);
+	bool HasCamera = CamSett.IsValid();
 
-	CamToCalib->StartFeed();
+	Camera* CamToCalib = new Camera(CamSett);
+	if (HasCamera)
+	{
+
+		CamToCalib->StartFeed();
+	}
+	
+	
 
 	Mat CameraMatrix;
 	Mat distanceCoefficients;
 
 	bool ShowUndistorted = false;
 	bool AutoCapture = false;
-	float AutoCaptureFramerate = 5;
+	float AutoCaptureFramerate = 2;
 	double AutoCaptureStart;
 	int LastAutoCapture;
 
 	
 	fs::create_directory(TempImgPath);
 
-	bool HasCamera = CamToCalib != NULL;
-
 	if (!HasCamera)
 	{
 		cout << "No camera was found, calibrating from saved images" << endl;
-		Size framesize = ReadAndCalibrate(CameraMatrix, distanceCoefficients);
+		Size framesize = ReadAndCalibrate(CameraMatrix, distanceCoefficients, CamToCalib);
 		writeCameraParameters("NoCam", CameraMatrix, distanceCoefficients, framesize);
+		vector<String> pathes = CalibrationImages();
+		for (int i = 0; i < pathes.size(); i++)
+		{
+
+		}
+		
 		return true;
 	}
 	CamToCalib->StartFeed();
@@ -257,9 +261,9 @@ bool docalibration(CameraSettings CamSett)
 		if (ShowUndistorted)
 		{
 			UMat frameundist;
-			undistort(frame, frameundist, CameraMatrix, distanceCoefficients);
+			CamToCalib->Undistort(0);
 
-			frameundist.copyTo(frame);
+			CamToCalib->GetOutputFrame(0, frame, CamSett.Resolution);
 		}
 
 		switch (character)
@@ -288,7 +292,8 @@ bool docalibration(CameraSettings CamSett)
 			}
 			else
 			{
-				ReadAndCalibrate(CameraMatrix, distanceCoefficients);
+				ReadAndCalibrate(CameraMatrix, distanceCoefficients, CamToCalib);
+				CamToCalib->SetCalibrationSetting(CameraMatrix, distanceCoefficients);
 				writeCameraParameters(CamToCalib->GetCameraSettings().DeviceInfo.device_description, CameraMatrix, distanceCoefficients, CamToCalib->GetCameraSettings().Resolution);
 				//distanceCoefficients = Mat::zeros(8, 1, CV_64F);
 				ShowUndistorted = true;

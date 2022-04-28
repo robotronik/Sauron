@@ -34,7 +34,7 @@ private:
 
 	//capture using cuda
 	Ptr<cudacodec::VideoReader> d_reader;
-
+protected:
 	//frame buffer, increases fps but also latency
 	vector<BufferedFrame> FrameBuffer;
 
@@ -80,6 +80,8 @@ public:
 	//Set the settings to used for this camera
 	virtual bool SetCameraSetting(CameraSettings InSettings);
 
+	virtual bool SetCalibrationSetting(Mat CameraMatrix, Mat DistanceCoefficients);
+
 	//Get the status of a buffer (read, aruco'ed, 3D-ed...)
 	virtual BufferStatus GetStatus(int BufferIndex);
 
@@ -92,6 +94,8 @@ public:
 
 	//Retrieve or read a frame
 	virtual bool Read(int BufferIndex);
+
+	virtual bool InjectImage(int BufferIndex, UMat& frame);
 
 	virtual void GetFrame(int BufferIndex, UMat& frame) override;
 
@@ -117,6 +121,11 @@ public:
 
 	//Get frame with marker data and everything for the required resolution
 	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize) override;
+
+	virtual void Calibrate(vector<vector<Point3f>> objectPoints,
+	vector<vector<Point2f>> imagePoints, Size imageSize,
+	Mat& cameraMatrix, Mat& distCoeffs,
+	OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
 
 };
 

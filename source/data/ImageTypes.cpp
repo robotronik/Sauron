@@ -1,5 +1,10 @@
 #include "data/ImageTypes.hpp"
 
+bool CameraSettings::IsValid()
+{
+	return Framerate >0 && Resolution.width >0 && Resolution.height >0 && BufferSize > 0 && FramerateDivider > 0;
+}
+
 bool MixedFrame::IsValid()
 {
 	return HasCPU || HasGPU;
@@ -7,7 +12,26 @@ bool MixedFrame::IsValid()
 
 bool MixedFrame::GetCPUFrame(UMat& frame)
 {
+	if (!MakeCPUAvailable())
+	{
+		return false;
+	}
+	frame = CPUFrame;
+	return true;
+}
 
+bool MixedFrame::GetGPUFrame(cuda::GpuMat& frame)
+{
+	if (!MakeGPUAvailable())
+	{
+		return false;
+	}
+	frame = GPUFrame;
+	return true;
+}
+
+bool MixedFrame::MakeCPUAvailable()
+{
 	if (!HasCPU)
 	{
 		if (!HasGPU)
@@ -17,11 +41,10 @@ bool MixedFrame::GetCPUFrame(UMat& frame)
 		GPUFrame.download(CPUFrame);
 		HasCPU = true;
 	}
-	frame = CPUFrame;
 	return true;
 }
 
-bool MixedFrame::GetGPUFrame(cuda::GpuMat& frame)
+bool MixedFrame::MakeGPUAvailable()
 {
 	if (!HasGPU)
 	{
@@ -33,7 +56,6 @@ bool MixedFrame::GetGPUFrame(cuda::GpuMat& frame)
 		GPUFrame.upload(CPUFrame);
 		HasGPU = true;
 	}
-	frame = GPUFrame;
 	return true;
 }
 

@@ -60,11 +60,18 @@ struct CameraSettings
 	Mat CameraMatrix;
 	//Distortion
 	Mat distanceCoeffs;
+
+	CameraSettings()
+	:Resolution(-1,-1), Framerate(0), FramerateDivider(1),
+	BufferSize(0), ApiID(-1)
+	{}
+
+	bool IsValid();
 };
 
 class MixedFrame
 {
-protected:
+public:
 	UMat CPUFrame;
 	cuda::GpuMat GPUFrame;
 	bool HasCPU;
@@ -95,6 +102,11 @@ public:
 
 	bool GetGPUFrame(cuda::GpuMat& frame);
 
+	bool MakeCPUAvailable();
+
+	bool MakeGPUAvailable();
+
+
 friend class Camera;
 };
 
@@ -103,7 +115,7 @@ class ObjectTracker;
 class BufferedFrame
 {
 
-protected:
+public:
 	MixedFrame FrameRaw;
 	MixedFrame FrameUndistorted;
 	BufferStatus Status;
