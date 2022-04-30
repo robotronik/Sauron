@@ -1,4 +1,5 @@
 #include "data/ImageTypes.hpp"
+#include "data/CameraView.hpp"
 
 bool CameraSettings::IsValid()
 {
@@ -8,6 +9,19 @@ bool CameraSettings::IsValid()
 bool MixedFrame::IsValid()
 {
 	return HasCPU || HasGPU;
+}
+
+Size MixedFrame::GetSize()
+{
+	if (HasCPU)
+	{
+		return CPUFrame.size();
+	}
+	if (HasGPU)
+	{
+		return GPUFrame.size();
+	}
+	return Size();
 }
 
 bool MixedFrame::GetCPUFrame(UMat& frame)

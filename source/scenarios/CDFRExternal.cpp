@@ -57,8 +57,8 @@ void CDFRExternalMain(bool direct)
 	tracker.RegisterTrackedObject(robot1);
 	tracker.RegisterTrackedObject(robot2);
 
-	sender.RegisterRobot(robot1);
-	sender.RegisterRobot(robot2);
+	sender.RegisterTrackedObject(robot1);
+	sender.RegisterTrackedObject(robot2);
 
 	//ofstream printfile;
 	//printfile.open("logpos.csv", ios::out);

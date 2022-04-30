@@ -8,6 +8,8 @@
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
 #include <opencv2/core/ocl.hpp>
 
+#include "data/CameraView.hpp"
+
 #include "GlobalConf.hpp"
 #include "Camera.hpp"
 #include "ObjectTracker.hpp"
@@ -116,7 +118,7 @@ int main(int argc, char** argv )
 		
 	}
 
-	bool direct = parser.has("direct");
+	bool direct = parser.has("direct") || true;
 	
 	
 	//hsvtest();

@@ -10,6 +10,7 @@
 #include "Camera.hpp"
 #include "GlobalConf.hpp"
 #include "data/SerialPacket.hpp"
+#include "data/CameraView.hpp"
 #include "visualisation/BoardViz2D.hpp"
 
 ArucoMarker center(0.1, 42, Affine3d(Vec3d::all(0), Vec3d(0, -0.25, 0)));

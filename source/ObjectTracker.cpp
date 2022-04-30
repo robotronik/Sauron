@@ -1,4 +1,5 @@
 #include "ObjectTracker.hpp"
+#include "data/CameraView.hpp"
 
 ObjectTracker::ObjectTracker(/* args */)
 {

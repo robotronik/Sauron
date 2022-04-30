@@ -11,10 +11,12 @@
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
 #include <opencv2/calib3d.hpp>
+#include <opencv2/imgproc.hpp>
 
+#include "thirdparty/serialib.h"
 #include "GlobalConf.hpp"
 #include "Camera.hpp"
-#include "FisheyeCamera.hpp"
+#include "data/CameraView.hpp"
 #include "data/Calibfile.hpp"
 #include "data/FrameCounter.hpp"
 
@@ -294,6 +296,12 @@ bool docalibration(CameraSettings CamSett)
 			{
 				ReadAndCalibrate(CameraMatrix, distanceCoefficients, CamToCalib);
 				CamToCalib->SetCalibrationSetting(CameraMatrix, distanceCoefficients);
+				double apertureWidth = 4.96, apertureHeight = 3.72, fovx, fovy, focalLength, aspectRatio;
+				Point2d principalPoint;
+				calibrationMatrixValues(CameraMatrix, CamToCalib->GetCameraSettings().Resolution, apertureWidth, apertureHeight, fovx, fovy, focalLength, principalPoint, aspectRatio);
+				cout << "Computed camera parameters for sensor of size " << apertureWidth << "x" << apertureHeight <<"mm :" << endl
+				<< " fov:" << fovx << "x" << fovy << "°, focal length=" << focalLength << ", aspect ratio=" << aspectRatio << endl
+				<< "Principal point @ " << principalPoint << endl;
 				writeCameraParameters(CamToCalib->GetCameraSettings().DeviceInfo.device_description, CameraMatrix, distanceCoefficients, CamToCalib->GetCameraSettings().Resolution);
 				//distanceCoefficients = Mat::zeros(8, 1, CV_64F);
 				ShowUndistorted = true;

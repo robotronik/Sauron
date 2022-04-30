@@ -3,8 +3,10 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 
+#include "thirdparty/serialib.h"
 #include "GlobalConf.hpp"
 #include "data/Calibfile.hpp"
+#include "data/CameraView.hpp"
 #include "TrackedObjects/TrackedObject.hpp"
 #include "Camera.hpp"
 #include "math3d.hpp"

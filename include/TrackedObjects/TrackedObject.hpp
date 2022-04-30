@@ -5,11 +5,11 @@
 #include <sstream>  // string to number conversion
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
 #include <opencv2/viz.hpp>
-#include "data/CameraView.hpp"
 
 class Camera;
 struct PositionPacket;
 class BoardViz2D;
+struct CameraView;
 
 using namespace std;
 using namespace cv;

@@ -5,7 +5,6 @@
 #include <fstream>
 #include <iostream>
 #include "thirdparty/serialib.h"
-#include "data/SerialPacket.hpp"
 #include "TrackedObjects/TrackedObject.hpp"
 #include "TrackedObjects/TrackerCube.hpp"
 
@@ -25,8 +24,6 @@ public:
 	~SerialSender();
 
 	void RegisterTrackedObject(TrackedObject* object);
-
-	void RegisterRobot(TrackerCube* tracker);
 
 	void SendPacket();
 

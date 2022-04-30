@@ -3,12 +3,12 @@
 #include <opencv2/core.hpp>
 #include <opencv2/cudacodec.hpp>
 
-#include "data/CameraView.hpp"
 #include "thirdparty/list-devices.hpp"
 
 using namespace cv;
 using namespace std;
-using namespace v4l2::devices;
+
+struct CameraView;
 
 struct BufferStatus
 {
@@ -49,7 +49,7 @@ struct CameraSettings
 	//Size of the camera frame buffer, to pipeline opencv computations
 	uint8_t BufferSize;
 	//data from v4l2 about the device
-	DEVICE_INFO DeviceInfo;
+	v4l2::devices::DEVICE_INFO DeviceInfo;
 
 	//Initialisation string
 	String StartPath;
@@ -97,6 +97,8 @@ public:
 	{}
 
 	bool IsValid();
+
+	Size GetSize();
 
 	bool GetCPUFrame(UMat& frame);
 

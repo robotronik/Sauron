@@ -5,25 +5,24 @@
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
+#include <opencv2/core/affine.hpp>
 
 #include <opencv2/cudacodec.hpp>
-#include <opencv2/cudawarping.hpp>
-
-#include "thirdparty/list-devices.hpp"
 
 #include "data/OutputImage.hpp"
-#include "data/CameraView.hpp"
 #include "data/ImageTypes.hpp"
 
 using namespace std;
 using namespace cv;
-using namespace v4l2::devices;
 
 class Camera : public OutputImage
 {
-private:
+protected:
 	//config
 	CameraSettings Settings;
+
+	bool HasUndistortionMaps;
+	cuda::GpuMat UndistMap1, UndistMap2;
 
 public:
 	Affine3d Location;
@@ -100,6 +99,8 @@ public:
 	virtual void GetFrame(int BufferIndex, UMat& frame) override;
 
 	virtual void Undistort(int BufferIdx);
+
+	virtual void GetFrameUndistorted(int BufferIndex, UMat& frame);
 
 	//Create lower-resolution copies of the frame to be used in aruco detection
 	virtual void RescaleFrames(int BufferIdx);

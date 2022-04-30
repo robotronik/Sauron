@@ -60,8 +60,8 @@ void CDFRInternalMain(bool direct)
 	tracker.RegisterTrackedObject(robot1);
 	tracker.RegisterTrackedObject(robot2);
 
-	sender.RegisterRobot(robot1);
-	sender.RegisterRobot(robot2);
+	sender.RegisterTrackedObject(robot1);
+	sender.RegisterTrackedObject(robot2);
 
 	ofstream printfile;
 	printfile.open("logpos.csv", ios::out);
@@ -98,23 +98,11 @@ void CDFRInternalMain(bool direct)
 				continue;
 			}
 			Affine3d CamTransform = Affine3d::Identity();
-			bool has42 = false;
-			for (int mark = 0; mark < CameraViews.size(); mark++)
+			for (int mark = 0; mark < CameraViews.size(); mark++) //add all views
 			{
-				int markerid = CameraViews[mark].TagID;
-				if (markerid == center.number)
-				{
-					CamTransform = center.Pose * CameraViews[mark].TagTransform.inv();
-					cam->Location = CamTransform;
-					has42 = true;
-				}
 				views[viewsidx++] = CameraViews[mark];
-				
 			}
-			cameras[i] = cam->Location;
-			BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, cam->Location, has42 ? viz::Color::green() : viz::Color::red());
-			//cout << "Camera" << i << " location : " << cam->Location.translation() << endl;
-			
+			cameras[i] = cam->Location; //add camera locations
 		}
 		
 		tracker.SolveLocations(cameras, views);

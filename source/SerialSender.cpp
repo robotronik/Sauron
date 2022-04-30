@@ -1,6 +1,9 @@
 #include "SerialSender.hpp"
+
 #include "math3d.hpp"
 #include "filesystem"
+
+#include "data/SerialPacket.hpp"
 
 namespace fs = std::filesystem;
 
@@ -15,14 +18,9 @@ SerialSender::~SerialSender()
 	delete Bridge;
 }
 
-void RegisterTrackedObject(TrackedObject* object)
+void SerialSender::RegisterTrackedObject(TrackedObject* object)
 {
-
-}
-
-void SerialSender::RegisterRobot(TrackerCube* tracker)
-{
-	SerialObjects.push_back(tracker);
+	SerialObjects.push_back(object);
 }
 
 void SerialSender::SendPacket()
