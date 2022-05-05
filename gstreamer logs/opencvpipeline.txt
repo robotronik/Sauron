@@ -1,0 +1,57 @@
+/dev/gpiochip0 at dq�� is attached to
+/dev/tegra_camera_ctrl
+vi-output, imx219 7-0010 at platform:54080000.vi:0 is attached to
+/dev/video0
+Starting calibration of camera index0
+Opening device at "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, format=(string)NV12, framerate=(fraction)30/1 ! nvvidconv ! video/x-raw, format=(string)BGRx ! videoconvert ! appsink" with API id 1800
+GST_ARGUS: Creating output stream
+CONSUMER: Waiting until producer is connected...
+GST_ARGUS: Available Sensor modes :
+GST_ARGUS: 3264 x 2464 FR = 21.000000 fps Duration = 47619048 ; Analog Gain range min 1.000000, max 10.625000; Exposure Range min 13000, max 683709000;
+
+GST_ARGUS: 3264 x 1848 FR = 28.000001 fps Duration = 35714284 ; Analog Gain range min 1.000000, max 10.625000; Exposure Range min 13000, max 683709000;
+
+GST_ARGUS: 1920 x 1080 FR = 29.999999 fps Duration = 33333334 ; Analog Gain range min 1.000000, max 10.625000; Exposure Range min 13000, max 683709000;
+
+GST_ARGUS: 1640 x 1232 FR = 29.999999 fps Duration = 33333334 ; Analog Gain range min 1.000000, max 10.625000; Exposure Range min 13000, max 683709000;
+
+GST_ARGUS: 1280 x 720 FR = 59.999999 fps Duration = 16666667 ; Analog Gain range min 1.000000, max 10.625000; Exposure Range min 13000, max 683709000;
+
+GST_ARGUS: 1280 x 720 FR = 120.000005 fps Duration = 8333333 ; Analog Gain range min 1.000000, max 10.625000; Exposure Range min 13000, max 683709000;
+
+GST_ARGUS: Running with following settings:
+   Camera index = 0 
+   Camera mode  = 2 
+   Output Stream W = 1920 H = 1080 
+   seconds to Run    = 0 
+   Frame Rate = 29.999999 
+GST_ARGUS: Setup Complete, Starting captures for 0 seconds
+GST_ARGUS: Starting repeat capture requests.
+CONSUMER: Producer has connected; continuing.
+nvbuf_utils: dmabuf_fd -1 mapped entry NOT found
+nvbuf_utils: Can not get HW buffer from FD... Exiting...
+CONSUMER: ERROR OCCURRED
+[ WARN:0@3.407] global /home/robotronik/opencv/modules/videoio/src/cap_gstreamer.cpp (2402) handleMessage OpenCV | GStreamer warning: Embedded video playback halted; module nvarguscamerasrc0 reported: CANCELLED
+GST_ARGUS: Cleaning up
+(Argus) Error Timeout:  (propagating from src/rpc/socket/client/ClientSocketManager.cpp, function send(), line 137)
+(Argus) Error Timeout:  (propagating from src/rpc/socket/client/SocketClientDispatch.cpp, function dispatch(), line 91)
+(Argus) Error Timeout:  (propagating from src/rpc/socket/client/ClientSocketManager.cpp, function send(), line 137)
+(Argus) Error Timeout:  (propagating from src/rpc/socket/client/SocketClientDispatch.cpp, function dispatch(), line 91)
+(Argus) Error Timeout:  (propagating from src/rpc/socket/client/ClientSocketManager.cpp, function send(), line 137)
+(Argus) Error Timeout:  (propagating from src/rpc/socket/client/SocketClientDispatch.cpp, function dispatch(), line 91)
+[ WARN:0@123.651] global /home/robotronik/opencv/modules/videoio/src/cap_gstreamer.cpp (1356) open OpenCV | GStreamer warning: unable to start pipeline
+[ WARN:0@123.651] global /home/robotronik/opencv/modules/videoio/src/cap_gstreamer.cpp (862) isPipelinePlaying OpenCV | GStreamer warning: GStreamer: pipeline have not been created
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+Failed to read frame for camera /dev/gpiochip0 with buffer 0
+(Argus) Error Timeout:  (propagating from src/rpc/socket/client/ClientSocketManager.cpp, function send(), line 137)
+(Argus) Error Timeout:  (propagating from src/rpc/socket/client/SocketClientDispatch.cpp, function dispatch(), line 91)
+(Argus) Error InvalidState: Argus client is exiting with 4 outstanding client threads (in src/rpc/socket/client/ClientSocketManager.cpp, function recvThreadCore(), line 357)
