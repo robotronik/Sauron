@@ -14,6 +14,7 @@ set(MMAPI_DIR "/usr/src/jetson_multimedia_api")
 
 set(ARGUS_DIR "${MMAPI_DIR}/argus")
 set(ARGUS_INCLUDE_DIR "${ARGUS_DIR}/")
+set(ARGUS_UTILS_DIR "${ARGUS_DIR}/samples/utils")
 
 #add rules to find nvmmapi and stuff
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_MODULE_PATH}")
@@ -30,27 +31,76 @@ message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
 find_package(NVMMAPI)
 if(NVMMAPI_FOUND)
-    find_package(Argus REQUIRED)
-    find_package(OpenGLES REQUIRED)
-    find_package(EGL REQUIRED)
-    include_directories(
-        ${ARGUS_INCLUDE_DIR}
-        ${EGL_INCLUDE_DIR}
-        ${OPENGLES_INCLUDE_DIR}
-        ${ARGUS_DIR}/samples/utils)
+	find_package(Argus REQUIRED)
+	find_package(OpenGLES REQUIRED)
+	find_package(EGL REQUIRED)
+	find_package(X11 REQUIRED)
+	find_package(CUDA REQUIRED)
+	find_package(PkgConfig REQUIRED)
+	pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+	pkg_check_modules(Cairo REQUIRED cairo)
+
+	add_compile_definitions(WITH_ARGUS)
+	add_definitions(${GTK3_CFLAGS_OTHER})
+
+	include_directories(
+		${ARGUS_INCLUDE_DIR}
+		${EGL_INCLUDE_DIR}
+		${OPENGLES_INCLUDE_DIR}
+		${ARGUS_UTILS_DIR}
+    	${GTK3_INCLUDE_DIRS})
+
+
+	file(GLOB ARG_UTILS_SOURCES "${ARGUS_UTILS_DIR}/*.cpp")
+	file(GLOB ARG_UTILS_SOURCES_GTK "${ARGUS_UTILS_DIR}/gtk/*.cpp")
+	list(APPEND ARG_UTILS_SOURCES ";${ARG_UTILS_SOURCES_GTK}")
+	#message(STATUS "ArgusUtils Sources found : ${ARG_UTILS_SOURCES}")
+
 endif(NVMMAPI_FOUND)
 
 include_directories(
-    $OPENCV_INCLUDE_DIRS
-    ./include
-    )
+	${OPENCV_INCLUDE_DIRS}
+	${CMAKE_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SOURCES "source/*.cpp")
-add_executable(Robotronikaruco ${SOURCES})
+if(NVMMAPI_FOUND)
+	list(APPEND SOURCES ";${ARG_UTILS_SOURCES}")
+endif(NVMMAPI_FOUND)
+
+if(NVMMAPI_FOUND)
+	cuda_add_executable(Robotronikaruco ${SOURCES})
+else(NVMMAPI_FOUND)
+	add_executable(Robotronikaruco ${SOURCES})
+endif(NVMMAPI_FOUND)
+
+
 
 message(STATUS "Sources found : ${SOURCES}")
 
 set_target_properties(Robotronikaruco PROPERTIES CXX_STANDARD 17)
 
 # Link your application with OpenCV libraries
-target_link_libraries(Robotronikaruco PRIVATE ${OpenCV_LIBS} stdc++fs)
+
+target_link_libraries(Robotronikaruco 
+	${OpenCV_LIBS} 
+	stdc++fs
+)
+
+message(STATUS "Cuda libs : ${CUDA_LIBRARIES}")
+
+if(NVMMAPI_FOUND)
+	target_link_libraries(Robotronikaruco
+		${ARGUS_LIBRARIES}
+		${OPENGLES_LIBRARIES}
+		${EGL_LIBRARIES}
+		pthread
+    	${X11_LIBRARIES}
+    	${GTK3_LIBRARIES}
+        ${NVMMAPI_LIBRARIES}
+        ${CUDA_LIBRARIES}
+		cuda
+	)
+	include(CPack)
+else(NVMMAPI_FOUND)
+	
+endif(NVMMAPI_FOUND)

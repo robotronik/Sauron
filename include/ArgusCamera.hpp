@@ -28,3 +28,5 @@ public:
 	
 	virtual bool Read(int BufferIndex) override;
 };
+
+int ArgusEGLImage(int argc, char** argv);

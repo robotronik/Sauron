@@ -12,6 +12,7 @@
 
 #include "GlobalConf.hpp"
 #include "Camera.hpp"
+#include "ArgusCamera.hpp"
 #include "ObjectTracker.hpp"
 #include "Calibrate.hpp"
 #include "visualisation/BoardViz2D.hpp"
@@ -26,6 +27,7 @@ using namespace cv;
 
 int main(int argc, char** argv )
 {
+	return ArgusEGLImage(argc, argv);
 	const string keys = 
 		"{help h usage ? |      | print this message}"
 		"{direct d       |      | show direct camera output}"
