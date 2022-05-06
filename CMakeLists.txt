@@ -42,6 +42,7 @@ if(NVMMAPI_FOUND)
 
 	add_compile_definitions(WITH_ARGUS)
 	add_definitions(${GTK3_CFLAGS_OTHER})
+	add_definitions(${NVMMAPI_DEFINITIONS})
 
 	include_directories(
 		${ARGUS_INCLUDE_DIR}
@@ -54,6 +55,10 @@ if(NVMMAPI_FOUND)
 	file(GLOB ARG_UTILS_SOURCES "${ARGUS_UTILS_DIR}/*.cpp")
 	file(GLOB ARG_UTILS_SOURCES_GTK "${ARGUS_UTILS_DIR}/gtk/*.cpp")
 	list(APPEND ARG_UTILS_SOURCES ";${ARG_UTILS_SOURCES_GTK}")
+	set(ARG_UTILS_SOURCES
+        ${ARG_UTILS_SOURCES}
+        ${ARGUS_UTILS_DIR}/nvmmapi/NvNativeBuffer.cpp
+        )
 	#message(STATUS "ArgusUtils Sources found : ${ARG_UTILS_SOURCES}")
 
 endif(NVMMAPI_FOUND)
