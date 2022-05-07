@@ -51,6 +51,12 @@ bool Camera::SetCalibrationSetting(Mat CameraMatrix, Mat DistanceCoefficients)
 	return true;
 }
 
+void Camera::GetCameraSettingsAfterUndistortion(Mat& CameraMatrix, Mat& DistanceCoefficients)
+{
+	CameraMatrix = Settings.CameraMatrix;
+	DistanceCoefficients = Mat::zeros(4,1, CV_64F);
+}
+
 BufferStatus Camera::GetStatus(int BufferIndex)
 {
 	return FrameBuffer[BufferIndex].Status;
@@ -266,6 +272,11 @@ void Camera::Undistort(int BufferIdx)
 	}
 	BufferedFrame& buff = FrameBuffer[BufferIdx];
 	
+	if (!buff.Status.HasCaptured)
+	{
+		return;
+	}
+	
 	if (!buff.FrameRaw.MakeGPUAvailable())
 	{
 		return;
@@ -276,11 +287,17 @@ void Camera::Undistort(int BufferIdx)
 	cuda::remap(buff.FrameRaw.GPUFrame, buff.FrameUndistorted.GPUFrame, UndistMap1, UndistMap2, INTER_LINEAR);
 	buff.FrameUndistorted.HasGPU = true;
 	buff.FrameUndistorted.HasCPU = false;
+	buff.Status.HasUndistorted = true;
 }
 
 void Camera::RescaleFrames(int BufferIdx)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIdx];
+	if (!buff.Status.HasUndistorted)
+	{
+		return;
+	}
+	
 	if (!buff.FrameUndistorted.MakeGPUAvailable())
 	{
 		return;
@@ -297,11 +314,16 @@ void Camera::RescaleFrames(int BufferIdx)
 		buff.rescaledFrames[i].HasGPU = true;
 		buff.rescaledFrames[i].HasCPU = false;
 	}
+	buff.Status.HasResized = true;
 }
 
 void Camera::GetFrameUndistorted(int BufferIndex, UMat& frame)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
+	if (!buff.Status.HasUndistorted)
+	{
+		return;
+	}
 	if (!buff.FrameUndistorted.MakeCPUAvailable())
 	{
 		return;
@@ -519,10 +541,12 @@ void Camera::SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registr
 		return;
 	}
 	buff.markerViews.resize(buff.markerIDs.size());
+	Mat CamMatrix, distCoefs;
+	GetCameraSettingsAfterUndistortion(CamMatrix, distCoefs);
 	for (int i = 0; i < buff.markerIDs.size(); i++)
 	{
 		float sideLength = registry->GetArucoSize(buff.markerIDs[i]);
-		Affine3d TagTransform = GetTagTransform(sideLength, buff.markerCorners[i], this);
+		Affine3d TagTransform = GetTagTransform(sideLength, buff.markerCorners[i], CamMatrix, distCoefs);
 		buff.markerViews[i] = CameraView(CameraIdx, buff.markerIDs[i], TagTransform);
 	}
 	buff.Status.HasViews = true;

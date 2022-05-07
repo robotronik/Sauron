@@ -81,6 +81,8 @@ public:
 
 	virtual bool SetCalibrationSetting(Mat CameraMatrix, Mat DistanceCoefficients);
 
+	virtual void GetCameraSettingsAfterUndistortion(Mat& CameraMatrix, Mat& DistanceCoefficients);
+
 	//Get the status of a buffer (read, aruco'ed, 3D-ed...)
 	virtual BufferStatus GetStatus(int BufferIndex);
 

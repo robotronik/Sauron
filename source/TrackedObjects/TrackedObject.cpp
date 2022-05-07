@@ -152,15 +152,23 @@ vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners)
 	return newCorners;
 }
 
-Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Camera* Cam)
+Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients)
 {
 	Mat rvec, tvec;
 	Mat distCoeffs = Mat::zeros(4,1, CV_64F);
 	solvePnP(ArucoMarker::GetObjectPointsNoOffset(SideLength), ReorderMarkerCorners(Corners), 
-		Cam->GetCameraSettings().CameraMatrix, distCoeffs, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
+		CameraMatrix, DistanceCoefficients, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
 	Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
 	Rodrigues(rvec, rotationMatrix);
 	return Affine3d(rotationMatrix, tvec);
+}
+
+Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Camera* Cam)
+{
+	Mat rvec, tvec;
+	Mat CamMatrix, distCoeffs;
+	Cam->GetCameraSettingsAfterUndistortion(CamMatrix, distCoeffs);
+	return GetTagTransform(SideLength, Corners, CamMatrix, distCoeffs);
 }
 
 Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam)

@@ -81,6 +81,8 @@ extern ArucoMarker center;
 
 vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners);
 
+Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients);
+
 Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Camera* Cam);
 
 Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam);

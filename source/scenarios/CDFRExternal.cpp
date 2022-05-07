@@ -2,7 +2,7 @@
 #include "Scenarios/CDFRCommon.hpp"
 #include "visualisation/BoardViz2D.hpp"
 
-void CDFRExternalMain(bool direct)
+void CDFRExternalMain(bool direct, bool v3d)
 {
     vector<CameraSettings> CameraSettings = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
@@ -26,8 +26,12 @@ void CDFRExternalMain(bool direct)
 		BoardViz2D::InitImages();
 	}
 	
-	viz::Viz3d board3d("3D board");
-	BoardViz3D::SetupTerrain(board3d);
+	viz::Viz3d board3d;
+	if (v3d)
+	{
+		board3d = viz::Viz3d("3D board");
+		BoardViz3D::SetupTerrain(board3d);
+	}
 
 	ObjectTracker tracker;
 	tracker.SetArucoSize(center.number, center.sideLength);
@@ -85,7 +89,6 @@ void CDFRExternalMain(bool direct)
 		if (direct)
 		{
 			board->CreateBackground(Size(1500, 1000));
-			board->OverlayImage(board->GetPalet(PaletCouleur::autre), FVector2D<float>(1), 0, FVector2D<float>(0.1));
 		}
 		
 		vector<CameraView> views;
@@ -124,15 +127,26 @@ void CDFRExternalMain(bool direct)
 				
 			}
 			cameras[i] = cam->Location;
-			BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, cam->Location, has42 ? viz::Color::green() : viz::Color::red());
+			if (v3d)
+			{
+				BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, cam->Location, has42 ? viz::Color::green() : viz::Color::red());
+			}
+			
 			//cout << "Camera" << i << " location : " << cam->Location.translation() << endl;
 			
 		}
 		
 		tracker.SolveLocations(cameras, views);
-		tracker.DisplayObjects(&board3d);
 
 		double deltaTime = fps.GetDeltaTime();
+
+		if (v3d)
+		{
+			tracker.DisplayObjects(&board3d);
+			viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
+			board3d.showWidget("fps", fpstext);
+			board3d.spinOnce(1, true);
+		}
 
 		if (direct)
 		{
@@ -146,9 +160,7 @@ void CDFRExternalMain(bool direct)
 		}
 		
 		
-		viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
-		board3d.showWidget("fps", fpstext);
-		board3d.spinOnce(1, true);
+		
 		//sender.PrintCSV(printfile);
 		/*sender.SendPacket();
 		if (bridge->available() > 0)
@@ -162,7 +174,7 @@ void CDFRExternalMain(bool direct)
 		
 		
 		
-		if (waitKey(1) == 27 || board3d.wasStopped())
+		if (waitKey(1) == 27 || (v3d && board3d.wasStopped()))
 		{
 			break;
 		}
