@@ -27,6 +27,12 @@ using namespace cv;
 
 int main(int argc, char** argv )
 {
+	{
+		ArgusCamera* CamTest = new ArgusCamera(CameraSettings());
+		CamTest->StartFeed();
+		//CamTest->Read(0);
+		exit(EXIT_SUCCESS);
+	}
 	return ArgusEGLImage(argc, argv);
 	const string keys = 
 		"{help h usage ? |      | print this message}"

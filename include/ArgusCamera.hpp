@@ -16,13 +16,31 @@
 using namespace std;
 using namespace cv;
 
+
+
+#include <Argus/Argus.h>
+#include <EGLStream/EGLStream.h>
+#include <Argus/BufferStream.h>
+
+using namespace EGLStream;
+using namespace Argus;
+
 class ArgusCamera : public Camera
 {
+	
+    unsigned char *m_OutputBuffer;
+	int m_dmabuf;
+	UniqueObj<FrameConsumer> m_consumer;
+
+	IBufferOutputStream *iEglOutputStream;
+	IFrameConsumer *iFrameConsumer;
 
 public:
-	ArgusCamera(CameraSettings InSettings)
-	:Camera(InSettings)
-	{}
+	ArgusCamera(CameraSettings InSettings);
+
+	~ArgusCamera();
+
+	virtual bool StartFeed() override;
 
 	virtual bool Grab(int BufferIndex) override;
 	
