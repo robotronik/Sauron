@@ -15,19 +15,13 @@ using namespace std;
 
 #ifndef WITH_ARGUS
 
-bool ArgusCamera::Grab(int BufferIdx)
+ArgusCamera::ArgusCamera(CameraSettings InCameraSettings)
+:Camera(InCameraSettings)
 {
-	return false;
 }
 
-bool ArgusCamera::Read(int BufferIdx)
+ArgusCamera::~ArgusCamera()
 {
-	return false;
-}
-
-int ArgusEGLImage(int argc, char** argv)
-{
-	return EXIT_SUCCESS;
 }
 
 #else
