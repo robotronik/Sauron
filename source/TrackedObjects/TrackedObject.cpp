@@ -13,6 +13,22 @@
 #include "data/CameraView.hpp"
 #include "visualisation/BoardViz2D.hpp"
 
+vector<Point3d> ArucoMarker::GetObjectPointsNoOffset(float SideLength)
+{
+	float sql2 = SideLength*0.5;
+	return {
+		Point3d(-sql2, sql2, 0.0),
+		Point3d(sql2, sql2, 0.0),
+		Point3d(sql2, -sql2, 0.0),
+		Point3d(-sql2, -sql2, 0.0)
+	};
+}
+
+vector<Point3d> ArucoMarker::GetObjectPointsNoOffset()
+{
+	return GetObjectPointsNoOffset(sideLength);
+}
+
 ArucoMarker center(0.1, 42, Affine3d(Vec3d::all(0), Vec3d(0, -0.25, 0)));
 
 void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
@@ -115,6 +131,95 @@ Affine3d TrackedObject::ResolveLocation(vector<Affine3d>& Cameras, vector<Camera
 	return Location;
 }
 
+bool TrackedObject::FindTag(int MarkerID, ArucoMarker& Marker, Affine3d& TransformToMarker)
+{
+	for (int i = 0; i < markers.size(); i++)
+	{
+		if (markers[i].number == MarkerID)
+		{
+			Marker = markers[i];
+			TransformToMarker = Affine3d::Identity();
+			return true;
+		}
+	}
+	for (int i = 0; i < childs.size(); i++)
+	{
+		if(childs[i]->FindTag(MarkerID, Marker, TransformToMarker))
+		{
+			TransformToMarker = childs[i]->Location * TransformToMarker;
+			return true;
+		}
+	}
+	return false;
+}
+
+void TrackedObject::GetObjectPoints(vector<vector<Point3d>>& MarkerCorners, vector<int>& MarkerIDs, Affine3d rootTransform, vector<int> filter)
+{
+	for (int i = 0; i < markers.size(); i++)
+	{
+		ArucoMarker& marker = markers[i];
+		//If filter is not empty and the number wasn't found in he filter
+		if (filter.size() != 0 && std::find(filter.begin(), filter.end(), marker.number) == filter.end())
+		{
+			continue;
+		}
+		vector<Point3d> cornerslocal = marker.GetObjectPointsNoOffset();
+		MarkerIDs.push_back(marker.number);
+		vector<Point3d> cornersworld;
+		for (int i = 0; i < cornerslocal.size(); i++)
+		{
+			cornersworld.push_back(rootTransform * (marker.Pose * cornerslocal[i]));
+		}
+		MarkerCorners.push_back(cornersworld);
+	}
+	for (int i = 0; i < childs.size(); i++)
+	{
+		TrackedObject* child = childs[i];
+		child->GetObjectPoints(MarkerCorners, MarkerIDs, rootTransform * child->Location, filter);
+	}
+}
+
+Affine3d TrackedObject::GetObjectTransform(vector<vector<Point2f>> MarkerCorners, vector<int> MarkerIDs, Mat& CameraMatrix, Mat& DistanceCoefficients)
+{
+	if (MarkerIDs.size() <=0)
+	{
+		return Affine3d::Identity();
+	}
+	if (MarkerIDs.size() == 1)
+	{
+		ArucoMarker marker; Affine3d transform;
+		if (!FindTag(MarkerIDs[0], marker, transform))
+		{
+			return Affine3d::Identity();
+		}
+		
+		Affine3d localTransform = GetTagTransform(marker.sideLength, MarkerCorners[0], CameraMatrix, DistanceCoefficients);
+		return transform * marker.Pose * localTransform;
+	}
+	
+	vector<vector<Point3d>> MarkerCorners3D, objectPoints; vector<int> MarkerIDs3D, IDs;
+	vector<vector<Point2f>> imagePoints;
+	GetObjectPoints(MarkerCorners3D, MarkerIDs3D, Affine3d::Identity(), MarkerIDs);
+	for (int index2d = 0; index2d < MarkerIDs.size(); index2d++)
+	{
+		int id = MarkerIDs[index2d];
+		auto foundloc = std::find(MarkerIDs3D.begin(), MarkerIDs3D.end(), id);
+		if (foundloc == MarkerIDs3D.end()) // not found
+		{
+			continue;
+		}
+		int index3d = foundloc - MarkerIDs3D.begin();
+		objectPoints.push_back(MarkerCorners3D[index3d]);
+		imagePoints.push_back(MarkerCorners[index2d]);
+		IDs.push_back(id);
+	}
+	Mat rvec, tvec;
+	solvePnP(objectPoints, imagePoints, CameraMatrix, DistanceCoefficients, rvec, tvec, false, SOLVEPNP_SQPNP);
+	Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
+	Rodrigues(rvec, rotationMatrix);
+	return Affine3d(rotationMatrix, tvec);
+}
+
 void TrackedObject::DisplayRecursive2D(BoardViz2D visualizer, Affine3d RootLocation, String rootName)
 {
 	Affine3d worldlocation = RootLocation * Location;
@@ -146,17 +251,11 @@ vector<PositionPacket> TrackedObject::ToPacket(int BaseNumeral)
 	return {};
 }
 
-vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners)
-{
-	vector<Point2f> newCorners{Corners[0], Corners[1], Corners[2], Corners[3]};
-	return newCorners;
-}
-
 Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients)
 {
 	Mat rvec, tvec;
 	Mat distCoeffs = Mat::zeros(4,1, CV_64F);
-	solvePnP(ArucoMarker::GetObjectPointsNoOffset(SideLength), ReorderMarkerCorners(Corners), 
+	solvePnP(ArucoMarker::GetObjectPointsNoOffset(SideLength), Corners, 
 		CameraMatrix, DistanceCoefficients, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
 	Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
 	Rodrigues(rvec, rotationMatrix);

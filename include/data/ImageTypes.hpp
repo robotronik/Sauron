@@ -10,6 +10,7 @@ using namespace std;
 
 struct CameraView;
 
+//Progression status for a buffer
 struct BufferStatus
 {
     bool HasGrabbed;
@@ -24,6 +25,7 @@ struct BufferStatus
 	{}
 };
 
+//Camera API and configuration selection
 enum class CameraStartType
 {
 	ANY,
@@ -34,6 +36,7 @@ enum class CameraStartType
 	CUDA
 };
 
+//All the settings needed to start a camera, in the palm of your hand...
 struct CameraSettings
 {
 	//which api should be used ?
@@ -69,15 +72,17 @@ struct CameraSettings
 	bool IsValid();
 };
 
+//class that can represent either a GPU-side frame or a CPU-side frame, with helper functions to convert between both sides
 class MixedFrame
 {
+
 public:
 	UMat CPUFrame;
 	cuda::GpuMat GPUFrame;
+	//Is the CPUFrame valid ?
 	bool HasCPU;
+	//Is the GPU frame valid ?
 	bool HasGPU;
-
-public:
 
 	MixedFrame()
 	:HasCPU(false),
@@ -96,20 +101,29 @@ public:
 	HasCPU(false)
 	{}
 
+	//Are any of the frames valid ?
 	bool IsValid();
 
+	//Return the size of the first valid stored frame
 	Size GetSize();
 
+	//Avoid using because it causes copies
+	//Make the frame available on the CPU side then copy into memory
 	bool GetCPUFrame(UMat& frame);
-
+	//Avoid using because it causes copies
+	//Make the frame available on the GPU suide then copy into memory
 	bool GetGPUFrame(cuda::GpuMat& frame);
 
+	//If the frame is available on the CPU do nothing
+	//If it's available on the GPU, download it
+	//If not we're fucked
 	bool MakeCPUAvailable();
 
+	//If the frame is available on the GPU do nothing
+	//If it's available on the CPU, upload it
+	//If not we're fucked
 	bool MakeGPUAvailable();
 
-
-friend class Camera;
 };
 
 class ObjectTracker;

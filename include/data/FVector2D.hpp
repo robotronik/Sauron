@@ -2,6 +2,9 @@
 #include <opencv2/core.hpp>
 #include <math.h>
 
+/*
+ * This class is solely used to replace the Point2d of OpenCV because it's trash for any sort of math
+ */
 template<class T>
 struct FVector2D
 {

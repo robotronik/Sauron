@@ -14,7 +14,9 @@ public:
     // Returns the time elapsed since last call of this function
     double GetDeltaTime();
 
+    //Return time since creation of this object
     double GetAbsoluteTime();
 
-    void AddFpsToImage(cv::InputOutputArray img, double DeltaTime);
+    //helper function to add a fps counter
+    static void AddFpsToImage(cv::InputOutputArray img, double DeltaTime);
 };

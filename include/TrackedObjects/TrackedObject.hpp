@@ -20,16 +20,9 @@ struct ArucoMarker
 	int number;
 	Affine3d Pose;
 
-	static vector<Point3d> GetObjectPointsNoOffset(float SideLength)
-	{
-		float sql2 = SideLength*0.5;
-		return {
-			Point3d(-sql2, sql2, 0.0),
-			Point3d(sql2, sql2, 0.0),
-			Point3d(sql2, -sql2, 0.0),
-			Point3d(-sql2, -sql2, 0.0)
-		};
-	}
+	static vector<Point3d> GetObjectPointsNoOffset(float SideLength);
+
+	vector<Point3d> GetObjectPointsNoOffset();
 
 	ArucoMarker()
 		:sideLength(0.05),
@@ -68,6 +61,15 @@ public:
 
 	virtual Affine3d ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views);
 
+	//Find the parameters and the accumulated transform of the tag in the component and it's childs
+	virtual bool FindTag(int MarkerID, ArucoMarker& Marker, Affine3d& TransformToMarker);
+
+	//Returns all the corners in 3D space of this object and it's childs, with the marker ID. Does not clear the array at start.
+	virtual void GetObjectPoints(vector<vector<Point3d>>& MarkerCorners, vector<int>& MarkerIDs, Affine3d rootTransform = Affine3d::Identity(), vector<int> filter = {});
+
+	//Given corners, solve this object's location using multiple tags at once
+	virtual Affine3d GetObjectTransform(vector<vector<Point2f>> MarkerCorners, vector<int> MarkerIDs, Mat& CameraMatrix, Mat& DistanceCoefficients);
+
 	virtual void DisplayRecursive2D(BoardViz2D visualizer, Affine3d RootLocation, String rootName);
 
 	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
@@ -78,8 +80,6 @@ public:
 
 
 extern ArucoMarker center;
-
-vector<Point2f> ReorderMarkerCorners(vector<Point2f> Corners);
 
 Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients);
 

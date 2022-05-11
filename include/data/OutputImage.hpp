@@ -5,6 +5,7 @@
 using namespace std;
 using namespace cv;
 
+//Father class to represent any object capable of outputting a 2D image
 class OutputImage
 {
 
