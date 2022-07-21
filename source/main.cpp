@@ -11,8 +11,8 @@
 #include "data/CameraView.hpp"
 
 #include "GlobalConf.hpp"
-#include "Camera.hpp"
-#include "ArgusCamera.hpp"
+#include "Cameras/VideoCaptureCamera.hpp"
+#include "Cameras/ArgusCamera.hpp"
 #include "ObjectTracker.hpp"
 #include "Calibrate.hpp"
 #include "visualisation/BoardViz2D.hpp"
@@ -27,13 +27,13 @@ using namespace cv;
 
 int main(int argc, char** argv )
 {
-	{
-		ArgusCamera* CamTest = new ArgusCamera(CameraSettings());
-		CamTest->StartFeed();
-		//CamTest->Read(0);
-		exit(EXIT_SUCCESS);
-	}
-	return ArgusEGLImage(argc, argv);
+	//{
+	//	ArgusCamera* CamTest = new ArgusCamera(CameraSettings());
+	//	CamTest->StartFeed();
+	//	//CamTest->Read(0);
+	//	exit(EXIT_SUCCESS);
+	//}
+	//return ArgusEGLImage(argc, argv);
 	const string keys = 
 		"{help h usage ? |      | print this message}"
 		"{direct d       |      | show direct camera output}"
@@ -99,7 +99,7 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	vector<CameraSettings> CamSettings = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio", false);
+	vector<CameraSettings> CamSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio", false);
 
 	if (CamSettings.size() == 0)
 	{
@@ -126,11 +126,11 @@ int main(int argc, char** argv )
 		
 	}
 
-	bool direct = parser.has("direct") || true;
+	bool direct = parser.has("direct");
 	
 	
 	//hsvtest();
-	CDFRExternalMain(direct);
+	CDFRExternalMain(direct, true);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

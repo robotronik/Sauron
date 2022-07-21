@@ -62,7 +62,8 @@ if(NVMMAPI_FOUND)
         ${ARGUS_UTILS_DIR}/nvmmapi/NvNativeBuffer.cpp
         )
 	#message(STATUS "ArgusUtils Sources found : ${ARG_UTILS_SOURCES}")
-
+else(NVMMAPI_FOUND)
+	message("Jetson Multimedia API was NOT found. If you are on a jetson, this is bad. Otherwise just don't care")
 endif(NVMMAPI_FOUND)
 
 include_directories(

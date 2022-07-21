@@ -26,10 +26,32 @@ void ObjectTracker::RegisterTrackedObject(TrackedObject* object)
 	RegisterArucoRecursive(object, index);
 }
 
-void ObjectTracker::SolveLocations(vector<Affine3d>& Cameras, vector<CameraView>& Tags)
+void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
+{
+	parallel_for_(Range(0, objects.size()), [&](const Range& range)
+	{
+		for(int ObjIdx = range.start; ObjIdx < range.end; ObjIdx++)
+		{
+			float AreaMax = 0;
+			for (int CameraIdx = 0; CameraIdx < CameraData.size(); CameraIdx++)
+			{
+				float AreaThis;
+				Affine3d transformProposed = objects[ObjIdx]->GetObjectTransform(CameraData[CameraIdx], AreaThis);
+				if (AreaThis > AreaMax)
+				{
+					objects[ObjIdx]->Location = transformProposed;
+					AreaMax = AreaThis;
+				}
+			}
+		}
+	});
+}
+
+void ObjectTracker::SolveLocationsTagByTag(vector<Affine3d>& Cameras, vector<CameraView>& Tags)
 {
 	vector<vector<CameraView>> tagsForObject;
 	tagsForObject.resize(objects.size());
+	//assign each view of a tag to an object
 	for (int i = 0; i < Tags.size(); i++)
 	{
 		int ObjectIdx = ArucoMap[Tags[i].TagID];

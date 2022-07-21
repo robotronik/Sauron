@@ -1,7 +1,7 @@
 #include "Scenarios/CDFRCommon.hpp"
 
 
-void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry)
+void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry)
 {
 	int numCams = Cameras.size();
 	vector<uint8_t> BufToCamMap;
@@ -22,7 +22,7 @@ void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, Ptr<aruco::
 		for (int i = range.start; i < range.end; i++)
 		{
 			int CamIdx = BufToCamMap[i];
-			Camera* cam = Cameras[CamIdx];
+			ArucoCamera* cam = Cameras[CamIdx];
 			int Buffer0 = BufIdxMap[i];
 			int BufferIdx = (BufferCaptureIdx + Buffer0) % cam->GetCameraSettings().BufferSize;
 			switch (i/numCams)

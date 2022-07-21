@@ -8,7 +8,7 @@
 #include "data/Calibfile.hpp"
 #include "data/CameraView.hpp"
 #include "TrackedObjects/TrackedObject.hpp"
-#include "Camera.hpp"
+#include "Cameras/Camera.hpp"
 #include "math3d.hpp"
 
 const String assetpath = "../assets/";

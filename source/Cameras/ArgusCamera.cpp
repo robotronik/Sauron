@@ -1,4 +1,4 @@
-#include "ArgusCamera.hpp"
+#include "Cameras/ArgusCamera.hpp"
 
 
 #include <iostream> // for standard I/O
@@ -16,7 +16,7 @@ using namespace std;
 #ifndef WITH_ARGUS
 
 ArgusCamera::ArgusCamera(CameraSettings InCameraSettings)
-:Camera(InCameraSettings)
+:ArucoCamera(InCameraSettings)
 {
 }
 

@@ -1,9 +1,11 @@
 #pragma once
 
+#include <vector>
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 
 using namespace cv;
+using namespace std;
 
 struct CameraView
 {
@@ -23,4 +25,14 @@ struct CameraView
 		TagID(InTagID),
 		TagTransform(InTagTransform)
 	{}
+};
+
+struct CameraArucoData
+{
+	Affine3d CameraTransform;
+	Mat CameraMatrix;
+	Mat DistanceCoefficients;
+	vector<int> TagIDs;
+	vector<vector<Point2f>> TagCorners;
+
 };

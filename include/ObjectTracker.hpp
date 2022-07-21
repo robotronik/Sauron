@@ -17,7 +17,9 @@ public:
 
 	void RegisterTrackedObject(TrackedObject* object);
 
-	void SolveLocations(vector<Affine3d>& Cameras, vector<CameraView>& Tags);
+	void SolveLocationsPerObject(vector<CameraArucoData>& CameraData);
+
+	void SolveLocationsTagByTag(vector<Affine3d>& Cameras, vector<CameraView>& Tags);
 
 	void DisplayObjects(viz::Viz3d* visualizer);
 

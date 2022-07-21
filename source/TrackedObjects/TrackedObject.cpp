@@ -4,10 +4,11 @@
 #include <opencv2/core/affine.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/viz.hpp>
+#include <opencv2/imgproc.hpp>
 
 
 #include "math3d.hpp"
-#include "Camera.hpp"
+#include "Cameras/Camera.hpp"
 #include "GlobalConf.hpp"
 #include "data/SerialPacket.hpp"
 #include "data/CameraView.hpp"
@@ -179,30 +180,17 @@ void TrackedObject::GetObjectPoints(vector<vector<Point3d>>& MarkerCorners, vect
 	}
 }
 
-Affine3d TrackedObject::GetObjectTransform(vector<vector<Point2f>> MarkerCorners, vector<int> MarkerIDs, Mat& CameraMatrix, Mat& DistanceCoefficients)
+Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& Surface)
 {
-	if (MarkerIDs.size() <=0)
-	{
-		return Affine3d::Identity();
-	}
-	if (MarkerIDs.size() == 1)
-	{
-		ArucoMarker marker; Affine3d transform;
-		if (!FindTag(MarkerIDs[0], marker, transform))
-		{
-			return Affine3d::Identity();
-		}
-		
-		Affine3d localTransform = GetTagTransform(marker.sideLength, MarkerCorners[0], CameraMatrix, DistanceCoefficients);
-		return transform * marker.Pose * localTransform;
-	}
-	
-	vector<vector<Point3d>> MarkerCorners3D, objectPoints; vector<int> MarkerIDs3D, IDs;
+	vector<vector<Point3d>> MarkerCorners3D, objectPoints; 
+	vector<int> MarkerIDs3D, IDs;
 	vector<vector<Point2f>> imagePoints;
-	GetObjectPoints(MarkerCorners3D, MarkerIDs3D, Affine3d::Identity(), MarkerIDs);
-	for (int index2d = 0; index2d < MarkerIDs.size(); index2d++)
+	GetObjectPoints(MarkerCorners3D, MarkerIDs3D, Affine3d::Identity(), CameraData.TagIDs);
+	Surface = 0;
+	//Keep only tags which have a 3D counterpart in this object, and link them together
+	for (int index2d = 0; index2d < CameraData.TagIDs.size(); index2d++)
 	{
-		int id = MarkerIDs[index2d];
+		int id = CameraData.TagIDs[index2d];
 		auto foundloc = std::find(MarkerIDs3D.begin(), MarkerIDs3D.end(), id);
 		if (foundloc == MarkerIDs3D.end()) // not found
 		{
@@ -210,14 +198,38 @@ Affine3d TrackedObject::GetObjectTransform(vector<vector<Point2f>> MarkerCorners
 		}
 		int index3d = foundloc - MarkerIDs3D.begin();
 		objectPoints.push_back(MarkerCorners3D[index3d]);
-		imagePoints.push_back(MarkerCorners[index2d]);
+		imagePoints.push_back(CameraData.TagCorners[index2d]);
 		IDs.push_back(id);
+		Surface += contourArea(CameraData.TagCorners[index2d], false);
 	}
-	Mat rvec, tvec;
-	solvePnP(objectPoints, imagePoints, CameraMatrix, DistanceCoefficients, rvec, tvec, false, SOLVEPNP_SQPNP);
-	Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
-	Rodrigues(rvec, rotationMatrix);
-	return Affine3d(rotationMatrix, tvec);
+
+	if (IDs.size() <=0)
+	{
+		Surface = 0;
+		return Affine3d::Identity();
+	}
+	Affine3d localTransform;
+	if (IDs.size() == 1)
+	{
+		ArucoMarker marker; Affine3d transform;
+		if (!FindTag(IDs[0], marker, transform))
+		{
+			return Affine3d::Identity();
+		}
+		localTransform = transform * marker.Pose * GetTagTransform(marker.sideLength, imagePoints[0], CameraData.CameraMatrix, CameraData.DistanceCoefficients);
+	}
+	else
+	{
+		Mat rvec, tvec;
+		solvePnP(objectPoints, imagePoints, CameraData.CameraMatrix, CameraData.DistanceCoefficients, rvec, tvec, false, SOLVEPNP_SQPNP);
+		Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
+		Rodrigues(rvec, rotationMatrix);
+		localTransform = Affine3d(rotationMatrix, tvec);
+	}
+
+	return localTransform;
+
+	
 }
 
 void TrackedObject::DisplayRecursive2D(BoardViz2D visualizer, Affine3d RootLocation, String rootName)
@@ -262,7 +274,7 @@ Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& Ca
 	return Affine3d(rotationMatrix, tvec);
 }
 
-Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Camera* Cam)
+Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, ArucoCamera* Cam)
 {
 	Mat rvec, tvec;
 	Mat CamMatrix, distCoeffs;
@@ -270,7 +282,7 @@ Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Camera*
 	return GetTagTransform(SideLength, Corners, CamMatrix, distCoeffs);
 }
 
-Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam)
+Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, ArucoCamera* Cam)
 {
 	return Tag.Pose * GetTagTransform(Tag.sideLength, Corners, Cam).inv();
 }

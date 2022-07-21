@@ -4,10 +4,10 @@
 
 void CDFRExternalMain(bool direct, bool v3d)
 {
-    vector<CameraSettings> CameraSettings = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio");
+    vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "", "Brio");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
-    vector<Camera*> physicalCameras = StartCameras<Camera>(CameraSettings);
+    vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);
 
 	cout << "Start grabbing " << physicalCameras.size() << " physical" << endl
 		<< "Press ESC to terminate" << endl;
@@ -80,7 +80,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 	for (;;)
 	{
 		fpsPipeline.GetDeltaTime();
-		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters, &tracker);
+		BufferedPipeline(PipelineIdx, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
 		PipelineIdx = (PipelineIdx + 1) % 2;
 		double TimePipeline = fpsPipeline.GetDeltaTime();
 
@@ -92,9 +92,10 @@ void CDFRExternalMain(bool direct, bool v3d)
 		}
 		
 		vector<CameraView> views;
-		vector<Affine3d> cameras;
-		cameras.resize(physicalCameras.size());
-
+		vector<CameraArucoData> arucoDatas;
+		vector<Affine3d> cameraLocations;
+		cameraLocations.resize(physicalCameras.size());
+		arucoDatas.resize(physicalCameras.size());
 		int viewsize = 0;
 		for (int i = 0; i < physicalCameras.size(); i++)
 		{
@@ -106,8 +107,13 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 		for (int i = 0; i < physicalCameras.size(); i++)
 		{
-			Camera* cam = physicalCameras[i];
+			VideoCaptureCamera* cam = physicalCameras[i];
 			vector<CameraView> CameraViews;
+			if (!cam->GetMarkerData(PipelineIdx, arucoDatas[i]))
+			{
+				continue;
+			}
+			
 			if (!cam->GetCameraViews(PipelineIdx, CameraViews))
 			{
 				continue;
@@ -126,7 +132,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 				views[viewsidx++] = CameraViews[mark];
 				
 			}
-			cameras[i] = cam->Location;
+			cameraLocations[i] = cam->Location;
 			if (v3d)
 			{
 				BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, cam->Location, has42 ? viz::Color::green() : viz::Color::red());
@@ -136,7 +142,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			
 		}
 		
-		tracker.SolveLocations(cameras, views);
+		tracker.SolveLocationsTagByTag(cameraLocations, views);
 
 		double deltaTime = fps.GetDeltaTime();
 

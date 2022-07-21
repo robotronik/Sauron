@@ -6,10 +6,11 @@
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
 #include <opencv2/viz.hpp>
 
-class Camera;
+class ArucoCamera;
 struct PositionPacket;
 class BoardViz2D;
 struct CameraView;
+struct CameraArucoData;
 
 using namespace std;
 using namespace cv;
@@ -68,7 +69,7 @@ public:
 	virtual void GetObjectPoints(vector<vector<Point3d>>& MarkerCorners, vector<int>& MarkerIDs, Affine3d rootTransform = Affine3d::Identity(), vector<int> filter = {});
 
 	//Given corners, solve this object's location using multiple tags at once
-	virtual Affine3d GetObjectTransform(vector<vector<Point2f>> MarkerCorners, vector<int> MarkerIDs, Mat& CameraMatrix, Mat& DistanceCoefficients);
+	virtual Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface);
 
 	virtual void DisplayRecursive2D(BoardViz2D visualizer, Affine3d RootLocation, String rootName);
 
@@ -83,8 +84,8 @@ extern ArucoMarker center;
 
 Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients);
 
-Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Camera* Cam);
+Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, ArucoCamera* Cam);
 
-Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, Camera* Cam);
+Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, ArucoCamera* Cam);
 
 void Tracker3DTest();

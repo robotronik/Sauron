@@ -154,5 +154,4 @@ public:
 
 	bool GetRescaledFrame(int index, MixedFrame& OutFrame);
 
-friend class Camera;
 };

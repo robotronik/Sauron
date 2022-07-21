@@ -15,7 +15,8 @@
 
 #include "thirdparty/serialib.h"
 #include "GlobalConf.hpp"
-#include "Camera.hpp"
+#include "Cameras/Camera.hpp"
+#include "Cameras/VideoCaptureCamera.hpp"
 #include "data/CameraView.hpp"
 #include "data/Calibfile.hpp"
 #include "data/FrameCounter.hpp"
@@ -195,10 +196,9 @@ bool docalibration(CameraSettings CamSett)
 {
 	bool HasCamera = CamSett.IsValid();
 
-	Camera* CamToCalib = new Camera(CamSett);
+	Camera* CamToCalib = new VideoCaptureCamera(CamSett);
 	if (HasCamera)
 	{
-
 		CamToCalib->StartFeed();
 	}
 	

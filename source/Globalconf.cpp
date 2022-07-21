@@ -35,7 +35,7 @@ Size GetScreenSize()
 
 Size GetFrameSize()
 {
-	//return Size(1280,720);
+	return Size(1280,720);
 	return Size(1920,1080);
 }
 

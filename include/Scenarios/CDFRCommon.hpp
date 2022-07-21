@@ -9,7 +9,7 @@
 
 #include "GlobalConf.hpp"
 
-#include "Camera.hpp"
+#include "Cameras/VideoCaptureCamera.hpp"
 #include "visualisation/BoardViz3D.hpp"
 #include "TrackedObjects/TrackerCube.hpp"
 #include "ObjectTracker.hpp"
@@ -25,5 +25,5 @@ using namespace cv;
 using namespace std;
 
 
-void BufferedPipeline(int BufferCaptureIdx, vector<Camera*> Cameras, 
+void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, 
     Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry);

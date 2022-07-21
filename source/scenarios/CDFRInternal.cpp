@@ -3,10 +3,10 @@
 
 void CDFRInternalMain(bool direct)
 {
-    vector<CameraSettings> CameraSettings = autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio");
+    vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
-    vector<Camera*> physicalCameras = StartCameras<Camera>(CameraSettings);
+    vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);
 	
 	viz::Viz3d board3d("local robot");
 	BoardViz3D::SetupRobot(board3d);
@@ -71,7 +71,7 @@ void CDFRInternalMain(bool direct)
 	int hassent = 0;
 	for (;;)
 	{
-		BufferedPipeline(PipelineIdx, physicalCameras, dictionary, parameters, &tracker);
+		BufferedPipeline(PipelineIdx, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
 		PipelineIdx = (PipelineIdx + 1) % 2;
 
 		//cout << "Pipeline took " << TimePipeline << "s to run" << endl;
@@ -91,7 +91,7 @@ void CDFRInternalMain(bool direct)
 
 		for (int i = 0; i < physicalCameras.size(); i++)
 		{
-			Camera* cam = physicalCameras[i];
+			VideoCaptureCamera* cam = physicalCameras[i];
 			vector<CameraView> CameraViews;
 			if (!cam->GetCameraViews(PipelineIdx, CameraViews))
 			{
@@ -105,7 +105,7 @@ void CDFRInternalMain(bool direct)
 			cameras[i] = cam->Location; //add camera locations
 		}
 		
-		tracker.SolveLocations(cameras, views);
+		tracker.SolveLocationsTagByTag(cameras, views);
 		tracker.DisplayObjects(&board3d);
 
 		double deltaTime = fps.GetDeltaTime();

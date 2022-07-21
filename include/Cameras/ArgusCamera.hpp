@@ -11,7 +11,7 @@
 
 #include "thirdparty/list-devices.hpp"
 
-#include "Camera.hpp"
+#include "Cameras/Camera.hpp"
 
 using namespace std;
 using namespace cv;
@@ -25,7 +25,7 @@ using namespace cv;
 using namespace EGLStream;
 using namespace Argus;
 #endif
-class ArgusCamera : public Camera
+class ArgusCamera : public ArucoCamera
 {
 #ifdef WITH_ARGUS
     unsigned char *m_OutputBuffer;
