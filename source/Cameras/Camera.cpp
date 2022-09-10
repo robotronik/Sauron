@@ -158,7 +158,9 @@ void Camera::Undistort(int BufferIdx)
 	{
 		cout << "Creating undistort map using Camera Matrix " << endl << setcopy.CameraMatrix << endl 
 		<< " and Distance coeffs " << endl << setcopy.distanceCoeffs << endl;
-		Mat map1, map2;
+		Mat map1, map2, newCamMat;
+		float balance = 0.8;
+		//fisheye::estimateNewCameraMatrixForUndistortRectify(setcopy.CameraMatrix, setcopy.distanceCoeffs, setcopy.Resolution, Mat::eye(3, 3, CV_32F), newCamMat, balance);
 		initUndistortRectifyMap(setcopy.CameraMatrix, setcopy.distanceCoeffs, Mat::eye(3,3, CV_64F), 
 		setcopy.CameraMatrix, setcopy.Resolution, CV_32FC1, map1, map2);
 		UndistMap1.upload(map1);

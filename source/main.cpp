@@ -3,10 +3,11 @@
 #include <sstream>  // string to number conversion
 #include <math.h>
 
+#include <thread>
 #include <filesystem>
 
 #include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
-#include <opencv2/core/ocl.hpp>
+#include <opencv2/core/ocl.hpp> //opencl
 
 #include "data/CameraView.hpp"
 
@@ -59,7 +60,7 @@ int main(int argc, char** argv )
 	
 	
 	cuda::setDevice(0);
-	//ocl::setUseOpenCL(true);
+	ocl::setUseOpenCL(true);
 	if (parser.has("cuda"))
 	{
 		int cuda_devices_number = cuda::getCudaEnabledDeviceCount();
@@ -71,6 +72,7 @@ int main(int argc, char** argv )
 			cout << "CUDA Device(s) Compatible: " << _is_device_compatible << endl;
 			cuda::printShortCudaDeviceInfo(cuda::getDevice());
 		}
+		exit(EXIT_SUCCESS);
 	}
 	if (parser.has("board"))
 	{
@@ -99,7 +101,7 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	vector<CameraSettings> CamSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio", false);
+	vector<CameraSettings> CamSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "", false);
 
 	if (CamSettings.size() == 0)
 	{

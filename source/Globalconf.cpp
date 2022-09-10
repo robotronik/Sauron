@@ -35,13 +35,13 @@ Size GetScreenSize()
 
 Size GetFrameSize()
 {
-	return Size(1280,720);
+	//return Size(1280,720);
 	return Size(1920,1080);
 }
 
 int GetCaptureFramerate()
 {
-	return 30;
+	//return 30;
 	return 60;
 }
 

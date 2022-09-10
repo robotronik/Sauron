@@ -63,13 +63,13 @@ void GetChessboardCorners(vector<UMat> images, vector<vector<Point2f>>& corners,
 	
 }
 
-void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Size BoardSize, float SquareEdgeLength, Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamToCalibrate)
+void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Size BoardSize, Size resolution, float SquareEdgeLength, Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamToCalibrate)
 {
 	vector<vector<Point3f>> WorldSpaceCornerPoints(1);
 	CreateKnownBoardPos(BoardSize, SquareEdgeLength, WorldSpaceCornerPoints[0]);
 	WorldSpaceCornerPoints.resize(CheckerboardImageSpacePoints.size(), WorldSpaceCornerPoints[0]);
 
-	Size FrameSize = GetFrameSize();
+	Size FrameSize = resolution;
 	vector<Mat> rVectors, tVectors;
 	CameraMatrix = Mat::eye(3, 3, CV_64F);
 	DistanceCoefficients = Mat::zeros(Size(4,1), CV_64F);
@@ -172,7 +172,7 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamT
 	if (sizes.size() == 1)
 	{
 		UMat image = imread(pathes[0], IMREAD_COLOR).getUMat(AccessFlag::ACCESS_READ);
-		CameraCalibration(savedPoints, CheckerSize, CalibrationSquareEdge, CameraMatrix, DistanceCoefficients, CamToCalibrate);
+		CameraCalibration(savedPoints, CheckerSize, sizes[0], CalibrationSquareEdge, CameraMatrix, DistanceCoefficients, CamToCalibrate);
 		cout << "Calibration done ! Matrix : " << CameraMatrix << " / Distance Coefficients : " << DistanceCoefficients << endl;
 		return sizes[0];
 	}

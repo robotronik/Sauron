@@ -6,7 +6,7 @@
 
 static bool readCameraParameters(std::string filename, Mat& camMatrix, Mat& distCoeffs, Size Resolution)
 {
-	cv::FileStorage fs(filename, cv::FileStorage::READ);
+	cv::FileStorage fs(filename + ".yaml", cv::FileStorage::READ);
 	if (!fs.isOpened())
 		return false;
 	
@@ -30,7 +30,7 @@ static bool readCameraParameters(std::string filename, Mat& camMatrix, Mat& dist
 
 static void writeCameraParameters(std::string filename, Mat camMatrix, Mat distCoeffs, Size Resolution)
 {
-	cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+	cv::FileStorage fs(filename + ".yaml", cv::FileStorage::WRITE);
 	if (!fs.isOpened())
 		return;
 	Mat1i resmat(1,2);

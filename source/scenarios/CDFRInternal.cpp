@@ -3,7 +3,7 @@
 
 void CDFRInternalMain(bool direct)
 {
-    vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "Brio");
+    vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
     vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);
