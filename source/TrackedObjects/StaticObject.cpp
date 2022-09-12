@@ -7,9 +7,9 @@ StaticObject::StaticObject(String InName)
 {
 	Unique = true;
 	Name = InName;
-    double xamp = 0.43, yamp = 0.925;
-    double size = 0.14;
-    vector<int> numbers = {20, 21, 22, 23};
+    double yamp = 1-0.570, xamp = 1.5-0.575;
+    double size = 0.1;
+    vector<int> numbers = {23, 21, 22, 20};
 	for (int i = 0; i < 4; i++)
 	{
 		Matx33d markerrot = MakeRotationFromXY(Vec3d(0,1,0), Vec3d(-1,0,0));

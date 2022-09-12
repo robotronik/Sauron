@@ -7,7 +7,14 @@ viz::Viz3d board3d;
 
 void spinboard()
 {
-	board3d.spinOnce(1000/GetCaptureFramerate(), true);
+	try
+	{
+		board3d.spinOnce(1000/GetCaptureFramerate(), true);
+	}
+	catch(const std::exception& e)
+	{
+		cerr << "VTK stopped: " << e.what() << endl;
+	}
 }
 
 void CDFRExternalMain(bool direct, bool v3d)
@@ -170,6 +177,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 		if (v3d)
 		{
 			vtkthread->join();
+			if (board3d.wasStopped())
+			{
+				break;
+			}
+			
 			tracker.DisplayObjects(&board3d);
 			viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
 			board3d.showWidget("fps", fpstext);
@@ -208,7 +220,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		
 		
 		
-		if (waitKey(1) == 27 || (v3d && board3d.wasStopped()))
+		if (waitKey(1) == 27)
 		{
 			break;
 		}
