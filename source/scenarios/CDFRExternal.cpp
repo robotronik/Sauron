@@ -1,6 +1,14 @@
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRCommon.hpp"
 #include "visualisation/BoardViz2D.hpp"
+#include <thread>
+
+viz::Viz3d board3d;
+
+void spinboard()
+{
+	board3d.spinOnce(1000/GetCaptureFramerate(), true);
+}
 
 void CDFRExternalMain(bool direct, bool v3d)
 {
@@ -15,18 +23,16 @@ void CDFRExternalMain(bool direct, bool v3d)
 	
 	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
 	FrameCounter fps;
-	FrameCounter fpsRead, fpsDetect;
-	FrameCounter fpsPipeline;
-	int PipelineIdx = 0;
-	BoardViz2D* board = new BoardViz2D(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
+	BoardViz2D* board = nullptr;
 	if (direct)
 	{
+		board = new BoardViz2D(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
         namedWindow("Cameras", WINDOW_NORMAL);
 		setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 		BoardViz2D::InitImages();
 	}
 	
-	viz::Viz3d board3d;
+	
 	if (v3d)
 	{
 		board3d = viz::Viz3d("3D board");
@@ -56,6 +62,8 @@ void CDFRExternalMain(bool direct, bool v3d)
     }
     
 	SerialSender sender(bridge);
+	StaticObject* boardobj = new StaticObject("board");
+	tracker.RegisterTrackedObject(boardobj); 
 	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
 	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot2");
 	tracker.RegisterTrackedObject(robot1);
@@ -75,51 +83,63 @@ void CDFRExternalMain(bool direct, bool v3d)
 		OutputTargets.push_back(physicalCameras[i]);
 	}
 	//OutputTargets.push_back(board);
+
+	thread* vtkthread;
+
+	if (v3d)
+	{
+		vtkthread = new thread(spinboard);
+	}
 	
 	int lastmarker = 0;
 	for (;;)
 	{
-		fpsPipeline.GetDeltaTime();
-		BufferedPipeline(PipelineIdx, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
-		PipelineIdx = (PipelineIdx + 1) % 2;
-		double TimePipeline = fpsPipeline.GetDeltaTime();
-
-		//cout << "Pipeline took " << TimePipeline << "s to run" << endl;
+		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
 
 		if (direct)
 		{
 			board->CreateBackground(Size(1500, 1000));
 		}
-		
+		int NumCams = physicalCameras.size();
 		vector<CameraView> views;
 		vector<CameraArucoData> arucoDatas;
 		vector<Affine3d> cameraLocations;
-		cameraLocations.resize(physicalCameras.size());
-		arucoDatas.resize(physicalCameras.size());
+		vector<bool> CamerasWithPosition;
+		cameraLocations.resize(NumCams);
+		arucoDatas.resize(NumCams);
+		CamerasWithPosition.resize(NumCams);
 		int viewsize = 0;
-		for (int i = 0; i < physicalCameras.size(); i++)
+		for (int i = 0; i < NumCams; i++)
 		{
-			viewsize += physicalCameras[i]->GetCameraViewsSize(PipelineIdx);
+			viewsize += physicalCameras[i]->GetCameraViewsSize(0);
 		}
 		
 		views.resize(viewsize);
 		int viewsidx = 0;
 
-		for (int i = 0; i < physicalCameras.size(); i++)
+		for (int i = 0; i < NumCams; i++)
 		{
 			VideoCaptureCamera* cam = physicalCameras[i];
 			vector<CameraView> CameraViews;
-			if (!cam->GetMarkerData(PipelineIdx, arucoDatas[i]))
+			if (!cam->GetMarkerData(0, arucoDatas[i]))
 			{
 				continue;
 			}
 			
-			if (!cam->GetCameraViews(PipelineIdx, CameraViews))
+			if (!cam->GetCameraViews(0, CameraViews))
 			{
 				continue;
 			}
-			Affine3d CamTransform = Affine3d::Identity();
-			bool has42 = false;
+
+			bool hasposition = false;
+			float surface;
+			Affine3d boardloc = boardobj->GetObjectTransform(arucoDatas[i], surface);
+			if (surface > 0)
+			{
+				cam->Location = boardloc.inv();
+				hasposition = true;
+			}
+			/*
 			for (int mark = 0; mark < CameraViews.size(); mark++)
 			{
 				int markerid = CameraViews[mark].TagID;
@@ -127,37 +147,45 @@ void CDFRExternalMain(bool direct, bool v3d)
 				{
 					CamTransform = center.Pose * CameraViews[mark].TagTransform.inv();
 					cam->Location = CamTransform;
-					has42 = true;
+					hasposition = true;
 				}
 				views[viewsidx++] = CameraViews[mark];
 				
-			}
+			}*/
 			cameraLocations[i] = cam->Location;
+			CamerasWithPosition[i] = hasposition;
 			if (v3d)
 			{
-				BoardViz3D::ShowCamera(board3d, cam, PipelineIdx, cam->Location, has42 ? viz::Color::green() : viz::Color::red());
+				
 			}
 			
 			//cout << "Camera" << i << " location : " << cam->Location.translation() << endl;
 			
 		}
 		
-		tracker.SolveLocationsTagByTag(cameraLocations, views);
+		tracker.SolveLocationsPerObject(arucoDatas);
 
 		double deltaTime = fps.GetDeltaTime();
 
 		if (v3d)
 		{
+			vtkthread->join();
 			tracker.DisplayObjects(&board3d);
 			viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
 			board3d.showWidget("fps", fpstext);
-			board3d.spinOnce(1, true);
+			for (int i = 0; i < NumCams; i++)
+			{
+				BoardViz3D::ShowCamera(board3d, physicalCameras[i], 0, cameraLocations[i], CamerasWithPosition[i] ? viz::Color::green() : viz::Color::red());
+			}
+			delete vtkthread;
+			vtkthread = new thread(spinboard);
+			//board3d.spinOnce(1, true);
 		}
 
 		if (direct)
 		{
 			
-			UMat image = ConcatCameras(PipelineIdx, OutputTargets, OutputTargets.size());
+			UMat image = ConcatCameras(0, OutputTargets, OutputTargets.size());
 			//board.GetOutputFrame(0, image, GetFrameSize());
 			//cout << "Concat OK" <<endl;
 			fps.AddFpsToImage(image, deltaTime);

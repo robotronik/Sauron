@@ -19,6 +19,8 @@ Vec3d MakeVectorOrthogonal(Vec3d base, Vec3d x);
 //makes a rotation matrix from identity to those 3 vectors
 Matx33d MakeRotationFromXYZ(Vec3d X, Vec3d Y, Vec3d Z);
 
+Matx33d MakeRotationFromXY(Vec3d X, Vec3d Y);
+
 Matx33d MakeRotationFromZX(Vec3d Z, Vec3d X);
 
 Matx33d MakeRotationFromZY(Vec3d Z, Vec3d Y);

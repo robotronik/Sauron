@@ -39,7 +39,7 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 				Affine3d transformProposed = objects[ObjIdx]->GetObjectTransform(CameraData[CameraIdx], AreaThis);
 				if (AreaThis > AreaMax)
 				{
-					objects[ObjIdx]->Location = transformProposed;
+					objects[ObjIdx]->SetLocation(transformProposed);
 					AreaMax = AreaThis;
 				}
 			}

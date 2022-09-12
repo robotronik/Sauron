@@ -51,14 +51,19 @@ class TrackedObject
 public:
 	vector<ArucoMarker> markers;
 	vector<TrackedObject*> childs;
-	Affine3d Location;
 	bool Unique;
 	String Name;
+
+protected:
+	Affine3d Location;
 
 public:
 
 	TrackedObject()
 	{};
+
+	virtual bool SetLocation(Affine3d InLocation);
+	virtual Affine3d GetLocation();
 
 	virtual Affine3d ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views);
 

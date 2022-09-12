@@ -40,6 +40,17 @@ void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, S
 	visualizer->showWidget(rootName + "/" + to_string(number) + "/axis", viz::WCoordinateSystem(0.01), Location);
 }
 
+bool TrackedObject::SetLocation(Affine3d InLocation)
+{
+	Location = InLocation;
+	return true;
+}
+
+Affine3d TrackedObject::GetLocation()
+{
+	return Location;
+}
+
 Affine3d TrackedObject::ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views)
 {
 	vector<Affine3d> positions;

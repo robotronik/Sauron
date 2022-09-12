@@ -12,6 +12,7 @@
 #include "Cameras/VideoCaptureCamera.hpp"
 #include "visualisation/BoardViz3D.hpp"
 #include "TrackedObjects/TrackerCube.hpp"
+#include "TrackedObjects/StaticObject.hpp"
 #include "ObjectTracker.hpp"
 
 #include "data/FrameCounter.hpp"
