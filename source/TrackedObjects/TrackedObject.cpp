@@ -225,12 +225,25 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 		{
 			return Affine3d::Identity();
 		}
-		localTransform = transform * marker.Pose * GetTagTransform(marker.sideLength, imagePoints[0], CameraData.CameraMatrix, CameraData.DistanceCoefficients);
+		Affine3d objectToMarker = transform * marker.Pose;
+		Affine3d CameraToMarker = GetTagTransform(marker.sideLength, imagePoints[0], CameraData.CameraMatrix, CameraData.DistanceCoefficients);
+		localTransform = CameraToMarker * objectToMarker.inv();
 	}
 	else
 	{
-		Mat rvec, tvec;
-		solvePnP(objectPoints, imagePoints, CameraData.CameraMatrix, CameraData.DistanceCoefficients, rvec, tvec, false, SOLVEPNP_SQPNP);
+		Mat rvec = Mat::zeros(3, 1, CV_64F), tvec = Mat::zeros(3, 1, CV_64F);
+		vector<Point3d> flatobj;
+		vector<Point2f> flatimg;
+		for (int i = 0; i < IDs.size(); i++)
+		{
+			for (int j = 0; j < 4; j++)
+			{
+				flatobj.push_back(objectPoints[i][j]);
+				flatimg.push_back(imagePoints[i][j]);
+			}
+		}
+		
+		solvePnP(flatobj, flatimg, CameraData.CameraMatrix, CameraData.DistanceCoefficients, rvec, tvec, false, SOLVEPNP_SQPNP);
 		Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
 		Rodrigues(rvec, rotationMatrix);
 		localTransform = Affine3d(rotationMatrix, tvec);

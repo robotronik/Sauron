@@ -53,6 +53,14 @@ Matx33d MakeRotationFromXY(Vec3d X, Vec3d Y)
 	return MakeRotationFromXYZ(X, Y, Z);
 }
 
+Matx33d MakeRotationFromXZ(Vec3d X, Vec3d Z)
+{
+	X = NormaliseVector(X);
+	Z = MakeVectorOrthogonal(X, Z);
+	Vec3d Y = Z.cross(X);
+	return MakeRotationFromXYZ(X, Y, Z);
+}
+
 Matx33d MakeRotationFromZX(Vec3d Z, Vec3d X)
 {
 	Z = NormaliseVector(Z);

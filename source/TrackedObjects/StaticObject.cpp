@@ -10,10 +10,10 @@ StaticObject::StaticObject(bool InRelative, String InName)
 	Name = InName;
     double yamp = 1-0.570, xamp = 1.5-0.575;
     double size = 0.1;
-    vector<int> numbers = {23, 21, 22, 20};
+    vector<int> numbers = {20, 22, 21, 23};
 	for (int i = 0; i < 4; i++)
 	{
-		Matx33d markerrot = MakeRotationFromXY(Vec3d(0,1,0), Vec3d(-1,0,0));
+		Matx33d markerrot = MakeRotationFromZX(Vec3d(0,0,1), Vec3d(0,1,0));
         Vec3d pos = Vec3d(i%2 ? xamp : -xamp, i>=2 ? yamp : -yamp, 0);
 		Affine3d markertransform = Affine3d(markerrot, pos);
 		ArucoMarker marker(size, numbers[i], markertransform);
