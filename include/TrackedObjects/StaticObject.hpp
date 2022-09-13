@@ -5,9 +5,9 @@
 class StaticObject : public TrackedObject
 {
 private:
-
+	bool Relative; //Allow modifying the position of this object ?
 public:
-	StaticObject(String InName);
+	StaticObject(bool InRelative, String InName);
 	~StaticObject();
 
 	virtual bool SetLocation(Affine3d InLocation) override;

@@ -21,7 +21,10 @@ private:
 
 public:
 	SerialSender(serialib* InBridge);
+	SerialSender(bool SelfDetectSerial);
 	~SerialSender();
+
+	serialib* GetBridge();
 
 	void RegisterTrackedObject(TrackedObject* object);
 

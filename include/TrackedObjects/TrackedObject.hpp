@@ -83,10 +83,6 @@ public:
 	virtual vector<PositionPacket> ToPacket(int BaseNumeral);
 };
 
-
-
-extern ArucoMarker center;
-
 Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients);
 
 Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, ArucoCamera* Cam);

@@ -30,8 +30,6 @@ vector<Point3d> ArucoMarker::GetObjectPointsNoOffset()
 	return GetObjectPointsNoOffset(sideLength);
 }
 
-ArucoMarker center(0.1, 42, Affine3d(Vec3d::all(0), Vec3d(0, -0.25, 0)));
-
 void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
 {
 	Affine3d Location = RootLocation * Pose;

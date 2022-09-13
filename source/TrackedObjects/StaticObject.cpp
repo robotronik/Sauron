@@ -3,9 +3,10 @@
 #include "math3d.hpp"
 #include "data/SerialPacket.hpp"
 
-StaticObject::StaticObject(String InName)
+StaticObject::StaticObject(bool InRelative, String InName)
 {
 	Unique = true;
+	Relative = InRelative;
 	Name = InName;
     double yamp = 1-0.570, xamp = 1.5-0.575;
     double size = 0.1;
@@ -30,6 +31,12 @@ StaticObject::~StaticObject()
 
 bool StaticObject::SetLocation(Affine3d InLocation)
 {
+	if (Relative)
+	{
+		Location = InLocation;
+		return true;
+	}
+	
 	Location = Affine3d::Identity();
 	return false;
 }
