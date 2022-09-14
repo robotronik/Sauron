@@ -350,9 +350,9 @@ bool docalibration(CameraSettings CamSett)
 			}
 			putText(frame, "Chessboard found !", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(255,0,0), 4);
 		}
-		
-		fps.AddFpsToImage(frame, fps.GetDeltaTime());
-		imshow(CalibWindowName, frame);
+		UMat resized; resize(frame, resized, GetScreenSize());
+		fps.AddFpsToImage(resized, fps.GetDeltaTime());
+		imshow(CalibWindowName, resized);
 	}
 	return true;
 }

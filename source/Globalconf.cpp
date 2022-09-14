@@ -30,19 +30,19 @@ Ptr<aruco::DetectorParameters> GetArucoParams()
 
 Size GetScreenSize()
 {
-	return Size(1920,1080);
+	return Size(1024,600);
 }
 
 Size GetFrameSize()
 {
 	//return Size(1280,720);
-	return Size(1920,1080);
+	return Size(3264,2464);
 }
 
 int GetCaptureFramerate()
 {
 	//return 30;
-	return 60;
+	return 21;
 }
 
 vector<float> GetReductionFactor()

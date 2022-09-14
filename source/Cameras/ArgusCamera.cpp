@@ -13,7 +13,7 @@
 #include "data/CameraView.hpp"
 using namespace std;
 
-#ifndef WITH_ARGUS
+#if !defined(WITH_ARGUS) || true
 
 ArgusCamera::ArgusCamera(CameraSettings InCameraSettings)
 :ArucoCamera(InCameraSettings)
@@ -58,11 +58,12 @@ ArgusCamera::~ArgusCamera()
 
 bool ArgusCamera::StartFeed()
 {
+	/*
 	//execute
 
 	UniqueObj<OutputStream> captureStream;
 
-	/* Create the CameraProvider object and get the core interface */
+	// Create the CameraProvider object and get the core interface 
 	UniqueObj<CameraProvider> cameraProvider = UniqueObj<CameraProvider>(CameraProvider::create());
 	ICameraProvider *iCameraProvider = interface_cast<ICameraProvider>(cameraProvider);
 	if (!iCameraProvider){
@@ -71,7 +72,7 @@ bool ArgusCamera::StartFeed()
 		//ORIGINATE_ERROR("Failed to create CameraProvider");
 	}
 
-	/* Get the camera devices */
+	// Get the camera devices
 	std::vector<CameraDevice*> cameraDevices;
 	iCameraProvider->getCameraDevices(&cameraDevices);
 	if (cameraDevices.size() == 0){
@@ -100,7 +101,7 @@ bool ArgusCamera::StartFeed()
 	}
 	
 
-	/* Create the capture session using the first device and get the core interface */
+	// Create the capture session using the first device and get the core interface 
 	UniqueObj<CaptureSession> captureSession(iCameraProvider->createCaptureSession(cameraDevices[0]));
 	ICaptureSession *iCaptureSession = interface_cast<ICaptureSession>(captureSession);
 	if (!iCaptureSession){
@@ -146,14 +147,14 @@ bool ArgusCamera::StartFeed()
 
 	cout << "Interfaces have been cast succesfully" << endl;
 
-	/* Wait until the producer has connected to the stream. */
+	// Wait until the producer has connected to the stream. 
     cout << "Waiting until producer is connected..." <<endl;
     if (iEglOutputStream->waitUntilConnected() != STATUS_OK)
 	{
         cerr << "Stream failed to connect." << endl;
 		return false;
 	}
-    cout << "Producer has connected; continuing." << endl;
+    cout << "Producer has connected; continuing." << endl;*/
 
 	return true;
 }
@@ -168,7 +169,7 @@ bool ArgusCamera::Read(int BufferIdx)
 
 	//return false;
 
-	UniqueObj<Frame> frame(iFrameConsumer->acquireFrame());
+	/*UniqueObj<Frame> frame(iFrameConsumer->acquireFrame());
 	IFrame *iFrame = interface_cast<IFrame>(frame);
 	if (!iFrame)
 	{
@@ -197,7 +198,7 @@ bool ArgusCamera::Read(int BufferIdx)
 	NvBuffer2Raw(m_dmabuf, 0, resolution.width(), resolution.height(), buffer);
 
 	imshow("Ca vient de Argus !", bufftarget);
-	waitKey();
+	waitKey();*/
 
 	return true;
 }

@@ -21,10 +21,35 @@
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRInternal.hpp"
 
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <iostream>
+
 using namespace std;
 using namespace cv;
 
 
+
+/*int main(int argc, char** argv )
+{
+	cuda::setDevice(0);
+	ocl::setUseOpenCL(true);
+
+	VideoCapture* cap = new VideoCapture();
+	cout << "Created video capture instance" << endl;
+	cap->open("nvarguscamerasrc ! nvvidconv ! videoconvert ! appsink drop=1", CAP_GSTREAMER);
+	cout << "Opened camera" << endl;
+	int keypressed = 0;
+	do
+	{
+		UMat image;
+		cap->read(image);
+		imshow("ArgusCamera", image);
+		keypressed = waitKey(1);
+	}
+	while (keypressed != 27);
+	return EXIT_SUCCESS;
+}*/
 
 int main(int argc, char** argv )
 {
@@ -101,15 +126,22 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	vector<CameraSettings> CamSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "", false);
-
+	//vector<CameraSettings> CamSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_NVARGUS, "!HD User Facing", "", false);
+	vector<CameraSettings> CamSettings;
+	CameraSettings fakedcam;
+	fakedcam.Resolution = GetFrameSize();
+	fakedcam.Framerate = GetCaptureFramerate();
+	fakedcam.FramerateDivider = 1;
+	fakedcam.BufferSize = 2;
+	fakedcam.StartType = CameraStartType::GSTREAMER_NVARGUS;
+	CamSettings.push_back(fakedcam);
 	if (CamSettings.size() == 0)
 	{
 		cerr << "No cameras detected" << endl;
 	}
 	
 
-	if (parser.has("calibrate"))
+	if (parser.has("calibrate") || true)
 	{
 		cout << "Starting calibration of camera index" << parser.get<int>("calibrate") <<endl;
 		int camIndex = parser.get<int>("calibrate");

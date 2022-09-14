@@ -30,7 +30,7 @@ message(STATUS "    libraries: ${OpenCV_LIBS}")
 message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
 find_package(NVMMAPI)
-if(NVMMAPI_FOUND)
+if(NVMMAPI_FOUND AND FALSE)
 	message("Jetson Multimedia API found, enabling Argus, OpenGL, EGL, X11 and CUDA. WITH_ARGUS defined.")
 	find_package(Argus REQUIRED)
 	find_package(OpenGLES REQUIRED)

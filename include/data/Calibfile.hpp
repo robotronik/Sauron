@@ -8,7 +8,10 @@ static bool readCameraParameters(std::string filename, Mat& camMatrix, Mat& dist
 {
 	cv::FileStorage fs(filename + ".yaml", cv::FileStorage::READ);
 	if (!fs.isOpened())
+	{
+		cerr << "Failed to read camera parameters for " << filename << endl;
 		return false;
+	}
 	
 	Mat1i resmat; Size CalibRes;
 	fs["resolution"] >> resmat;

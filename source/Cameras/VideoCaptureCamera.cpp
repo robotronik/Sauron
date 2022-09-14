@@ -61,13 +61,13 @@ bool VideoCaptureCamera::StartFeed()
 		{
 		case CameraStartType::GSTREAMER_NVARGUS:
 			{
-				Settings.StartPath = "nvarguscamerasrc ! nvvidconv ! videoconvert ! appsink";
-				/*ostringstream capnamestream;
+				//Settings.StartPath = "nvarguscamerasrc ! nvvidconv ! videoconvert ! appsink drop=1";
+				ostringstream capnamestream;
 				capnamestream << "nvarguscamerasrc ! video/x-raw(memory:NVMM), " 
 				<< sizestream.str() << ", framerate=(fraction)"
 				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider 
-				<< " !  nvvidconv ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! videoconvert ! appsink";
-				Settings.StartPath = capnamestream.str();*/
+				<< " !  nvvidconv ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! videoconvert ! appsink drop=1";
+				Settings.StartPath = capnamestream.str();
 				Settings.ApiID = CAP_GSTREAMER;
 			}
 			break;
