@@ -19,7 +19,7 @@ void spinboard()
 
 void CDFRExternalMain(bool direct, bool v3d)
 {
-    vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "");
+    vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_NVARGUS, "!HD User Facing", "");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
     vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);
@@ -142,10 +142,6 @@ void CDFRExternalMain(bool direct, bool v3d)
 			}*/
 			cameraLocations[i] = cam->Location;
 			CamerasWithPosition[i] = hasposition;
-			if (v3d)
-			{
-				
-			}
 			
 			//cout << "Camera" << i << " location : " << cam->Location.translation() << endl;
 			

@@ -286,7 +286,7 @@ void ArucoCamera::RescaleFrames(int BufferIdx)
 	{
 		cuda::GpuMat rescaled;
 		cuda::resize(buff.FrameUndistorted.GPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
-		cuda::cvtColor(rescaled, buff.rescaledFrames[i].GPUFrame, COLOR_BGR2GRAY);
+		cuda::cvtColor(rescaled, buff.rescaledFrames[i].GPUFrame, rescaled.channels() == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
 		buff.rescaledFrames[i].HasGPU = true;
 		buff.rescaledFrames[i].HasCPU = false;
 	}
@@ -378,7 +378,7 @@ void ArucoCamera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Pt
 		{
 			return;
 		}
-		cvtColor(framebase, framegray, COLOR_BGR2GRAY);
+		cvtColor(framebase, framegray, framebase.channels() == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
 
 		//Lower resolution processing to increase accuracy while keeping speed
 		for (int Lower = 0; Lower < nbframes; Lower++)

@@ -46,7 +46,7 @@ UMat ConcatCameras(int BufferIndex, vector<OutputImage*> Cameras, int NumCams)
 				continue;
 			}*/
 			UMat region = concatenated(roi);
-			Cameras[i]->GetOutputFrame(BufferIndex, region, Size(winWidth, winHeight));
+			Cameras[i]->GetOutputFrame(0, region, Size(winWidth, winHeight));
 		}
 	});
 	return concatenated;

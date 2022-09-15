@@ -164,7 +164,7 @@ int main(int argc, char** argv )
 	
 	
 	//hsvtest();
-	CDFRExternalMain(direct, true);
+	CDFRExternalMain(true, false);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;
