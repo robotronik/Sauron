@@ -17,6 +17,7 @@ ObjectTracker::ObjectTracker(/* args */)
 ObjectTracker::~ObjectTracker()
 {
 	delete ArucoMap;
+	delete ArucoSizes;
 }
 
 void ObjectTracker::RegisterTrackedObject(TrackedObject* object)

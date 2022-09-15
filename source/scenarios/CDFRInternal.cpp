@@ -33,28 +33,12 @@ void CDFRInternalMain(bool direct)
 	}
 
 	ObjectTracker tracker;
-	tracker.SetArucoSize(center.number, center.sideLength);
+    
+	SerialSender sender(true);
 
-    vector<String> SerialPorts = SerialSender::autoDetectTTYUSB();
-    for (size_t i = 0; i < SerialPorts.size(); i++)
-    {
-        cout << "Serial port found at " << SerialPorts[i] << endl;
-    }
-    
-	serialib* bridge = new serialib();
-    if (SerialPorts.size() > 0)
-    {
-        int success = bridge->openDevice(SerialPorts[0].c_str(), SerialTransmission::BaudRate);
-        cout << "Result opening serial bridge : " << success << endl;
-		if (success != 1)
-		{
-			cout << "Failed to open the serial bridge, make sure your user is in the dialout group" <<endl;
-			cout << "run this ->   sudo usermod -a -G dialout $USER    <- then restart your PC." << endl;
-		}
-		
-    }
-    
-	SerialSender sender(bridge);
+	StaticObject* boardobj = new StaticObject(true, "board");
+	tracker.RegisterTrackedObject(boardobj);
+
 	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
 	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot2");
 	tracker.RegisterTrackedObject(robot1);
@@ -135,9 +119,9 @@ void CDFRInternalMain(bool direct)
 		}
 		
 		
-		if (bridge->available() > 0)
+		if (sender.GetBridge()->available() > 0)
 		{
-			int out = bridge->readString(rcvbuff, '\n', rcvbuffsize, 1);
+			int out = sender.GetBridge()->readString(rcvbuff, '\n', rcvbuffsize, 1);
 			if (out > 0)
 			{
 				printf("Received from serial : %*s", out, rcvbuff);

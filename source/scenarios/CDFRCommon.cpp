@@ -9,7 +9,7 @@ void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, Ptr<ar
 	for (int i = 0; i < Cameras.size(); i++)
 	{
 		Cameras[i]->Grab(BufferCaptureIdx);
-		for (size_t j = 0; j < Cameras[i]->GetCameraSettings().BufferSize; j++)
+		for (size_t j = 0; j < 1/*Cameras[i]->GetCameraSettings().BufferSize*/; j++)
 		{
 			BufToCamMap.push_back(i);
 			BufIdxMap.push_back(j);
@@ -25,27 +25,12 @@ void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, Ptr<ar
 			ArucoCamera* cam = Cameras[CamIdx];
 			int Buffer0 = BufIdxMap[i];
 			int BufferIdx = (BufferCaptureIdx + Buffer0) % cam->GetCameraSettings().BufferSize;
-			switch (i/numCams)
-			{
-			case 0:
-				// read
-				
-				
-				break;
-			
-			case 1:
-				//Detect aruco
-				cam->Read(BufferIdx);
-				cam->Undistort(BufferIdx);
-				cam->RescaleFrames(BufferIdx);
-				cam->detectMarkers(BufferIdx, dict, params);
-				cam->SolveMarkers(BufferIdx, CamIdx, registry);
-				break;
-
-			default:
-				cout << "Frame buffer too big or operation unimplemented" << endl;
-				break;
-			}
+			//Detect aruco
+			cam->Read(BufferIdx);
+			cam->Undistort(BufferIdx);
+			cam->RescaleFrames(BufferIdx);
+			cam->detectMarkers(BufferIdx, dict, params);
+			cam->SolveMarkers(BufferIdx, CamIdx, registry);
 			
 			
 		}
