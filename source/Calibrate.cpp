@@ -13,6 +13,8 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include <opencv2/cudawarping.hpp>
+
 #include "thirdparty/serialib.h"
 #include "GlobalConf.hpp"
 #include "Cameras/Camera.hpp"
@@ -241,8 +243,10 @@ bool docalibration(CameraSettings CamSett)
 	int failed = 0;
 	while (true)
 	{
-		UMat frame;
+		UMat frame, frameresized;
 		bool CaptureImageThisFrame = false;
+		cuda::GpuMat gpuframe, gpuresized;
+		cuda::Stream resizestream;
 		
 		if (!CamToCalib->Read(0))
 		{
@@ -256,6 +260,20 @@ bool docalibration(CameraSettings CamSett)
 			continue;
 		}
 		CamToCalib->GetFrame(0, frame);
+		if (GetScreenSize() != CamSett.Resolution)
+		{
+			gpuframe.upload(frame, resizestream);
+			cuda::resize(gpuframe, gpuresized, GetScreenSize(), 0, 0, 1, resizestream);
+			gpuresized.download(frameresized);
+		}
+		else
+		{
+			frameresized = frame;
+		}
+		
+		
+		
+
 		//cout << "read success" << endl;
 		//drawChessboardCorners(drawToFrame, CheckerSize, foundPoints, found);
 		char character = waitKey(1);
@@ -335,24 +353,13 @@ bool docalibration(CameraSettings CamSett)
 			UMat grayscale;
 			cvtColor(frame, grayscale, COLOR_BGR2GRAY);
 			bool found = checkChessboard(grayscale, CheckerSize);
-			
-			if (found || true)
-			{
-				imwrite(TempImgPath + "/" + to_string(nextIdx++) + ".png", frame);
-				/*TermCriteria criteria(TermCriteria::COUNT | TermCriteria::EPS, 30, 0.001);
-				cornerSubPix(grayscale, foundPoints, Size(11,11), Size(-1,-1), criteria);
-				Scalar sharpness = estimateChessboardSharpness(frame, CheckerSize, foundPoints);
-				putText(frame, to_string(sharpness[0]), Point2i(0, frame.rows-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 0, 0));
-				if (sharpness[0] < 4.f || true)
-				{
-					savedPoints.push_back(foundPoints);
-				}*/
-			}
-			putText(frame, "Chessboard found !", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(255,0,0), 4);
+			imwrite(TempImgPath + "/" + to_string(nextIdx++) + ".png", frame);
+			putText(frame, "Image captured !", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(255,0,0), 4);
 		}
-		UMat resized; resize(frame, resized, GetScreenSize());
-		fps.AddFpsToImage(resized, fps.GetDeltaTime());
-		imshow(CalibWindowName, resized);
+		resizestream.waitForCompletion();
+		
+		fps.AddFpsToImage(frameresized, fps.GetDeltaTime());
+		imshow(CalibWindowName, frameresized);
 	}
 	return true;
 }
