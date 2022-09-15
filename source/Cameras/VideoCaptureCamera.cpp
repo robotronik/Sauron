@@ -66,7 +66,7 @@ bool VideoCaptureCamera::StartFeed()
 				capnamestream << "nvarguscamerasrc ! video/x-raw(memory:NVMM), " 
 				<< sizestream.str() << ", framerate=(fraction)"
 				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider 
-				<< " !  nvvidconv ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! videoconvert ! appsink drop=1";
+				<< " !  nvvidconv ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! appsink drop=1";
 				Settings.StartPath = capnamestream.str();
 				Settings.ApiID = CAP_GSTREAMER;
 			}

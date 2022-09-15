@@ -35,14 +35,14 @@ Size GetScreenSize()
 
 Size GetFrameSize()
 {
-	//return Size(1280,720);
-	return Size(3264,2464);
+	return Size(1280,720);
+	//return Size(3264,2464);
 }
 
 int GetCaptureFramerate()
 {
 	//return 30;
-	return 21;
+	return 120;
 }
 
 vector<float> GetReductionFactor()

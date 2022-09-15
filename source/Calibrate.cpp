@@ -259,17 +259,7 @@ bool docalibration(CameraSettings CamSett)
 			
 			continue;
 		}
-		CamToCalib->GetFrame(0, frame);
-		if (GetScreenSize() != CamSett.Resolution)
-		{
-			gpuframe.upload(frame, resizestream);
-			cuda::resize(gpuframe, gpuresized, GetScreenSize(), 0, 0, 1, resizestream);
-			gpuresized.download(frameresized);
-		}
-		else
-		{
-			frameresized = frame;
-		}
+		
 		
 		
 		
@@ -284,6 +274,21 @@ bool docalibration(CameraSettings CamSett)
 			CamToCalib->Undistort(0);
 
 			CamToCalib->GetOutputFrame(0, frame, CamSett.Resolution);
+		}
+		else
+		{
+			CamToCalib->GetFrame(0, frame);
+		}
+		
+		if (GetScreenSize() != CamSett.Resolution)
+		{
+			gpuframe.upload(frame, resizestream);
+			cuda::resize(gpuframe, gpuresized, GetScreenSize(), 0, 0, 1, resizestream);
+			gpuresized.download(frameresized);
+		}
+		else
+		{
+			frameresized = frame;
 		}
 
 		switch (character)

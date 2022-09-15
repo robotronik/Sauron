@@ -126,22 +126,22 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	//vector<CameraSettings> CamSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_NVARGUS, "!HD User Facing", "", false);
-	vector<CameraSettings> CamSettings;
+	vector<CameraSettings> CamSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_NVARGUS, "!HD User Facing", "", false);
+	/*vector<CameraSettings> CamSettings;
 	CameraSettings fakedcam;
 	fakedcam.Resolution = GetFrameSize();
 	fakedcam.Framerate = GetCaptureFramerate();
 	fakedcam.FramerateDivider = 1;
 	fakedcam.BufferSize = 2;
 	fakedcam.StartType = CameraStartType::GSTREAMER_NVARGUS;
-	CamSettings.push_back(fakedcam);
+	CamSettings.push_back(fakedcam);*/
 	if (CamSettings.size() == 0)
 	{
 		cerr << "No cameras detected" << endl;
 	}
 	
 
-	if (parser.has("calibrate") || true)
+	if (parser.has("calibrate"))
 	{
 		cout << "Starting calibration of camera index" << parser.get<int>("calibrate") <<endl;
 		int camIndex = parser.get<int>("calibrate");
