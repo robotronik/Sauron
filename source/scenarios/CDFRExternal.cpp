@@ -49,26 +49,9 @@ void CDFRExternalMain(bool direct, bool v3d)
 	ObjectTracker tracker;
 	tracker.SetArucoSize(center.number, center.sideLength);
 
-    vector<String> SerialPorts = SerialSender::autoDetectTTYUSB();
-    for (size_t i = 0; i < SerialPorts.size(); i++)
-    {
-        cout << "Serial port found at " << SerialPorts[i] << endl;
-    }
     
-	serialib* bridge = new serialib();
-    if (SerialPorts.size() > 0)
-    {
-        int success = bridge->openDevice(SerialPorts[0].c_str(), SerialTransmission::BaudRate);
-        cout << "Result opening serial bridge : " << success << endl;
-		if (success != 1)
-		{
-			cout << "Failed to open the serial bridge, make sure your user is in the dialout group" <<endl;
-			cout << "run this ->   sudo usermod -a -G dialout $USER    <- then restart your PC." << endl;
-		}
-		
-    }
     
-	SerialSender sender(bridge);
+	SerialSender sender();
 	StaticObject* boardobj = new StaticObject("board");
 	tracker.RegisterTrackedObject(boardobj); 
 	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");

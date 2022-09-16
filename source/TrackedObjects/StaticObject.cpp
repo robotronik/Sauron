@@ -1,7 +1,7 @@
 #include "TrackedObjects/StaticObject.hpp"
 
 #include "math3d.hpp"
-#include "data/SerialPacket.hpp"
+#include "data/DataPacket.hpp"
 
 StaticObject::StaticObject(String InName)
 {
