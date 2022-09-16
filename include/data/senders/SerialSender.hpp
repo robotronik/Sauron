@@ -5,7 +5,7 @@
 using namespace std;
 using namespace cv;
 
-class SerialSender : public DataSender
+class SerialSender : public PositionDataSender
 {
 private:
 	vector<TrackedObject*> SerialObjects;
@@ -19,8 +19,6 @@ public:
 	~SerialSender();
 
 	serialib* GetBridge();
-
-	void RegisterTrackedObject(TrackedObject* object) override;
 
 	void SendPacket() override;
 

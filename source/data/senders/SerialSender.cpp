@@ -9,7 +9,6 @@ namespace fs = std::filesystem;
 
 SerialSender::SerialSender(bool SelfDetectSerial)
 {
-	StartTick = getTickCount();
 	if (!SelfDetectSerial)
 	{
 		return;
@@ -37,33 +36,6 @@ SerialSender::SerialSender(bool SelfDetectSerial)
 SerialSender::SerialSender(serialib* InBridge)
 {
 	Bridge = InBridge;
-	StartTick = getTickCount();
-}
-
-SerialSender::SerialSender(bool SelfDetectSerial)
-{
-	StartTick = getTickCount();
-	if (SelfDetectSerial)
-	{
-		vector<String> SerialPorts = SerialSender::autoDetectTTYUSB();
-		for (size_t i = 0; i < SerialPorts.size(); i++)
-		{
-			cout << "Serial port found at " << SerialPorts[i] << endl;
-		}
-		
-		Bridge = new serialib();
-		if (SerialPorts.size() > 0)
-		{
-			int success = Bridge->openDevice(SerialPorts[0].c_str(), SerialTransmission::BaudRate);
-			cout << "Result opening serial bridge : " << success << endl;
-			if (success != 1)
-			{
-				cout << "Failed to open the serial bridge, make sure your user is in the dialout group" <<endl;
-				cout << "run this ->   sudo usermod -a -G dialout $USER    <- then restart your PC." << endl;
-			}
-		}
-	}
-	
 }
 
 SerialSender::~SerialSender()
@@ -74,11 +46,6 @@ SerialSender::~SerialSender()
 serialib* SerialSender::GetBridge()
 {
 	return Bridge;
-}
-
-void SerialSender::RegisterTrackedObject(TrackedObject* object)
-{
-	SerialObjects.push_back(object);
 }
 
 void SerialSender::SendPacket()

@@ -1,11 +1,23 @@
 #include "data/senders/DataSender.hpp"
-
+#include "data/DataPacket.hpp"
 #include <cinttypes>
-
 #include <iostream>
 #include <string>
+#include <opencv2/core.hpp>
 
-void DataSender::PrintCSVHeader(ofstream &file)
+PositionDataSender::PositionDataSender()
+{
+	StartTick = getTickCount();
+}
+
+void PositionDataSender::RegisterTrackedObject(TrackedObject* object)
+{
+	SerialObjects.push_back(object);
+}
+
+
+
+void PositionDataSender::PrintCSVHeader(ofstream &file)
 {
 	file << "ms" << ", ";
 	for (size_t i = 0; i < SerialObjects.size(); i++)
@@ -20,7 +32,7 @@ void DataSender::PrintCSVHeader(ofstream &file)
 	file << endl;
 }
 
-void DataSender::PrintCSV(ofstream &file)
+void PositionDataSender::PrintCSV(ofstream &file)
 {
 	uint32_t ms = (getTickCount() - StartTick) *1000 / getTickFrequency();
 	file << ms << ", ";

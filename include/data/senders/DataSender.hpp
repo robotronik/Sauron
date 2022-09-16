@@ -6,20 +6,21 @@
 
 using namespace std;
 
-class DataSender
+class PositionDataSender
 {
-private:
+protected:
 	vector<TrackedObject*> SerialObjects;
 
 	int64 StartTick;
 
 public:
-	DataSender();
-	~DataSender();
+	PositionDataSender();
+
+	virtual ~PositionDataSender(){};
 
 	virtual void RegisterTrackedObject(TrackedObject* object);
 
-	virtual void SendPacket();
+	virtual void SendPacket() = 0;
 
 	virtual void PrintCSVHeader(ofstream &file);
 
