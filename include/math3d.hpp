@@ -30,3 +30,12 @@ Matx31d GetAxis(Matx33d rotation, int i);
 double GetRotZ(Matx33d rotation);
 
 bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Vec3d Line2Dir, Vec3d& Line1Point, Vec3d& Line2Point);
+
+void Affine3dToVictor(PositionPacket &InPacket, Affine3d position)
+{
+    Vec3d pos3d = position.translation() * 1000.0; //convert to mm
+    InPacket.X = pos3d(0);
+    InPacket.Y = pos3d(1);
+    double angle = GetRotZ(position.linear()) * 180.f / M_PI;
+    InPacket.rotation = angle;
+}
