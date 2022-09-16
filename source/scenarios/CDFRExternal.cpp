@@ -3,20 +3,6 @@
 #include "visualisation/BoardViz2D.hpp"
 #include <thread>
 
-viz::Viz3d board3d;
-
-void spinboard()
-{
-	try
-	{
-		board3d.spinOnce(1000/GetCaptureFramerate(), true);
-	}
-	catch(const std::exception& e)
-	{
-		cerr << "VTK stopped: " << e.what() << endl;
-	}
-}
-
 void CDFRExternalMain(bool direct, bool v3d)
 {
     vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_NVARGUS, "!HD User Facing", "");
@@ -39,7 +25,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		BoardViz2D::InitImages();
 	}
 	
-	
+	viz::Viz3d board3d;
 	if (v3d)
 	{
 		board3d = viz::Viz3d("3D board");
@@ -72,11 +58,10 @@ void CDFRExternalMain(bool direct, bool v3d)
 	}
 	//OutputTargets.push_back(board);
 
-	thread* vtkthread;
 
 	if (v3d)
 	{
-		vtkthread = new thread(spinboard);
+		//board3d.spin();
 	}
 	
 	int lastmarker = 0;
@@ -153,7 +138,6 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 		if (v3d)
 		{
-			vtkthread->join();
 			if (board3d.wasStopped())
 			{
 				break;
@@ -166,9 +150,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			{
 				BoardViz3D::ShowCamera(board3d, physicalCameras[i], 0, cameraLocations[i], CamerasWithPosition[i] ? viz::Color::green() : viz::Color::red());
 			}
-			delete vtkthread;
-			vtkthread = new thread(spinboard);
-			//board3d.spinOnce(1, true);
+			board3d.spinOnce(1, true);
 		}
 
 		if (direct)
@@ -197,7 +179,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		
 		
 		
-		if (waitKey(1) == 27)
+		if (waitKey(0) == 27)
 		{
 			break;
 		}

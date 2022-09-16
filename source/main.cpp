@@ -24,6 +24,9 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
+#ifdef WITH_X11
+#include <X11/Xlib.h>
+#endif
 
 using namespace std;
 using namespace cv;
@@ -86,6 +89,9 @@ int main(int argc, char** argv )
 	
 	cuda::setDevice(0);
 	ocl::setUseOpenCL(true);
+	#ifdef WITH_X11
+	XInitThreads();
+	#endif
 	if (parser.has("cuda"))
 	{
 		int cuda_devices_number = cuda::getCudaEnabledDeviceCount();
@@ -164,7 +170,7 @@ int main(int argc, char** argv )
 	
 	
 	//hsvtest();
-	CDFRExternalMain(true, false);
+	CDFRExternalMain(false, true);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

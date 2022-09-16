@@ -10,11 +10,11 @@ project(Robotronikaruco)
 find_package(OpenCV REQUIRED)
 
 #define location of nvmmapi and argus in jetson
-set(MMAPI_DIR "/usr/src/jetson_multimedia_api")
+#set(MMAPI_DIR "/usr/src/jetson_multimedia_api")
 
-set(ARGUS_DIR "${MMAPI_DIR}/argus")
-set(ARGUS_INCLUDE_DIR "${ARGUS_DIR}/")
-set(ARGUS_UTILS_DIR "${ARGUS_DIR}/samples/utils")
+#set(ARGUS_DIR "${MMAPI_DIR}/argus")
+#set(ARGUS_INCLUDE_DIR "${ARGUS_DIR}/")
+#set(ARGUS_UTILS_DIR "${ARGUS_DIR}/samples/utils")
 
 #add rules to find nvmmapi and stuff
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${CMAKE_MODULE_PATH}")
@@ -30,37 +30,38 @@ message(STATUS "    libraries: ${OpenCV_LIBS}")
 message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
 
 find_package(NVMMAPI)
-if(NVMMAPI_FOUND AND FALSE)
+if(NVMMAPI_FOUND)
 	message("Jetson Multimedia API found, enabling Argus, OpenGL, EGL, X11 and CUDA. WITH_ARGUS defined.")
-	find_package(Argus REQUIRED)
+	#find_package(Argus REQUIRED)
 	find_package(OpenGLES REQUIRED)
 	find_package(EGL REQUIRED)
 	find_package(X11 REQUIRED)
+	add_compile_definitions(WITH_X11)
 	find_package(CUDA REQUIRED)
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
 	pkg_check_modules(Cairo REQUIRED cairo)
 
-	add_compile_definitions(WITH_ARGUS)
+	#add_compile_definitions(WITH_ARGUS)
 	add_definitions(${GTK3_CFLAGS_OTHER})
-	add_definitions(${NVMMAPI_DEFINITIONS})
+	#add_definitions(${NVMMAPI_DEFINITIONS})
 
 	include_directories(
-		${ARGUS_INCLUDE_DIR}
+		#${ARGUS_INCLUDE_DIR}
 		${EGL_INCLUDE_DIR}
 		${OPENGLES_INCLUDE_DIR}
-		${ARGUS_UTILS_DIR}
+		#${ARGUS_UTILS_DIR}
     	${GTK3_INCLUDE_DIRS})
 
 
-	file(GLOB ARG_UTILS_SOURCES "${ARGUS_UTILS_DIR}/*.cpp")
-	file(GLOB ARG_UTILS_SOURCES_GTK "${ARGUS_UTILS_DIR}/gtk/*.cpp")
+	#file(GLOB ARG_UTILS_SOURCES "${ARGUS_UTILS_DIR}/*.cpp")
+	#file(GLOB ARG_UTILS_SOURCES_GTK "${ARGUS_UTILS_DIR}/gtk/*.cpp")
 	#file(GLOB_RECURSE NVMM_SOURCES "${MMAPI_DIR}/samples/common/*.cpp")
-	list(APPEND ARG_UTILS_SOURCES ";${ARG_UTILS_SOURCES_GTK}")
-	set(ARG_UTILS_SOURCES
-        ${ARG_UTILS_SOURCES}
-        ${ARGUS_UTILS_DIR}/nvmmapi/NvNativeBuffer.cpp
-        )
+	#list(APPEND ARG_UTILS_SOURCES ";${ARG_UTILS_SOURCES_GTK}")
+	#set(ARG_UTILS_SOURCES
+    #    ${ARG_UTILS_SOURCES}
+    #    ${ARGUS_UTILS_DIR}/nvmmapi/NvNativeBuffer.cpp
+    #    )
 	#message(STATUS "ArgusUtils Sources found : ${ARG_UTILS_SOURCES}")
 else(NVMMAPI_FOUND)
 	message("Jetson Multimedia API was NOT found. If you are on a jetson, this is bad. Otherwise just don't care")
