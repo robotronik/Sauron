@@ -51,7 +51,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 
     
     
-	SerialSender sender();
+	SerialSender sender;
 	StaticObject* boardobj = new StaticObject("board");
 	tracker.RegisterTrackedObject(boardobj); 
 	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
