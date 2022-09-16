@@ -2,9 +2,12 @@
 
 #include <vector>
 #include <opencv2/core.hpp>
+#include <opencv2/core/affine.hpp>
 
 using namespace std;
 using namespace cv;
+
+struct PositionPacket;
 
 Matx33d ImageToWorld();
 
@@ -32,3 +35,5 @@ Matx31d GetAxis(Matx33d rotation, int i);
 double GetRotZ(Matx33d rotation);
 
 bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Vec3d Line2Dir, Vec3d& Line1Point, Vec3d& Line2Point);
+
+void Affine3dToVictor(PositionPacket &InPacket, Affine3d position);

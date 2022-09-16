@@ -1,4 +1,4 @@
-#include "SerialSender.hpp"
+#include "data/senders/SerialSender.hpp"
 
 #include "math3d.hpp"
 #include "filesystem"
@@ -6,6 +6,33 @@
 #include "data/SerialPacket.hpp"
 
 namespace fs = std::filesystem;
+
+SerialSender::SerialSender(bool SelfDetectSerial)
+{
+	StartTick = getTickCount();
+	if (!SelfDetectSerial)
+	{
+		return;
+	}
+	vector<String> SerialPorts = SerialSender::autoDetectTTYUSB();
+    for (size_t i = 0; i < SerialPorts.size(); i++)
+    {
+        cout << "Serial port found at " << SerialPorts[i] << endl;
+    }
+    
+	serialib* bridge = new serialib();
+    if (SerialPorts.size() > 0)
+    {
+        int success = bridge->openDevice(SerialPorts[0].c_str(), SerialTransmission::BaudRate);
+        cout << "Result opening serial bridge : " << success << endl;
+		if (success != 1)
+		{
+			cout << "Failed to open the serial bridge, make sure your user is in the dialout group" <<endl;
+			cout << "run this ->   sudo usermod -a -G dialout $USER    <- then restart your PC." << endl;
+		}
+    }
+	Bridge = bridge;
+}
 
 SerialSender::SerialSender(serialib* InBridge)
 {
@@ -85,40 +112,6 @@ void SerialSender::SendPacket()
 	Bridge->writeBytes(SerialTransmission::StartFlag.data(), SerialTransmission::StartFlag.size());
 	Bridge->writeBytes(buff, buffsize);
 	Bridge->writeBytes(SerialTransmission::StopFlag.data(), SerialTransmission::StopFlag.size());
-}
-
-void SerialSender::PrintCSVHeader(ofstream &file)
-{
-	file << "ms" << ", ";
-	for (size_t i = 0; i < SerialObjects.size(); i++)
-	{
-		file << "numeral, X , Y, rot(deg)";
-		if (i != SerialObjects.size() -1)
-		{
-			file << ", ";
-		}
-		
-	}
-	file << endl;
-}
-
-void SerialSender::PrintCSV(ofstream &file)
-{
-	uint32_t ms = (getTickCount() - StartTick) *1000 / getTickFrequency();
-	file << ms << ", ";
-	for (size_t i = 0; i < SerialObjects.size(); i++)
-	{
-		vector<PositionPacket> packets = SerialObjects[i]->ToPacket(i);
-		for (size_t j = 0; j < packets.size(); j++)
-		{
-			file << packets[j].ToCSV();
-			if ((i != SerialObjects.size() -1) || (j != packets.size() -1))
-			{
-				file << ", ";
-			}
-		}
-	}
-	file << endl;
 }
 
 vector<String> SerialSender::autoDetectTTYUSB()

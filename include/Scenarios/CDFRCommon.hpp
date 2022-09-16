@@ -19,7 +19,7 @@
 #include "data/CameraView.hpp"
 
 #include "data/SerialPacket.hpp"
-#include "SerialSender.hpp"
+#include "data/senders/SerialSender.hpp"
 
 
 using namespace cv;

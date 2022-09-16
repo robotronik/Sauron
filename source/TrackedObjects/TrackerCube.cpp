@@ -1,7 +1,7 @@
 #include "TrackedObjects/TrackerCube.hpp"
 
 #include "math3d.hpp"
-#include "data/SerialPacket.hpp"
+#include "data/DataPacket.hpp"
 
 TrackerCube::TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize, String InName)
 {

@@ -4,14 +4,6 @@
 #include <sstream>
 #include <math.h>
 
-string PositionPacket::ToCSV()
-{
-	ostringstream fab; 
-	fab << (int)type << ", " << (int)numeral
-	<< ", " << X << ", " << Y << ", " << rotation*180/M_PI;
-	return fab.str();
-}
-
 const uint64_t SerialTransmission::BaudRate = 115200;
 const string SerialTransmission::StartFlag = string("robotronik");
 const string SerialTransmission::StopFlag = string("meilleurclub");
