@@ -91,6 +91,7 @@ int main(int argc, char** argv )
 	ocl::setUseOpenCL(true);
 	#ifdef WITH_X11
 	XInitThreads();
+	cout << "Detected screen resolution : " << GetScreenSize() << endl;
 	#endif
 	if (parser.has("cuda"))
 	{
@@ -170,7 +171,7 @@ int main(int argc, char** argv )
 	
 	
 	//hsvtest();
-	CDFRExternalMain(false, true);
+	CDFRExternalMain(direct, true);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

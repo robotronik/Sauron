@@ -1,5 +1,7 @@
 #include "GlobalConf.hpp"
 
+#include <X11/Xlib.h> //window resolution
+
 using namespace std;
 using namespace cv;
 
@@ -30,7 +32,14 @@ Ptr<aruco::DetectorParameters> GetArucoParams()
 
 Size GetScreenSize()
 {
-	return Size(1024,600);
+	#ifdef WITH_X11
+	Display* d = XOpenDisplay(NULL);
+	Screen*  s = DefaultScreenOfDisplay(d);
+	
+	return Size(s->width, s->height);
+	#else
+	return Size(1920,1080);
+	#endif
 }
 
 Size GetFrameSize()

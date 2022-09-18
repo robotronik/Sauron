@@ -9,6 +9,8 @@ project(Robotronikaruco)
 # via the command line or GUI
 find_package(OpenCV REQUIRED)
 
+find_package(X11 REQUIRED)
+add_compile_definitions(WITH_X11)
 #define location of nvmmapi and argus in jetson
 #set(MMAPI_DIR "/usr/src/jetson_multimedia_api")
 
@@ -35,8 +37,6 @@ if(NVMMAPI_FOUND)
 	#find_package(Argus REQUIRED)
 	find_package(OpenGLES REQUIRED)
 	find_package(EGL REQUIRED)
-	find_package(X11 REQUIRED)
-	add_compile_definitions(WITH_X11)
 	find_package(CUDA REQUIRED)
 	find_package(PkgConfig REQUIRED)
 	pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
@@ -93,6 +93,7 @@ set_target_properties(Robotronikaruco PROPERTIES CXX_STANDARD 17)
 target_link_libraries(Robotronikaruco 
 	${OpenCV_LIBS} 
 	stdc++fs
+	${X11_LIBRARIES}
 )
 
 message(STATUS "Cuda libs : ${CUDA_LIBRARIES}")
@@ -103,7 +104,6 @@ if(NVMMAPI_FOUND)
 		${OPENGLES_LIBRARIES}
 		${EGL_LIBRARIES}
 		pthread
-    	${X11_LIBRARIES}
     	${GTK3_LIBRARIES}
         ${NVMMAPI_LIBRARIES}
         ${CUDA_LIBRARIES}

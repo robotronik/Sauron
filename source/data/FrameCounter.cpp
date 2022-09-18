@@ -32,9 +32,16 @@ double FrameCounter::GetAbsoluteTime()
 	return deltaTime;
 }
 
+string FrameCounter::GetFPSString(double DeltaTime)
+{
+	char buffer[20];
+	snprintf(buffer, 20, "fps : %.1f", 1/DeltaTime);
+	return string(buffer);
+}
+
 void FrameCounter::AddFpsToImage(InputOutputArray img, double DeltaTime)
 {
-	String strfps = String("fps : ") + std::to_string(1/DeltaTime);
+	String strfps = GetFPSString(DeltaTime);
 	putText(img, strfps, Point2i(0,img.rows()-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(255, 255, 255), 5);
 	putText(img, strfps, Point2i(0,img.rows()-20), FONT_HERSHEY_SIMPLEX, 2, Scalar(0, 0, 0), 2);
 }

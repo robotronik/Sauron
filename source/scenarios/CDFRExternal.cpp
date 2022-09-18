@@ -144,7 +144,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			}
 			
 			tracker.DisplayObjects(&board3d);
-			viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
+			viz::WText fpstext(FrameCounter::GetFPSString(deltaTime), Point2i(100,150));
 			board3d.showWidget("fps", fpstext);
 			for (int i = 0; i < NumCams; i++)
 			{
@@ -179,7 +179,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		
 		
 		
-		if (waitKey(0) == 27)
+		if (waitKey(1) == 27)
 		{
 			break;
 		}

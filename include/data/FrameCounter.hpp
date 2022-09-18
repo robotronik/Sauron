@@ -1,6 +1,9 @@
 #pragma once
 
 #include <opencv2/core.hpp>
+#include <string>
+
+using std::string;
 
 class FrameCounter
 {
@@ -16,6 +19,8 @@ public:
 
     //Return time since creation of this object
     double GetAbsoluteTime();
+
+    static string GetFPSString(double DeltaTime);
 
     //helper function to add a fps counter
     static void AddFpsToImage(cv::InputOutputArray img, double DeltaTime);
