@@ -1,3 +1,5 @@
-#include "Cameras/Camera.hpp"
+#pragma once
+
+struct CameraSettings;
 
 bool docalibration(CameraSettings CamSett);
