@@ -1,6 +1,9 @@
 #include "data/OutputImage.hpp"
 #include "GlobalConf.hpp"
 
+using namespace cv;
+using namespace std;
+
 OutputImage::OutputImage(/* args */)
 {
 }

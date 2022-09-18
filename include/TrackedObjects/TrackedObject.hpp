@@ -12,38 +12,36 @@ class BoardViz2D;
 struct CameraView;
 struct CameraArucoData;
 
-using namespace std;
-using namespace cv;
-
+using std::vector;
 struct ArucoMarker
 {
 	float sideLength;
 	int number;
-	Affine3d Pose;
+	cv::Affine3d Pose;
 
-	static vector<Point3d> GetObjectPointsNoOffset(float SideLength);
+	static vector<cv::Point3d> GetObjectPointsNoOffset(float SideLength);
 
-	vector<Point3d> GetObjectPointsNoOffset();
+	vector<cv::Point3d> GetObjectPointsNoOffset();
 
 	ArucoMarker()
 		:sideLength(0.05),
 		number(-1),
-		Pose(Affine3d::Identity())
+		Pose(cv::Affine3d::Identity())
 	{}
 
 	ArucoMarker(float InSideLength, int InNumber)
 		:sideLength(InSideLength),
 		number(InNumber),
-		Pose(Affine3d::Identity())
+		Pose(cv::Affine3d::Identity())
 	{}
 
-	ArucoMarker(float InSideLength, int InNumber, Affine3d InPose)
+	ArucoMarker(float InSideLength, int InNumber, cv::Affine3d InPose)
 		:sideLength(InSideLength),
 		number(InNumber),
 		Pose(InPose)
 	{}
 
-	void DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
+	void DisplayMarker(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName);
 };
 
 class TrackedObject
@@ -52,41 +50,43 @@ public:
 	vector<ArucoMarker> markers;
 	vector<TrackedObject*> childs;
 	bool Unique;
-	String Name;
+	cv::String Name;
 
 protected:
-	Affine3d Location;
+	cv::Affine3d Location;
 
 public:
 
 	TrackedObject()
 	{};
 
-	virtual bool SetLocation(Affine3d InLocation);
-	virtual Affine3d GetLocation();
+	virtual bool SetLocation(cv::Affine3d InLocation);
+	virtual cv::Affine3d GetLocation();
 
-	virtual Affine3d ResolveLocation(vector<Affine3d>& Cameras, vector<CameraView>& views);
+	virtual cv::Affine3d ResolveLocation(vector<cv::Affine3d>& Cameras, vector<CameraView>& views);
 
 	//Find the parameters and the accumulated transform of the tag in the component and it's childs
-	virtual bool FindTag(int MarkerID, ArucoMarker& Marker, Affine3d& TransformToMarker);
+	virtual bool FindTag(int MarkerID, ArucoMarker& Marker, cv::Affine3d& TransformToMarker);
 
 	//Returns all the corners in 3D space of this object and it's childs, with the marker ID. Does not clear the array at start.
-	virtual void GetObjectPoints(vector<vector<Point3d>>& MarkerCorners, vector<int>& MarkerIDs, Affine3d rootTransform = Affine3d::Identity(), vector<int> filter = {});
+	virtual void GetObjectPoints(vector<vector<cv::Point3d>>& MarkerCorners, vector<int>& MarkerIDs, cv::Affine3d rootTransform = cv::Affine3d::Identity(), vector<int> filter = {});
 
 	//Given corners, solve this object's location using multiple tags at once
-	virtual Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface);
+	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface);
 
-	virtual void DisplayRecursive2D(BoardViz2D visualizer, Affine3d RootLocation, String rootName);
+	virtual void DisplayRecursive2D(BoardViz2D visualizer, cv::Affine3d RootLocation, cv::String rootName);
 
-	virtual void DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName);
+	virtual void DisplayRecursive(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName);
 
 	virtual vector<PositionPacket> ToPacket(int BaseNumeral);
 };
 
-Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients);
 
-Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, ArucoCamera* Cam);
 
-Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, ArucoCamera* Cam);
+cv::Affine3d GetTagTransform(float SideLength, std::vector<cv::Point2f> Corners, cv::Mat& CameraMatrix, cv::Mat& DistanceCoefficients);
+
+cv::Affine3d GetTagTransform(float SideLength, std::vector<cv::Point2f> Corners, ArucoCamera* Cam);
+
+cv::Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<cv::Point2f> Corners, ArucoCamera* Cam);
 
 void Tracker3DTest();

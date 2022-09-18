@@ -5,6 +5,9 @@
 #include <string>
 #include <opencv2/core.hpp>
 
+using namespace cv;
+using namespace std;
+
 PositionDataSender::PositionDataSender()
 {
 	StartTick = getTickCount();

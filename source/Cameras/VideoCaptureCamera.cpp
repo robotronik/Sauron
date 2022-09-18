@@ -25,8 +25,8 @@
 #include "GlobalConf.hpp"
 #include "data/FVector2D.hpp"
 
+using namespace cv;
 using namespace std;
-using namespace v4l2::devices;
 
 bool VideoCaptureCamera::StartFeed()
 {

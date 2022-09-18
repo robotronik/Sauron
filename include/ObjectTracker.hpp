@@ -19,9 +19,9 @@ public:
 
 	void SolveLocationsPerObject(vector<CameraArucoData>& CameraData);
 
-	void SolveLocationsTagByTag(vector<Affine3d>& Cameras, vector<CameraView>& Tags);
+	void SolveLocationsTagByTag(vector<cv::Affine3d>& Cameras, vector<CameraView>& Tags);
 
-	void DisplayObjects(viz::Viz3d* visualizer);
+	void DisplayObjects(cv::viz::Viz3d* visualizer);
 
 	//only needed for the center
 	void SetArucoSize(int number, float SideLength);

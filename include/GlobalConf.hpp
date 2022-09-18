@@ -3,23 +3,21 @@
 #include <opencv2/core.hpp>
 #include <opencv2/aruco.hpp>
 
-using namespace std;
-using namespace cv;
 
-Ptr<aruco::Dictionary> GetArucoDict();
+cv::Ptr<cv::aruco::Dictionary> GetArucoDict();
 
-Ptr<aruco::DetectorParameters> GetArucoParams();
+cv::Ptr<cv::aruco::DetectorParameters> GetArucoParams();
 
-Size GetScreenSize();
+cv::Size GetScreenSize();
 
-Size GetFrameSize();
+cv::Size GetFrameSize();
 
 int GetCaptureFramerate();
 
 //list of downscales to be done to the aruco detections
-vector<float> GetReductionFactor();
+std::vector<float> GetReductionFactor();
 
 //list of resolutions in the end
-vector<Size> GetArucoReductions();
+std::vector<cv::Size> GetArucoReductions();
 
-UMat& GetArucoImage(int id);
+cv::UMat& GetArucoImage(int id);

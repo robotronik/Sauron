@@ -21,6 +21,9 @@
 #include "GlobalConf.hpp"
 #include "data/FVector2D.hpp"
 
+using namespace cv;
+using namespace std;
+
 vector<CameraSettings> Camera::autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile, bool silent)
 {
 	vector<v4l2::devices::DEVICE_INFO> devices;

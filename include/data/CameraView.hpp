@@ -4,23 +4,21 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 
-using namespace cv;
-using namespace std;
 
 struct CameraView
 {
 	int Camera;
 	int TagID;
-	Affine3d TagTransform;
+	cv::Affine3d TagTransform;
 	double score;
 
 	CameraView()
 		:Camera(0),
 		TagID(0),
-		TagTransform(Affine3d::Identity())
+		TagTransform(cv::Affine3d::Identity())
 	{}
 
-	CameraView(int InCamera, int InTagID, Affine3d InTagTransform)
+	CameraView(int InCamera, int InTagID, cv::Affine3d InTagTransform)
 		:Camera(InCamera),
 		TagID(InTagID),
 		TagTransform(InTagTransform)
@@ -29,10 +27,10 @@ struct CameraView
 
 struct CameraArucoData
 {
-	Affine3d CameraTransform;
-	Mat CameraMatrix;
-	Mat DistanceCoefficients;
-	vector<int> TagIDs;
-	vector<vector<Point2f>> TagCorners;
+	cv::Affine3d CameraTransform;
+	cv::Mat CameraMatrix;
+	cv::Mat DistanceCoefficients;
+	std::vector<int> TagIDs;
+	std::vector<std::vector<cv::Point2f>> TagCorners;
 
 };

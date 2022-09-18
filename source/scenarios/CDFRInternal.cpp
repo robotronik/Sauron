@@ -1,12 +1,11 @@
 #include "Scenarios/CDFRInternal.hpp"
 #include "Scenarios/CDFRCommon.hpp"
 
-void CDFRInternalMain(bool direct)
+void CDFRInternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v3d)
 {
-    vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_CPU, "!HD User Facing", "");
-    Ptr<aruco::Dictionary> dictionary = GetArucoDict();
+	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
-    vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);
+	vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);
 	
 	viz::Viz3d board3d("local robot");
 	BoardViz3D::SetupRobot(board3d);
@@ -23,7 +22,7 @@ void CDFRInternalMain(bool direct)
 	vector<OutputImage*> OutputTargets;
 	if (direct)
 	{
-        namedWindow("Cameras", WINDOW_NORMAL);
+		namedWindow("Cameras", WINDOW_NORMAL);
 		setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 		
 		for (int i = 0; i < physicalCameras.size(); i++)
@@ -33,7 +32,7 @@ void CDFRInternalMain(bool direct)
 	}
 
 	ObjectTracker tracker;
-    
+	
 	SerialSender sender(true);
 
 	StaticObject* boardobj = new StaticObject(true, "board");

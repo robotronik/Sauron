@@ -2,6 +2,9 @@
 #include "data/SerialPacket.hpp"
 #include <math.h>
 
+using namespace cv;
+using namespace std;
+
 Matx33d ImageToWorld()
 {
 	return Matx33d(1,0,0, 0,-1,0, 0,0,1);

@@ -11,6 +11,9 @@
 #include "Cameras/Camera.hpp"
 #include "math3d.hpp"
 
+using namespace cv;
+using namespace std;
+
 const String assetpath = "../assets/";
 
 bool BoardViz3D::MeshesLoaded;

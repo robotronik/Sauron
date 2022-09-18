@@ -4,36 +4,34 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 
-using namespace std;
-using namespace cv;
 
 struct PositionPacket;
 
-Matx33d ImageToWorld();
+cv::Matx33d ImageToWorld();
 
-double GetVectorLengthSquared(Vec3d x);
+double GetVectorLengthSquared(cv::Vec3d x);
 
-Vec3d NormaliseVector(Vec3d x);
+cv::Vec3d NormaliseVector(cv::Vec3d x);
 
 //removes the component of base from x, then normalises it
 //Base must be of unit length
-Vec3d MakeVectorOrthogonal(Vec3d base, Vec3d x);
+cv::Vec3d MakeVectorOrthogonal(cv::Vec3d base, cv::Vec3d x);
 
 //makes a rotation matrix from identity to those 3 vectors
-Matx33d MakeRotationFromXYZ(Vec3d X, Vec3d Y, Vec3d Z);
+cv::Matx33d MakeRotationFromXYZ(cv::Vec3d X, cv::Vec3d Y, cv::Vec3d Z);
 
-Matx33d MakeRotationFromXY(Vec3d X, Vec3d Y);
+cv::Matx33d MakeRotationFromXY(cv::Vec3d X, cv::Vec3d Y);
 
-Matx33d MakeRotationFromXZ(Vec3d X, Vec3d Z);
+cv::Matx33d MakeRotationFromXZ(cv::Vec3d X, cv::Vec3d Z);
 
-Matx33d MakeRotationFromZX(Vec3d Z, Vec3d X);
+cv::Matx33d MakeRotationFromZX(cv::Vec3d Z, cv::Vec3d X);
 
-Matx33d MakeRotationFromZY(Vec3d Z, Vec3d Y);
+cv::Matx33d MakeRotationFromZY(cv::Vec3d Z, cv::Vec3d Y);
 
-Matx31d GetAxis(Matx33d rotation, int i);
+cv::Matx31d GetAxis(cv::Matx33d rotation, int i);
 
-double GetRotZ(Matx33d rotation);
+double GetRotZ(cv::Matx33d rotation);
 
-bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Vec3d Line2Dir, Vec3d& Line1Point, Vec3d& Line2Point);
+bool ClosestPointsOnTwoLine(cv::Vec3d Line1Orig, cv::Vec3d Line1Dir, cv::Vec3d Line2Orig, cv::Vec3d Line2Dir, cv::Vec3d& Line1Point, cv::Vec3d& Line2Point);
 
-void Affine3dToVictor(PositionPacket &InPacket, Affine3d position);
+void Affine3dToVictor(PositionPacket &InPacket, cv::Affine3d position);

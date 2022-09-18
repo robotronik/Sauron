@@ -14,6 +14,9 @@
 #include "data/CameraView.hpp"
 #include "visualisation/BoardViz2D.hpp"
 
+using namespace cv;
+using namespace std;
+
 vector<Point3d> ArucoMarker::GetObjectPointsNoOffset(float SideLength)
 {
 	float sql2 = SideLength*0.5;

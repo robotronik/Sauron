@@ -5,6 +5,8 @@
 
 #include "data/SerialPacket.hpp"
 
+using namespace cv;
+using namespace std;
 namespace fs = std::filesystem;
 
 SerialSender::SerialSender(bool SelfDetectSerial)

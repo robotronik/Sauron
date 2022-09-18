@@ -3,6 +3,9 @@
 #include "math3d.hpp"
 #include "data/DataPacket.hpp"
 
+using namespace cv;
+using namespace std;
+
 StaticObject::StaticObject(bool InRelative, String InName)
 {
 	Unique = true;

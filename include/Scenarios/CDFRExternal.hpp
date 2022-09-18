@@ -1,8 +1,9 @@
 #pragma once
 
-#include <opencv2/core.hpp>
+#include <vector>
+#include "data/ImageTypes.hpp"
 
-using namespace cv;
-using namespace std;
+using std::vector;
 
-void CDFRExternalMain(bool direct, bool v3d);
+
+void CDFRExternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v3d);

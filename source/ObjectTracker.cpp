@@ -1,6 +1,9 @@
 #include "ObjectTracker.hpp"
 #include "data/CameraView.hpp"
 
+using namespace cv;
+using namespace std;
+
 ObjectTracker::ObjectTracker(/* args */)
 {
 	ArucoMap = new int[100];

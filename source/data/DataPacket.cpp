@@ -2,6 +2,8 @@
 #include <sstream>
 #include <cmath>
 
+using namespace std;
+
 string PositionPacket::ToCSV()
 {
 	ostringstream fab; 

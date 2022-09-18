@@ -13,7 +13,6 @@
 
 #include "GlobalConf.hpp"
 #include "Cameras/VideoCaptureCamera.hpp"
-#include "Cameras/ArgusCamera.hpp"
 #include "ObjectTracker.hpp"
 #include "Calibrate.hpp"
 #include "visualisation/BoardViz2D.hpp"
@@ -171,7 +170,7 @@ int main(int argc, char** argv )
 	
 	
 	//hsvtest();
-	CDFRExternalMain(direct, true);
+	CDFRExternalMain(CamSettings, direct, true);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

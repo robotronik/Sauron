@@ -6,8 +6,6 @@
 #include "data/FVector2D.hpp"
 #include "data/OutputImage.hpp"
 
-using namespace cv;
-
 enum class PaletCouleur
 {
 	autre=17,
@@ -20,15 +18,15 @@ class BoardViz2D : public OutputImage
 {
 private:
 	static bool ImagesLoaded;
-	static cuda::GpuMat table;
-	static cuda::GpuMat robot;
-	static cuda::GpuMat rouge, vert, bleu, autre;
-	static cuda::GpuMat camera;
+	static cv::cuda::GpuMat table;
+	static cv::cuda::GpuMat robot;
+	static cv::cuda::GpuMat rouge, vert, bleu, autre;
+	static cv::cuda::GpuMat camera;
 
 private:
 	FVector2D<float> Extent;
 	FVector2D<float> Center;
-	cuda::GpuMat image;
+	cv::cuda::GpuMat image;
 
 
 public:
@@ -41,9 +39,9 @@ public:
 
 private:
 
-	static void LoadImage(cuda::GpuMat& output, String location);
+	static void LoadImage(cv::cuda::GpuMat& output, cv::String location);
 	FVector2D<int> BoardToPixel(FVector2D<float> location);
-	FVector2D<float> GetImageCenter(cuda::GpuMat& Image);
+	FVector2D<float> GetImageCenter(cv::cuda::GpuMat& Image);
 
 public:
 
@@ -51,26 +49,26 @@ public:
 	static void InitImages();
 
 	//Regénère l'image de fond
-	void CreateBackground(Size Resolution);
+	void CreateBackground(cv::Size Resolution);
 
 	//Recupère l'image finale
-	void GetImage(UMat& rvalue);
+	void GetImage(cv::UMat& rvalue);
 
 	//Ajoute une image par dessus le reste, le centre de l'image se trouvant à Position dans le terrain
-	void OverlayImage(cuda::GpuMat& ImageToOverlay, FVector2D<float> position, float rotation, FVector2D<float> ImageSize);
+	void OverlayImage(cv::cuda::GpuMat& ImageToOverlay, FVector2D<float> position, float rotation, FVector2D<float> ImageSize);
 
 	//Ajoute une image, assume que X+ correspond au X+ de l'image, Y+ correspond au Y+ de l'image, et Z correspond à la rotation
 	//Pour une image, le X+ va à droite et le Y+ va vers le bas
-	void OverlayImage(cuda::GpuMat& ImageToOverlay, Affine3d position, FVector2D<float> ImageSize);
+	void OverlayImage(cv::cuda::GpuMat& ImageToOverlay, cv::Affine3d position, FVector2D<float> ImageSize);
 
 	FVector2D<float> GetCenter();
 	FVector2D<float> GetExtent();
 
-	static cuda::GpuMat& GetRobotImage();
-	static cuda::GpuMat& GetPalet(PaletCouleur type);
-	static cuda::GpuMat& GetCamera();
+	static cv::cuda::GpuMat& GetRobotImage();
+	static cv::cuda::GpuMat& GetPalet(PaletCouleur type);
+	static cv::cuda::GpuMat& GetCamera();
 
-	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize) override;
+	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Size winsize) override;
 };
 
 

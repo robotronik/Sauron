@@ -4,12 +4,11 @@
 #include <fstream>
 #include "TrackedObjects/TrackedObject.hpp"
 
-using namespace std;
 
 class PositionDataSender
 {
 protected:
-	vector<TrackedObject*> SerialObjects;
+	std::vector<TrackedObject*> SerialObjects;
 
 	int64 StartTick;
 
@@ -22,7 +21,7 @@ public:
 
 	virtual void SendPacket() = 0;
 
-	virtual void PrintCSVHeader(ofstream &file);
+	virtual void PrintCSVHeader(std::ofstream &file);
 
-	virtual void PrintCSV(ofstream &file);
+	virtual void PrintCSV(std::ofstream &file);
 };

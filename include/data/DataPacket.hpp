@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <string>
 
-using namespace std;
 
 enum class PacketType : uint8_t
 {
@@ -32,5 +31,5 @@ struct PositionPacket //palets sur l'arène uniquement
 	:type(InType), numeral(InNumber), X(InX), Y(InY), rotation(InRotation)
 	{};
 
-	string ToCSV();
+	std::string ToCSV();
 };

@@ -3,6 +3,9 @@
 #include "math3d.hpp"
 #include "data/DataPacket.hpp"
 
+using namespace cv;
+using namespace std;
+
 TrackerCube::TrackerCube(vector<int> MarkerIdx, float MarkerSize, Point3d CubeSize, String InName)
 {
 	Unique = false;

@@ -14,23 +14,20 @@
 #include "data/OutputImage.hpp"
 #include "data/ImageTypes.hpp"
 
-using namespace std;
-using namespace cv;
-
 class Camera;
 struct CameraArucoData;
 
 template<class CameraClass>
-vector<CameraClass*> StartCameras(vector<CameraSettings> CameraSettings)
+std::vector<CameraClass*> StartCameras(std::vector<CameraSettings> CameraSettings)
 {
-	vector<CameraClass*> Cameras;
+	std::vector<CameraClass*> Cameras;
 	for (int i = 0; i < CameraSettings.size(); i++)
 	{
 		Camera* cam = new CameraClass(CameraSettings[i]);
 		Cameras.push_back((CameraClass*)cam);
 		if(!Cameras[i]->StartFeed())
 		{
-			cerr << "ERROR! Unable to open camera " << Cameras[i]->GetCameraSettings().DeviceInfo.device_description;
+			std::cerr << "ERROR! Unable to open camera " << Cameras[i]->GetCameraSettings().DeviceInfo.device_description << std::endl;
 		}
 	}
 	return Cameras;
@@ -44,14 +41,14 @@ protected:
 	CameraSettings Settings;
 
 	bool HasUndistortionMaps;
-	cuda::GpuMat UndistMap1, UndistMap2;
+	cv::cuda::GpuMat UndistMap1, UndistMap2;
 
 public:
-	Affine3d Location;
+	cv::Affine3d Location;
 
 protected:
 	//frame buffer, increases fps but also latency
-	vector<BufferedFrame> FrameBuffer;
+	std::vector<BufferedFrame> FrameBuffer;
 
 public:
 	//status
@@ -61,7 +58,7 @@ public:
 
 	Camera(CameraSettings InSettings)
 		:Settings(InSettings),
-		Location(Affine3d::Identity()),
+		Location(cv::Affine3d::Identity()),
 		connected(false),
 		FrameBuffer()
 	{
@@ -72,7 +69,7 @@ public:
 		
 	}
 
-	static vector<CameraSettings> autoDetectCameras(CameraStartType Start, String Filter, String CalibrationFile, bool silent = true);
+	static std::vector<CameraSettings> autoDetectCameras(CameraStartType Start, cv::String Filter, cv::String CalibrationFile, bool silent = true);
 
 	//Get the settings used to start this camera
 	virtual CameraSettings GetCameraSettings();
@@ -80,9 +77,9 @@ public:
 	//Set the settings to used for this camera
 	virtual bool SetCameraSetting(CameraSettings InSettings);
 
-	virtual bool SetCalibrationSetting(Mat CameraMatrix, Mat DistanceCoefficients);
+	virtual bool SetCalibrationSetting(cv::Mat CameraMatrix, cv::Mat DistanceCoefficients);
 
-	virtual void GetCameraSettingsAfterUndistortion(Mat& CameraMatrix, Mat& DistanceCoefficients);
+	virtual void GetCameraSettingsAfterUndistortion(cv::Mat& CameraMatrix, cv::Mat& DistanceCoefficients);
 
 	//Get the status of a buffer (read, aruco'ed, 3D-ed...)
 	virtual BufferStatus GetStatus(int BufferIndex);
@@ -97,20 +94,20 @@ public:
 	//Retrieve or read a frame
 	virtual bool Read(int BufferIndex);
 
-	virtual bool InjectImage(int BufferIndex, UMat& frame);
+	virtual bool InjectImage(int BufferIndex, cv::UMat& frame);
 
 	virtual void Undistort(int BufferIdx);
 
-	virtual void GetFrameUndistorted(int BufferIndex, UMat& frame);
+	virtual void GetFrameUndistorted(int BufferIndex, cv::UMat& frame);
 
-	virtual void Calibrate(vector<vector<Point3f>> objectPoints,
-	vector<vector<Point2f>> imagePoints, Size imageSize,
-	Mat& cameraMatrix, Mat& distCoeffs,
-	OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs);
+	virtual void Calibrate(std::vector<std::vector<cv::Point3f>> objectPoints,
+	std::vector<std::vector<cv::Point2f>> imagePoints, cv::Size imageSize,
+	cv::Mat& cameraMatrix, cv::Mat& distCoeffs,
+	cv::OutputArrayOfArrays rvecs, cv::OutputArrayOfArrays tvecs);
 
-	virtual void GetFrame(int BufferIndex, UMat& frame) override;
+	virtual void GetFrame(int BufferIndex, cv::UMat& frame) override;
 
-	virtual void GetOutputFrame(int BufferIndex, UMat& frame, Size winsize) override;
+	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Size winsize) override;
 };
 
 class ArucoCamera : public Camera
@@ -126,7 +123,7 @@ public:
 	virtual void RescaleFrames(int BufferIdx);
 
     //detect markers using the lower resolutions and improve accuracy using the higher-resolution image
-	virtual void detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params);
+	virtual void detectMarkers(int BufferIndex, cv::Ptr<cv::aruco::Dictionary> dict, cv::Ptr<cv::aruco::DetectorParameters> params);
 
 	//Gather detected markers in screen space
 	virtual bool GetMarkerData(int BufferIndex, CameraArucoData& CameraData);
@@ -138,6 +135,6 @@ public:
 	virtual int GetCameraViewsSize(int BufferIndex);
 
 	//Gather detected markers in 3D space relative to the camera
-	virtual bool GetCameraViews(int BufferIndex, vector<CameraView>& views);
+	virtual bool GetCameraViews(int BufferIndex, std::vector<CameraView>& views);
 
 };

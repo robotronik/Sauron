@@ -3,9 +3,8 @@
 #include "visualisation/BoardViz2D.hpp"
 #include <thread>
 
-void CDFRExternalMain(bool direct, bool v3d)
+void CDFRExternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v3d)
 {
-    vector<CameraSettings> CameraSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_NVARGUS, "!HD User Facing", "");
     Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
     vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);

@@ -4,6 +4,8 @@
 #include <sstream>
 #include <math.h>
 
+using namespace std;
+
 const uint64_t SerialTransmission::BaudRate = 115200;
 const string SerialTransmission::StartFlag = string("robotronik");
 const string SerialTransmission::StopFlag = string("meilleurclub");

@@ -5,8 +5,6 @@
 
 #include "thirdparty/list-devices.hpp"
 
-using namespace cv;
-using namespace std;
 
 struct CameraView;
 
@@ -44,7 +42,7 @@ struct CameraSettings
 
 	//General data
 	//Resolution of the frame to be captured
-	Size Resolution;
+	cv::Size Resolution;
 	//Framerate
 	uint8_t Framerate;
 	//Framerate divider : you can set 60fps but only sample 1 of 2 frames to have less latency and less computation
@@ -55,14 +53,14 @@ struct CameraSettings
 	v4l2::devices::DEVICE_INFO DeviceInfo;
 
 	//Initialisation string
-	String StartPath;
+	cv::String StartPath;
 	//API to be used for opening
 	int ApiID;
 
 	//FOV and center
-	Mat CameraMatrix;
+	cv::Mat CameraMatrix;
 	//Distortion
-	Mat distanceCoeffs;
+	cv::Mat distanceCoeffs;
 
 	CameraSettings()
 	:Resolution(-1,-1), Framerate(0), FramerateDivider(1),
@@ -77,8 +75,8 @@ class MixedFrame
 {
 
 public:
-	UMat CPUFrame;
-	cuda::GpuMat GPUFrame;
+	cv::UMat CPUFrame;
+	cv::cuda::GpuMat GPUFrame;
 	//Is the CPUFrame valid ?
 	bool HasCPU;
 	//Is the GPU frame valid ?
@@ -89,13 +87,13 @@ public:
 	HasGPU(false)
 	{}
 
-	MixedFrame(UMat& InCPUFrame)
+	MixedFrame(cv::UMat& InCPUFrame)
 	:CPUFrame(InCPUFrame),
 	HasCPU(true),
 	HasGPU(false)
 	{}
 
-	MixedFrame(cuda::GpuMat& InGPUFrame)
+	MixedFrame(cv::cuda::GpuMat& InGPUFrame)
 	:GPUFrame(InGPUFrame),
 	HasGPU(true),
 	HasCPU(false)
@@ -105,14 +103,14 @@ public:
 	bool IsValid();
 
 	//Return the size of the first valid stored frame
-	Size GetSize();
+	cv::Size GetSize();
 
 	//Avoid using because it causes copies
 	//Make the frame available on the CPU side then copy into memory
-	bool GetCPUFrame(UMat& frame);
+	bool GetCPUFrame(cv::UMat& frame);
 	//Avoid using because it causes copies
 	//Make the frame available on the GPU suide then copy into memory
-	bool GetGPUFrame(cuda::GpuMat& frame);
+	bool GetGPUFrame(cv::cuda::GpuMat& frame);
 
 	//If the frame is available on the CPU do nothing
 	//If it's available on the GPU, download it
@@ -136,11 +134,11 @@ public:
 	MixedFrame FrameUndistorted;
 	BufferStatus Status;
 
-	vector<MixedFrame> rescaledFrames;
+	std::vector<MixedFrame> rescaledFrames;
 
-	vector<int> markerIDs;
-	vector<vector<Point2f>> markerCorners;
-	vector<CameraView> markerViews;
+	std::vector<int> markerIDs;
+	std::vector<std::vector<cv::Point2f>> markerCorners;
+	std::vector<CameraView> markerViews;
 
 public:
 

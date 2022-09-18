@@ -1,6 +1,9 @@
 #include "data/ImageTypes.hpp"
 #include "data/CameraView.hpp"
 
+using namespace cv;
+using namespace std;
+
 bool CameraSettings::IsValid()
 {
 	return Framerate >0 && Resolution.width >0 && Resolution.height >0 && BufferSize > 0 && FramerateDivider > 0;

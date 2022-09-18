@@ -12,8 +12,6 @@
 #include "Cameras/Camera.hpp"
 #include "data/ImageTypes.hpp"
 
-using namespace std;
-using namespace cv;
 
 class VideoCaptureCamera : public ArucoCamera
 {
@@ -21,7 +19,7 @@ class VideoCaptureCamera : public ArucoCamera
 
 private:
 	//capture using classic api
-	VideoCapture* feed;
+	cv::VideoCapture* feed;
 
 public:
 
@@ -48,6 +46,6 @@ public:
 	//Retrieve or read a frame
 	virtual bool Read(int BufferIndex) override;
 
-	virtual bool InjectImage(int BufferIndex, UMat& frame) override;
+	virtual bool InjectImage(int BufferIndex, cv::UMat& frame) override;
 
 };
