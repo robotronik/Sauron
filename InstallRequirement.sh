@@ -1,4 +1,5 @@
 sudo apt-get install -y cmake ninja-build
+sudo apt-get install -y libconfig++-dev
 sudo apt-get install -y build-essential cmake git unzip pkg-config zlib1g-dev
 sudo apt-get install -y libjpeg-dev libjpeg8-dev libjpeg-turbo8-dev libpng-dev libtiff-dev
 sudo apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libglew-dev

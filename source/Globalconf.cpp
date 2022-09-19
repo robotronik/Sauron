@@ -1,13 +1,69 @@
 #include "GlobalConf.hpp"
 
+#include <iostream>
+#include <libconfig.h++>
+#include "data/ImageTypes.hpp"
+
 #include <X11/Xlib.h> //window resolution
 
 using namespace std;
 using namespace cv;
+using namespace libconfig;
 
 Ptr<aruco::Dictionary> dict;
 Ptr<aruco::DetectorParameters> parameters;
 vector<UMat> MarkerImages;
+
+bool ConfigInitialised = false;
+Config cfg;
+
+void InitConfig()
+{
+	if (ConfigInitialised)
+	{
+		return;
+	}
+	
+	bool err = false;
+	try
+	{
+		cfg.readFile("../config.cfg");
+	}
+		catch(const FileIOException &fioex)
+	{
+		std::cerr << "I/O error while reading file." << std::endl;
+		err = true;
+	}
+		catch(const ParseException &pex)
+	{
+		std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine()
+			<< " - " << pex.getError() << std::endl;
+		err = true;
+	}
+
+	Setting& root = cfg.getRoot();
+
+	if (!root.exists("CaptureResolution"))
+	{
+		root.add("CaptureResolution", Setting::Type::TypeArray);
+		root["CaptureResolution"].add(Setting::Type::TypeInt) = 1280;
+		root["CaptureResolution"].add(Setting::Type::TypeInt) = 720;
+	}
+	if (!root.exists("CaptureFramerate"))
+	{
+		root.add("CaptureFramerate", Setting::Type::TypeInt) = 120;
+	}
+	if (!root.exists("CaptureMethod"))
+	{
+		root.add("CaptureMethod", Setting::Type::TypeInt) = (int)CameraStartType::GSTREAMER_NVARGUS;
+	}
+	
+	
+
+	cfg.writeFile("../config.cfg");
+	
+	ConfigInitialised = true;
+}
 
 Ptr<aruco::Dictionary> GetArucoDict(){
 	if (dict.empty())
@@ -44,19 +100,26 @@ Size GetScreenSize()
 
 Size GetFrameSize()
 {
-	return Size(1280,720);
-	//return Size(3264,2464);
+	InitConfig();
+	Setting& resolution = cfg.getRoot()["CaptureResolution"];
+	return Size((int)resolution[0], (int)resolution[1]);
 }
 
 int GetCaptureFramerate()
 {
-	//return 30;
-	return 120;
+	InitConfig();
+	return (int)(cfg.getRoot()["CaptureFramerate"]);
+}
+
+CameraStartType GetCaptureMethod()
+{
+	InitConfig();
+	return (CameraStartType)(int)(cfg.getRoot()["CaptureMethod"]);
 }
 
 vector<float> GetReductionFactor()
 {
-	return {2};
+	return {1};
 }
 
 vector<Size> GetArucoReductions()

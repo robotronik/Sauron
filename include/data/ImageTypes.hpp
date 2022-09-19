@@ -4,9 +4,8 @@
 #include <opencv2/cudacodec.hpp>
 
 #include "thirdparty/list-devices.hpp"
+#include "data/CameraView.hpp"
 
-
-struct CameraView;
 
 //Progression status for a buffer
 struct BufferStatus
@@ -26,12 +25,12 @@ struct BufferStatus
 //Camera API and configuration selection
 enum class CameraStartType
 {
-	ANY,
-	GSTREAMER_CPU,
-	GSTREAMER_NVDEC,
-	GSTREAMER_JETSON,
-	GSTREAMER_NVARGUS,
-	CUDA
+	ANY = 0,
+	GSTREAMER_CPU = 1,
+	GSTREAMER_NVDEC = 2,
+	GSTREAMER_JETSON = 3,
+	GSTREAMER_NVARGUS = 4,
+	CUDA = 5
 };
 
 //All the settings needed to start a camera, in the palm of your hand...

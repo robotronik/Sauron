@@ -132,7 +132,7 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
     
-	vector<CameraSettings> CamSettings = Camera::autoDetectCameras(CameraStartType::GSTREAMER_NVARGUS, "!HD User Facing", "", false);
+	vector<CameraSettings> CamSettings = Camera::autoDetectCameras(GetCaptureMethod(), "!HD User Facing", "", false);
 	/*vector<CameraSettings> CamSettings;
 	CameraSettings fakedcam;
 	fakedcam.Resolution = GetFrameSize();

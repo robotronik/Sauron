@@ -94,6 +94,7 @@ target_link_libraries(Robotronikaruco
 	${OpenCV_LIBS} 
 	stdc++fs
 	${X11_LIBRARIES}
+	config++
 )
 
 message(STATUS "Cuda libs : ${CUDA_LIBRARIES}")
