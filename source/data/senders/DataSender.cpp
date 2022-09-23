@@ -13,9 +13,14 @@ PositionDataSender::PositionDataSender()
 	StartTick = getTickCount();
 }
 
+int64 PositionDataSender::GetTick()
+{
+	return getTickCount() - StartTick;
+}
+
 void PositionDataSender::RegisterTrackedObject(TrackedObject* object)
 {
-	SerialObjects.push_back(object);
+	RegisteredObjects.push_back(object);
 }
 
 
@@ -23,10 +28,10 @@ void PositionDataSender::RegisterTrackedObject(TrackedObject* object)
 void PositionDataSender::PrintCSVHeader(ofstream &file)
 {
 	file << "ms" << ", ";
-	for (size_t i = 0; i < SerialObjects.size(); i++)
+	for (size_t i = 0; i < RegisteredObjects.size(); i++)
 	{
 		file << "numeral, X , Y, rot(deg)";
-		if (i != SerialObjects.size() -1)
+		if (i != RegisteredObjects.size() -1)
 		{
 			file << ", ";
 		}
@@ -39,13 +44,13 @@ void PositionDataSender::PrintCSV(ofstream &file)
 {
 	uint32_t ms = (getTickCount() - StartTick) *1000 / getTickFrequency();
 	file << ms << ", ";
-	for (size_t i = 0; i < SerialObjects.size(); i++)
+	for (size_t i = 0; i < RegisteredObjects.size(); i++)
 	{
-		vector<PositionPacket> packets = SerialObjects[i]->ToPacket(i);
+		vector<PositionPacket> packets = RegisteredObjects[i]->ToPacket(i);
 		for (size_t j = 0; j < packets.size(); j++)
 		{
 			file << packets[j].ToCSV();
-			if ((i != SerialObjects.size() -1) || (j != packets.size() -1))
+			if ((i != RegisteredObjects.size() -1) || (j != packets.size() -1))
 			{
 				file << ", ";
 			}

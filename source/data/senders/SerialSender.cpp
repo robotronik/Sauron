@@ -59,7 +59,7 @@ void SerialSender::SendPacket()
 	packet.PositionPackets.resize(0);
 	for (size_t i = 0; i < packet.NumPositions; i++)
 	{
-		vector<PositionPacket> positions = SerialObjects[i]->ToPacket(i);
+		vector<PositionPacket> positions = RegisteredObjects[i]->ToPacket(i);
 		packet.PositionPackets.insert(packet.PositionPackets.end(), positions.begin(), positions.end());
 	}
 	packet.NumPositions = packet.PositionPackets.size();

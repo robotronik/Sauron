@@ -8,7 +8,7 @@
 class PositionDataSender
 {
 protected:
-	std::vector<TrackedObject*> SerialObjects;
+	std::vector<TrackedObject*> RegisteredObjects;
 
 	int64 StartTick;
 
@@ -16,6 +16,8 @@ public:
 	PositionDataSender();
 
 	virtual ~PositionDataSender(){};
+
+	int64 GetTick();
 
 	virtual void RegisterTrackedObject(TrackedObject* object);
 

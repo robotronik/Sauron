@@ -1,9 +1,9 @@
 #include "GlobalConf.hpp"
 
-#include <iostream>
-#include <libconfig.h++>
 #include "data/ImageTypes.hpp"
 
+#include <iostream>
+#include <libconfig.h++>
 #include <X11/Xlib.h> //window resolution
 
 using namespace std;
@@ -16,6 +16,58 @@ vector<UMat> MarkerImages;
 
 bool ConfigInitialised = false;
 Config cfg;
+
+//Default values
+CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), 120};
+WebsocketConfig WebsocketCfg = {false, true, true, "127.0.0.1", 24};
+
+template<class T>
+Setting& EnsureExistCfg(Setting& Location, const char *FieldName, Setting::Type SettingType, T DefaultValue)
+{
+	if (!Location.exists(FieldName))
+	{
+		Setting& settingloc = Location.add(FieldName, SettingType);
+		switch (SettingType)
+		{
+		case Setting::TypeGroup:
+		case Setting::TypeArray:
+			/* code */
+			break;
+		
+		default:
+			settingloc = DefaultValue;
+			break;
+		}
+		return settingloc;
+	}
+	return Location[FieldName];
+}
+
+template<class T>
+Setting& CopyDefaultCfg(Setting& Location, const char *FieldName, Setting::Type SettingType, T& DefaultValue)
+{
+	if (!Location.exists(FieldName))
+	{
+		Setting& settingloc = Location.add(FieldName, SettingType);
+		switch (SettingType)
+		{
+		case Setting::TypeGroup:
+		case Setting::TypeArray:
+			/* code */
+			break;
+		
+		default:
+			settingloc = DefaultValue;
+			break;
+		}
+		return settingloc;
+	}
+	else
+	{
+		DefaultValue = (T)Location[FieldName];
+		return Location[FieldName];
+	}
+}
 
 void InitConfig()
 {
@@ -43,26 +95,30 @@ void InitConfig()
 
 	Setting& root = cfg.getRoot();
 
-	if (!root.exists("CaptureResolution"))
-	{
-		root.add("CaptureResolution", Setting::Type::TypeArray);
-		root["CaptureResolution"].add(Setting::Type::TypeInt) = 1280;
-		root["CaptureResolution"].add(Setting::Type::TypeInt) = 720;
-	}
-	if (!root.exists("CaptureFramerate"))
-	{
-		root.add("CaptureFramerate", Setting::Type::TypeInt) = 120;
-	}
-	if (!root.exists("CaptureMethod"))
-	{
-		root.add("CaptureMethod", Setting::Type::TypeInt) = (int)CameraStartType::GSTREAMER_NVARGUS;
-	}
+	Setting& Capture = EnsureExistCfg(root, "Capture", Setting::Type::TypeGroup, 0);
 	
-	
+	{
+		Setting& Resolution = EnsureExistCfg(Capture, "Resolution", Setting::TypeGroup, 0);
+		CopyDefaultCfg(Resolution, "Width", Setting::TypeInt, CaptureCfg.FrameSize.width);
+		CopyDefaultCfg(Resolution, "Height", Setting::TypeInt, CaptureCfg.FrameSize.height);
+		CopyDefaultCfg(Capture, "Framerate", Setting::TypeInt, CaptureCfg.CaptureFramerate);
+		CopyDefaultCfg(Capture, "Method", Setting::TypeInt, CaptureCfg.StartType);
+	}
+
+	Setting& Websocket = EnsureExistCfg(root, "Websocket", Setting::Type::TypeGroup, 0);
+	{
+		CopyDefaultCfg(Websocket, "Unix", Setting::TypeBoolean, WebsocketCfg.Unix);
+		CopyDefaultCfg(Websocket, "TCP", Setting::TypeBoolean, WebsocketCfg.TCP);
+		CopyDefaultCfg(Websocket, "Server", Setting::TypeBoolean, WebsocketCfg.Server);
+
+		CopyDefaultCfg(Websocket, "IP", Setting::TypeString, WebsocketCfg.IP);
+		CopyDefaultCfg(Websocket, "Port", Setting::TypeInt, WebsocketCfg.Port);
+	}
 
 	cfg.writeFile("../config.cfg");
 	
 	ConfigInitialised = true;
+	
 }
 
 Ptr<aruco::Dictionary> GetArucoDict(){
@@ -91,8 +147,9 @@ Size GetScreenSize()
 	#ifdef WITH_X11
 	Display* d = XOpenDisplay(NULL);
 	Screen*  s = DefaultScreenOfDisplay(d);
-	
-	return Size(s->width, s->height);
+	Size screensize = Size(s->width, s->height);
+	XCloseDisplay(d);
+	return screensize;
 	#else
 	return Size(1920,1080);
 	#endif
@@ -101,20 +158,19 @@ Size GetScreenSize()
 Size GetFrameSize()
 {
 	InitConfig();
-	Setting& resolution = cfg.getRoot()["CaptureResolution"];
-	return Size((int)resolution[0], (int)resolution[1]);
+	return CaptureCfg.FrameSize;
 }
 
 int GetCaptureFramerate()
 {
 	InitConfig();
-	return (int)(cfg.getRoot()["CaptureFramerate"]);
+	return (int)CaptureCfg.CaptureFramerate;
 }
 
 CameraStartType GetCaptureMethod()
 {
 	InitConfig();
-	return (CameraStartType)(int)(cfg.getRoot()["CaptureMethod"]);
+	return (CameraStartType)CaptureCfg.StartType;
 }
 
 vector<float> GetReductionFactor()
@@ -146,4 +202,17 @@ UMat& GetArucoImage(int id)
 		aruco::drawMarker(GetArucoDict(), id, 256, MarkerImages[id], 1);
 	}
 	return MarkerImages[id];
+}
+
+WebsocketConfig GetWebsocketConfig()
+{
+	InitConfig();
+	Setting& Websocket = cfg.getRoot()["Websocket"];
+	WebsocketConfig wscfg;
+	wscfg.Unix = Websocket["Unix"];
+	wscfg.TCP = Websocket["TCP"];
+	wscfg.Server = Websocket["Server"];
+	wscfg.IP = (std::string)Websocket["IP"];
+	wscfg.Port = Websocket["Port"];
+	return wscfg;
 }

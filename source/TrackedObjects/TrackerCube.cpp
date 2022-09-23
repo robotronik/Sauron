@@ -32,9 +32,7 @@ vector<PositionPacket> TrackerCube::ToPacket(int BaseNumeral)
 {
 	PositionPacket robot;
 	robot.type = PacketType::Robot;
-	robot.X = Location.translation()[0];
-	robot.Y = Location.translation()[1];
-	robot.rotation = GetRotZ(Location.rotation());
+	Affine3dToVictor(robot, Location);
 	robot.numeral = BaseNumeral;
 	return {robot};
 }

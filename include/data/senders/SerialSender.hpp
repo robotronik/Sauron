@@ -6,7 +6,7 @@
 class SerialSender : public PositionDataSender
 {
 private:
-	std::vector<TrackedObject*> SerialObjects;
+	std::vector<TrackedObject*> RegisteredObjects;
 	serialib* Bridge;
 
 	int64 StartTick;

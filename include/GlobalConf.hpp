@@ -5,6 +5,13 @@
 
 enum class CameraStartType;
 
+struct CaptureConfig
+{
+    int StartType;
+    cv::Size FrameSize;
+    int CaptureFramerate;
+};
+
 cv::Ptr<cv::aruco::Dictionary> GetArucoDict();
 
 cv::Ptr<cv::aruco::DetectorParameters> GetArucoParams();
@@ -24,3 +31,14 @@ std::vector<float> GetReductionFactor();
 std::vector<cv::Size> GetArucoReductions();
 
 cv::UMat& GetArucoImage(int id);
+
+struct WebsocketConfig
+{
+    bool Unix;
+    bool TCP;
+    bool Server;
+    cv::String IP;
+    int Port; 
+};
+
+WebsocketConfig GetWebsocketConfig();

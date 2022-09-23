@@ -14,7 +14,7 @@ enum class PacketType : uint8_t
 	Reference = 7
 };
 
-struct PositionPacket //palets sur l'arène uniquement
+struct __attribute__ ((packed)) PositionPacket //palets sur l'arène uniquement
 {
 	PacketType type;
 	uint8_t numeral;

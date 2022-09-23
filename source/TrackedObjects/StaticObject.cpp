@@ -46,13 +46,11 @@ bool StaticObject::SetLocation(Affine3d InLocation)
 
 vector<PositionPacket> StaticObject::ToPacket(int BaseNumeral)
 {
-	PositionPacket robot;
-	robot.type = PacketType::Robot;
-	robot.X = Location.translation()[0];
-	robot.Y = Location.translation()[1];
-	robot.rotation = GetRotZ(Location.rotation());
-	robot.numeral = BaseNumeral;
-	return {robot};
+	PositionPacket packet;
+	packet.type = PacketType::Reference;
+	Affine3dToVictor(packet, Location);
+	packet.numeral = BaseNumeral;
+	return {packet};
 }
 
 void StaticObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)

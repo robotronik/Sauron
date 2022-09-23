@@ -33,7 +33,7 @@ void CDFRExternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v
 
 	ObjectTracker tracker;
     
-	SerialSender sender(true);
+	WebSender sender(true, true);
 
 	StaticObject* boardobj = new StaticObject(false, "board");
 	tracker.RegisterTrackedObject(boardobj); 
@@ -164,7 +164,7 @@ void CDFRExternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v
 		}
 		
 		
-		
+		sender.SendPacket();
 		//sender.PrintCSV(printfile);
 		/*sender.SendPacket();
 		if (bridge->available() > 0)

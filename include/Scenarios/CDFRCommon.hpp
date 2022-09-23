@@ -20,6 +20,7 @@
 
 #include "data/SerialPacket.hpp"
 #include "data/senders/SerialSender.hpp"
+#include "data/senders/WebSender.hpp"
 
 
 using namespace cv;
