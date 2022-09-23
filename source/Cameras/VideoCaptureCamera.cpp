@@ -91,7 +91,7 @@ bool VideoCaptureCamera::StartFeed()
 				{
 					capnamestream << "nvdec ! glcolorconvert ! gldownload ! ";
 				}
-				capnamestream << "video/x-raw, format=BGR ! appsink";
+				capnamestream << "video/x-raw, format=BGR ! appsink drop=1";
 				Settings.StartPath = capnamestream.str();
 				Settings.ApiID = CAP_GSTREAMER;
 			}

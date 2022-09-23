@@ -31,28 +31,6 @@ using namespace std;
 using namespace cv;
 
 
-
-/*int main(int argc, char** argv )
-{
-	cuda::setDevice(0);
-	ocl::setUseOpenCL(true);
-
-	VideoCapture* cap = new VideoCapture();
-	cout << "Created video capture instance" << endl;
-	cap->open("nvarguscamerasrc ! nvvidconv ! videoconvert ! appsink drop=1", CAP_GSTREAMER);
-	cout << "Opened camera" << endl;
-	int keypressed = 0;
-	do
-	{
-		UMat image;
-		cap->read(image);
-		imshow("ArgusCamera", image);
-		keypressed = waitKey(1);
-	}
-	while (keypressed != 27);
-	return EXIT_SUCCESS;
-}*/
-
 int main(int argc, char** argv )
 {
 	//{
