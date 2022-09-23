@@ -5,6 +5,13 @@
 using namespace cv;
 using namespace std;
 
+Size2d GetCameraFOV(Size Resolution, Mat CameraMatrix)
+{
+	double fx = CameraMatrix.at<double>(0,0), fy = CameraMatrix.at<double>(1,1);
+	double fovx = 2*atan(Resolution.width/(2*fx)), fovy = 2*atan(Resolution.height/(2*fy));
+	return Size2d(fovx, fovy);
+} 
+
 Matx33d ImageToWorld()
 {
 	return Matx33d(1,0,0, 0,-1,0, 0,0,1);

@@ -69,7 +69,14 @@ void BoardViz3D::SetupRobot(viz::Viz3d& Visualizer)
 void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferIdx, Affine3d Pose, viz::Color color)
 {
 	viz::WCameraPosition CamWidget;
-	if (BufferIdx != -1 && false)
+	CameraSettings stg = Camera->GetCameraSettings();
+	Mat CameraMatrix = stg.CameraMatrix;
+	Size2d FOV = GetCameraFOV(stg.Resolution, stg.CameraMatrix);
+	if (FOV.width >= 170 || FOV.height >= 170)
+	{
+		CamWidget = viz::WCameraPosition(Vec2d(170,170), 0.2, color);
+	}
+	else if (BufferIdx != -1 && false)
 	{
 		UMat Frame;Camera->GetOutputFrame(BufferIdx, Frame, Size(640,480));
 		CamWidget = viz::WCameraPosition((Matx33d)(Camera->GetCameraSettings().CameraMatrix), Frame, 1.0, color);

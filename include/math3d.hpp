@@ -7,6 +7,8 @@
 
 struct PositionPacket;
 
+cv::Size2d GetCameraFOV(cv::Size Resolution, cv::Mat CameraMatrix);
+
 cv::Matx33d ImageToWorld();
 
 double GetVectorLengthSquared(cv::Vec3d x);
