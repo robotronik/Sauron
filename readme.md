@@ -46,7 +46,7 @@ Créer un fichier pour le build de vtk : `mkdir buildvtk`
 
 Puis build vtk : 
 ```console
-cmake -G Ninja -D CMAKE_BUILD_TYPE=RELEASE ../VTK-9.1.0
+cmake -G Ninja -D CMAKE_BUILD_TYPE=RELEASE ../
 ninja
 sudo ninja install
 ```
