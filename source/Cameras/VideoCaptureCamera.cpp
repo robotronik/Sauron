@@ -63,10 +63,12 @@ bool VideoCaptureCamera::StartFeed()
 			{
 				//Settings.StartPath = "nvarguscamerasrc ! nvvidconv ! videoconvert ! appsink drop=1";
 				ostringstream capnamestream;
-				capnamestream << "nvarguscamerasrc ! video/x-raw(memory:NVMM), " 
+				int sensorid = Settings.DeviceInfo.bus_info.back() == '4' ? 1 : 0;
+				
+				capnamestream << "nvarguscamerasrc sensor-id=" << sensorid << " ! video/x-raw(memory:NVMM), " 
 				<< sizestream.str() << ", framerate=(fraction)"
 				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider 
-				<< " !  nvvidconv ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! videoconvert ! video/x-raw, format=BGR ! appsink drop=1";
+				<< " ! nvvidconv flip-method=2 ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! videoconvert ! video/x-raw, format=BGR ! appsink drop=1";
 				Settings.StartPath = capnamestream.str();
 				Settings.ApiID = CAP_GSTREAMER;
 			}

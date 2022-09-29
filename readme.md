@@ -174,3 +174,8 @@ C'est une système de position 2D utilisé par boardviz. En vrai ca sert à rien
 L'exécutable se trouvera dans le fichier Build
 
 `./Robotronikaruco -h` pour avoir l'aide
+
+# Jetson
+
+Surtout si c'est dans le cas où les caméras sont connectées en MIPI-CSI, des fois le daemon plante : éxecuter
+`systemctl restart nvargus-daemon.service`

@@ -175,7 +175,7 @@ CameraStartType GetCaptureMethod()
 
 vector<float> GetReductionFactor()
 {
-	return {1};
+	return {2};
 }
 
 vector<Size> GetArucoReductions()

@@ -27,30 +27,51 @@ void OutputImage::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 
 }
 
+Size findSplit(Size screensize, Size targetAspect, int numscreen)
+{
+	Size splits(1,1);
+	double AspectRatioTarget = (double)targetAspect.width/targetAspect.height;
+	double AspectRatioScreen = (double)screensize.width/screensize.height;
+	while (splits.height * splits.width < numscreen)
+	{
+		double arc = AspectRatioScreen/(splits.width+1.0)*splits.height;
+		double arr = AspectRatioScreen/splits.width*(splits.height+1.0);
+		if (abs(arc - AspectRatioTarget) < abs(arr - AspectRatioTarget))
+		{
+			splits.width++;
+		}
+		else
+		{
+			splits.height++;
+		}
+	}
+	return splits;
+}
+
 UMat ConcatCameras(int BufferIndex, vector<OutputImage*> Cameras, int NumCams)
 {
 	Size screensize = GetScreenSize();
 	UMat concatenated(screensize, CV_8UC3, Scalar(0,0,255));
-	int rows = 1, columns = 1;
-	while (rows * rows < NumCams)
-	{
-		rows++;
-	}
-	columns = rows;
-	int winWidth = screensize.width/rows, winHeight = screensize.height/columns;
-	parallel_for_(Range(0, Cameras.size()), [&](const Range& range)
-	{
+	Size splits = findSplit(screensize, Size(16,9), Cameras.size());
+	int &rows = splits.height, &columns = splits.width;
+	int winWidth = screensize.width/columns, winHeight = screensize.height/rows;
+	/*parallel_for_(Range(0, Cameras.size()), [&](const Range& range)
+	{*/
+	Range range(0, Cameras.size());
 		for (int i = range.start; i < range.end; i++)
 		{
-			Rect roi(winWidth * (i%rows), winHeight * (i / rows), winWidth, winHeight);
+			Rect roi(winWidth * (i%columns), winHeight * (i / columns), winWidth, winHeight);
 			/*UMat frame; Cameras[i]->GetFrame(BufferIndex, frame);
 			if (frame.empty())
 			{
 				continue;
 			}*/
-			UMat region = concatenated(roi);
+			UMat region;// = concatenated(roi);
 			Cameras[i]->GetOutputFrame(0, region, Size(winWidth, winHeight));
+			Size offset = (Size(winWidth, winHeight) - region.size())/2;
+			region.copyTo(concatenated(Rect(roi.x+offset.width, roi.y+offset.height, region.cols, region.rows)));
+			//region.copyTo(concatenated(roi));
 		}
-	});
+	/*});*/
 	return concatenated;
 }
