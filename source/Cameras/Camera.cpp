@@ -69,9 +69,10 @@ vector<CameraSettings> Camera::autoDetectCameras(CameraStartType Start, String F
 		if ((device.device_description.find(Filter) != String::npos) ^ invertedFilter)
 		{
 			CameraSettings settings;
-			settings.Resolution = GetFrameSize();
-			settings.Framerate = GetCaptureFramerate();
-			settings.FramerateDivider = 1;
+			CaptureConfig cfg = GetCaptureConfig();
+			settings.Resolution = cfg.FrameSize;
+			settings.Framerate = cfg.CaptureFramerate;
+			settings.FramerateDivider = cfg.FramerateDivider;
 			settings.DeviceInfo = device;
 			settings.BufferSize = 2;
 			settings.StartType = Start;
