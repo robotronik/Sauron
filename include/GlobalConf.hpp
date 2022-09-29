@@ -10,6 +10,7 @@ struct CaptureConfig
     int StartType;
     cv::Size FrameSize;
     int CaptureFramerate;
+    int FramerateDivider;
 };
 
 cv::Ptr<cv::aruco::Dictionary> GetArucoDict();
@@ -21,6 +22,8 @@ cv::Size GetScreenSize();
 cv::Size GetFrameSize();
 
 int GetCaptureFramerate();
+
+CaptureConfig GetCaptureConfig();
 
 CameraStartType GetCaptureMethod();
 

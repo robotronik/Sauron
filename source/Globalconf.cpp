@@ -18,7 +18,7 @@ bool ConfigInitialised = false;
 Config cfg;
 
 //Default values
-CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), 120};
+CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), 120, 4};
 WebsocketConfig WebsocketCfg = {false, true, true, "127.0.0.1", 24};
 
 template<class T>
@@ -102,6 +102,7 @@ void InitConfig()
 		CopyDefaultCfg(Resolution, "Width", Setting::TypeInt, CaptureCfg.FrameSize.width);
 		CopyDefaultCfg(Resolution, "Height", Setting::TypeInt, CaptureCfg.FrameSize.height);
 		CopyDefaultCfg(Capture, "Framerate", Setting::TypeInt, CaptureCfg.CaptureFramerate);
+		CopyDefaultCfg(Capture, "FramerateDivider", Setting::TypeInt, CaptureCfg.FramerateDivider);
 		CopyDefaultCfg(Capture, "Method", Setting::TypeInt, CaptureCfg.StartType);
 	}
 
@@ -171,6 +172,11 @@ CameraStartType GetCaptureMethod()
 {
 	InitConfig();
 	return (CameraStartType)CaptureCfg.StartType;
+}
+
+CaptureConfig GetCaptureConfig()
+{
+	return CaptureCfg;
 }
 
 vector<float> GetReductionFactor()

@@ -1,2 +1,0 @@
-/etc/apt/sources.list.d/nvidia-l4t-apt-source.list
-/etc/systemd/nv-oem-config.sh
