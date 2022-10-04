@@ -18,7 +18,7 @@ bool ConfigInitialised = false;
 Config cfg;
 
 //Default values
-CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), 120, 4};
+CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), Rect(0,0,0,0), 120, 4};
 WebsocketConfig WebsocketCfg = {false, true, true, "127.0.0.1", 24};
 
 template<class T>
@@ -101,6 +101,10 @@ void InitConfig()
 		Setting& Resolution = EnsureExistCfg(Capture, "Resolution", Setting::TypeGroup, 0);
 		CopyDefaultCfg(Resolution, "Width", Setting::TypeInt, CaptureCfg.FrameSize.width);
 		CopyDefaultCfg(Resolution, "Height", Setting::TypeInt, CaptureCfg.FrameSize.height);
+		CopyDefaultCfg(Resolution, "CropLeft", Setting::TypeInt, CaptureCfg.CropRegion.x);
+		CopyDefaultCfg(Resolution, "CropTop", Setting::TypeInt, CaptureCfg.CropRegion.y);
+		CopyDefaultCfg(Resolution, "CropRight", Setting::TypeInt, CaptureCfg.CropRegion.width);
+		CopyDefaultCfg(Resolution, "CropBottom", Setting::TypeInt, CaptureCfg.CropRegion.height);
 		CopyDefaultCfg(Capture, "Framerate", Setting::TypeInt, CaptureCfg.CaptureFramerate);
 		CopyDefaultCfg(Capture, "FramerateDivider", Setting::TypeInt, CaptureCfg.FramerateDivider);
 		CopyDefaultCfg(Capture, "Method", Setting::TypeInt, CaptureCfg.StartType);

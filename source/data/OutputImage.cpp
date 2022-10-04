@@ -52,7 +52,7 @@ UMat ConcatCameras(int BufferIndex, vector<OutputImage*> Cameras, int NumCams)
 {
 	Size screensize = GetScreenSize();
 	UMat concatenated(screensize, CV_8UC3, Scalar(0,0,255));
-	Size splits = findSplit(screensize, Size(16,9), Cameras.size());
+	Size splits = findSplit(screensize, GetFrameSize(), Cameras.size());
 	int &rows = splits.height, &columns = splits.width;
 	int winWidth = screensize.width/columns, winHeight = screensize.height/rows;
 	parallel_for_(Range(0, Cameras.size()), [&](const Range& range)

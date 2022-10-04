@@ -30,6 +30,7 @@ using namespace std;
 
 bool VideoCaptureCamera::StartFeed()
 {
+	auto globalconf = GetCaptureConfig();
 	if (connected)
 	{
 		return false;
@@ -57,6 +58,9 @@ bool VideoCaptureCamera::StartFeed()
 		ostringstream sizestream;
 		sizestream << "width=(int)" << Settings.Resolution.width
 				<< ", height=(int)" << Settings.Resolution.height;
+		ostringstream sizestreamnocrop;
+		sizestreamnocrop << "width=(int)" << Settings.Resolution.width + globalconf.CropRegion.x + globalconf.CropRegion.width
+				<< ", height=(int)" << Settings.Resolution.height + globalconf.CropRegion.y + globalconf.CropRegion.height;
 		switch (Settings.StartType)
 		{
 		case CameraStartType::GSTREAMER_NVARGUS:
@@ -66,9 +70,12 @@ bool VideoCaptureCamera::StartFeed()
 				int sensorid = Settings.DeviceInfo.bus_info.back() == '4' ? 1 : 0;
 				
 				capnamestream << "nvarguscamerasrc sensor-id=" << sensorid << " ! video/x-raw(memory:NVMM), " 
-				<< sizestream.str() << ", framerate=(fraction)"
+				<< sizestreamnocrop.str() << ", framerate=(fraction)"
 				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider 
-				<< " ! nvvidconv flip-method=2 ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! videoconvert ! video/x-raw, format=BGR ! appsink drop=1";
+				<< " ! nvvidconv flip-method=2 left=" << globalconf.CropRegion.x << " top=" << globalconf.CropRegion.y 
+				<< " right=" << Settings.Resolution.width + globalconf.CropRegion.x 
+				<< " bottom=" << Settings.Resolution.height + globalconf.CropRegion.y
+				<< " ! video/x-raw, format=(string)BGRx, " << sizestream.str() << " ! videoconvert ! video/x-raw, format=BGR ! appsink drop=1";
 				Settings.StartPath = capnamestream.str();
 				Settings.ApiID = CAP_GSTREAMER;
 			}

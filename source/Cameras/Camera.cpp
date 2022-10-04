@@ -117,6 +117,7 @@ bool Camera::SetCalibrationSetting(Mat CameraMatrix, Mat DistanceCoefficients)
 {
 	Settings.CameraMatrix = CameraMatrix;
 	Settings.distanceCoeffs = DistanceCoefficients;
+	HasUndistortionMaps = false;
 	return true;
 }
 

@@ -9,6 +9,7 @@ struct CaptureConfig
 {
     int StartType;
     cv::Size FrameSize;
+    cv::Rect CropRegion;
     int CaptureFramerate;
     int FramerateDivider;
 };
