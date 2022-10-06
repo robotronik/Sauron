@@ -19,6 +19,7 @@ Config cfg;
 
 //Default values
 CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), Rect(0,0,0,0), 120, 4};
+vector<float> Reductions = {2};
 WebsocketConfig WebsocketCfg = {false, true, true, "127.0.0.1", 24};
 
 template<class T>
@@ -69,6 +70,46 @@ Setting& CopyDefaultCfg(Setting& Location, const char *FieldName, Setting::Type 
 	}
 }
 
+template<class T>
+Setting& CopyDefaultVector(Setting& Location, const char *FieldName, Setting::Type SettingType, vector<T>& DefaultValue)
+{
+	if(Location.exists(FieldName))
+	{
+		if (Location[FieldName].isArray())
+		{
+			Setting& Arrayloc = Location[FieldName];
+			DefaultValue.clear();
+			for (int i = 0; i < Location.getLength(); i++)
+			{
+				DefaultValue.push_back(Arrayloc[i]);
+			}
+			return Arrayloc;
+		}
+		else
+		{
+			Location.remove(FieldName);
+		}
+		
+	}
+	Setting& settingloc = Location.add(FieldName, Setting::TypeArray);
+	switch (SettingType)
+	{
+	case Setting::TypeGroup:
+	case Setting::TypeArray:
+		/* code */
+		break;
+	
+	default:
+		for (int i = 0; i < DefaultValue.size(); i++)
+		{
+			settingloc.add(SettingType) = DefaultValue[i];
+		}
+		
+		break;
+	}
+	return settingloc;
+}
+
 void InitConfig()
 {
 	if (ConfigInitialised)
@@ -108,6 +149,7 @@ void InitConfig()
 		CopyDefaultCfg(Capture, "Framerate", Setting::TypeInt, CaptureCfg.CaptureFramerate);
 		CopyDefaultCfg(Capture, "FramerateDivider", Setting::TypeInt, CaptureCfg.FramerateDivider);
 		CopyDefaultCfg(Capture, "Method", Setting::TypeInt, CaptureCfg.StartType);
+		CopyDefaultVector(Resolution, "Reductions", Setting::TypeFloat, Reductions);
 	}
 
 	Setting& Websocket = EnsureExistCfg(root, "Websocket", Setting::Type::TypeGroup, 0);
@@ -185,7 +227,7 @@ CaptureConfig GetCaptureConfig()
 
 vector<float> GetReductionFactor()
 {
-	return {2};
+	return Reductions;
 }
 
 vector<Size> GetArucoReductions()
