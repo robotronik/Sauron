@@ -20,7 +20,7 @@ Config cfg;
 //Default values
 CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), Rect(0,0,0,0), 120, 4};
 vector<float> Reductions = {2};
-WebsocketConfig WebsocketCfg = {false, true, true, "127.0.0.1", 24};
+WebsocketConfig WebsocketCfg = {false, true, true, "127.0.0.1", 24, {}};
 
 template<class T>
 Setting& EnsureExistCfg(Setting& Location, const char *FieldName, Setting::Type SettingType, T DefaultValue)
@@ -79,7 +79,7 @@ Setting& CopyDefaultVector(Setting& Location, const char *FieldName, Setting::Ty
 		{
 			Setting& Arrayloc = Location[FieldName];
 			DefaultValue.clear();
-			for (int i = 0; i < Location.getLength(); i++)
+			for (int i = 0; i < Arrayloc.getLength(); i++)
 			{
 				DefaultValue.push_back(Arrayloc[i]);
 			}
@@ -160,6 +160,8 @@ void InitConfig()
 
 		CopyDefaultCfg(Websocket, "IP", Setting::TypeString, WebsocketCfg.IP);
 		CopyDefaultCfg(Websocket, "Port", Setting::TypeInt, WebsocketCfg.Port);
+
+		CopyDefaultVector(Websocket, "URLs", Setting::TypeString, WebsocketCfg.URLs);
 	}
 
 	cfg.writeFile("../config.cfg");

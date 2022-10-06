@@ -33,7 +33,7 @@ void CDFRExternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v
 
 	ObjectTracker tracker;
     
-	WebSender sender(true, true);
+	WebSender sender;
 
 	StaticObject* boardobj = new StaticObject(false, "board");
 	tracker.RegisterTrackedObject(boardobj); 

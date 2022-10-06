@@ -43,6 +43,7 @@ struct WebsocketConfig
     bool Server;
     cv::String IP;
     int Port; 
+    std::vector<std::string> URLs;
 };
 
 WebsocketConfig GetWebsocketConfig();
