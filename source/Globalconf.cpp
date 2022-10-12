@@ -18,9 +18,10 @@ bool ConfigInitialised = false;
 Config cfg;
 
 //Default values
-CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), Rect(0,0,0,0), 120, 4};
+CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), Rect(0,0,0,0), 120, 4, ""};
 vector<float> Reductions = {2};
 WebsocketConfig WebsocketCfg = {false, true, true, "127.0.0.1", 24, {}};
+vector<InternalCameraConfig> CamerasInternal;
 
 template<class T>
 Setting& EnsureExistCfg(Setting& Location, const char *FieldName, Setting::Type SettingType, T DefaultValue)
@@ -32,6 +33,7 @@ Setting& EnsureExistCfg(Setting& Location, const char *FieldName, Setting::Type 
 		{
 		case Setting::TypeGroup:
 		case Setting::TypeArray:
+		case Setting::TypeList:
 			/* code */
 			break;
 		
@@ -54,6 +56,7 @@ Setting& CopyDefaultCfg(Setting& Location, const char *FieldName, Setting::Type 
 		{
 		case Setting::TypeGroup:
 		case Setting::TypeArray:
+		case Setting::TypeList:
 			/* code */
 			break;
 		
@@ -96,6 +99,7 @@ Setting& CopyDefaultVector(Setting& Location, const char *FieldName, Setting::Ty
 	{
 	case Setting::TypeGroup:
 	case Setting::TypeArray:
+	case Setting::TypeList:
 		/* code */
 		break;
 	
@@ -150,6 +154,7 @@ void InitConfig()
 		CopyDefaultCfg(Capture, "FramerateDivider", Setting::TypeInt, CaptureCfg.FramerateDivider);
 		CopyDefaultCfg(Capture, "Method", Setting::TypeInt, CaptureCfg.StartType);
 		CopyDefaultVector(Resolution, "Reductions", Setting::TypeFloat, Reductions);
+		CopyDefaultCfg(Capture, "CameraFilter", Setting::TypeString, CaptureCfg.filter);
 	}
 
 	Setting& Websocket = EnsureExistCfg(root, "Websocket", Setting::Type::TypeGroup, 0);
@@ -163,6 +168,46 @@ void InitConfig()
 
 		CopyDefaultVector(Websocket, "URLs", Setting::TypeString, WebsocketCfg.URLs);
 	}
+
+	Setting& CamerasSett = EnsureExistCfg(root, "InternalCameras", Setting::Type::TypeList, 0);
+	{
+		CamerasInternal.clear();
+		for (int i = 0; i < CamerasSett.getLength(); i++)
+		{
+			CamerasInternal.push_back(InternalCameraConfig());
+			CamerasInternal[i].LocationRelative = Affine3d::Identity();
+			CopyDefaultCfg(CamerasSett[i], "Name", Setting::TypeString, CamerasInternal[i].CameraName);
+			Setting& Loc = EnsureExistCfg(CamerasSett[i], "Location", Setting::Type::TypeList, 0);
+
+			for (int j = 0; j < 4; j++)
+			{
+				if (Loc.getLength() <= j)
+				{
+					Loc.add(Setting::TypeArray);
+				}
+				while (!Loc[j].isArray())
+				{
+					Loc.remove(j);
+					Loc.add(Setting::TypeArray);
+				}
+				
+				for (int k = 0; k < 4; k++)
+				{
+					double &address = CamerasInternal[i].LocationRelative.matrix(j,k);
+					float value = address;
+					if (Loc[j].getLength() <= k)
+					{
+						Loc[j].add(Setting::TypeFloat) = address;
+					}
+					else
+					{
+						address = Loc[j][k];
+					}
+				}
+			}
+		}
+	}
+
 
 	cfg.writeFile("../config.cfg");
 	
@@ -224,11 +269,13 @@ CameraStartType GetCaptureMethod()
 
 CaptureConfig GetCaptureConfig()
 {
+	InitConfig();
 	return CaptureCfg;
 }
 
 vector<float> GetReductionFactor()
 {
+	InitConfig();
 	return Reductions;
 }
 
@@ -269,4 +316,10 @@ WebsocketConfig GetWebsocketConfig()
 	wscfg.IP = (std::string)Websocket["IP"];
 	wscfg.Port = Websocket["Port"];
 	return wscfg;
+}
+
+vector<InternalCameraConfig> GetInternalCameraPositionsConfig()
+{
+	InitConfig();
+	return CamerasInternal;
 }

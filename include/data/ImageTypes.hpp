@@ -129,6 +129,7 @@ class BufferedFrame
 {
 
 public:
+	unsigned int CaptureTick;
 	MixedFrame FrameRaw;
 	MixedFrame FrameUndistorted;
 	BufferStatus Status;

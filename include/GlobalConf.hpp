@@ -2,6 +2,7 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/aruco.hpp>
+#include <opencv2/core/affine.hpp>
 
 enum class CameraStartType;
 
@@ -12,6 +13,7 @@ struct CaptureConfig
     cv::Rect CropRegion;
     int CaptureFramerate;
     int FramerateDivider;
+    std::string filter;
 };
 
 cv::Ptr<cv::aruco::Dictionary> GetArucoDict();
@@ -47,3 +49,11 @@ struct WebsocketConfig
 };
 
 WebsocketConfig GetWebsocketConfig();
+
+struct InternalCameraConfig
+{
+    std::string CameraName;
+    cv::Affine3d LocationRelative;
+};
+
+std::vector<InternalCameraConfig> GetInternalCameraPositionsConfig();

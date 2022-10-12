@@ -1,14 +1,17 @@
+sudo -v
+
 #!/bin/bash
 set -e
 
 # reveal the CUDA location
-cd ~
+cd ..
 sudo sh -c "echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/nvidia-tegra.conf"
 sudo ldconfig
 
 
 # set install dir
-cd ~/opencv
+cd opencv/
+mkdir build || echo "Build folder already existed, skipping..."
 cd build
 
 #-D WITH_NVCUVID=ON \ potetiellement pour cudacodec::VideoCapture
@@ -32,7 +35,7 @@ cmake -G Ninja \
 -D ENABLE_FAST_MATH=ON \
 -D CUDA_FAST_MATH=ON \
 -D OPENCV_DNN_CUDA=OFF \
--D CUDA_ARCH_BIN=53 \
+-D CUDA_ARCH_BIN=50,52,61,75,86 \
 -D WITH_QT=OFF \
 -D BUILD_TIFF=ON \
 -D WITH_FFMPEG=ON \
@@ -56,9 +59,10 @@ cmake -G Ninja \
 -D BUILD_JAVA=OFF \
 -D BUILD_EXAMPLES=OFF ../
 
+sudo -v
 ninja
 
-sudo rm -r /usr/include/opencv4/opencv2
+sudo rm -r /usr/include/opencv4/opencv2 || echo "No previous installation of opencv, skipping..."
 sudo ninja install
 sudo ldconfig
 

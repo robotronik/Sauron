@@ -149,6 +149,7 @@ bool VideoCaptureCamera::Grab(int BufferIndex)
 	if (grabsuccess)
 	{
 		FrameBuffer[BufferIndex].Status.HasGrabbed = true;
+		FrameBuffer[BufferIndex].CaptureTick = getCPUTickCount();
 	}
 	else
 	{
@@ -175,6 +176,7 @@ bool VideoCaptureCamera::Read(int BufferIndex)
 	else
 	{
 		ReadSuccess = feed->read(buff.FrameRaw.CPUFrame);
+		buff.CaptureTick = getCPUTickCount();
 	}
 	buff.FrameRaw.HasCPU = ReadSuccess;
 	
