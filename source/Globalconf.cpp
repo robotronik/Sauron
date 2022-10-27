@@ -20,7 +20,7 @@ Config cfg;
 //Default values
 CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), Rect(0,0,0,0), 120, 4, ""};
 vector<float> Reductions = {2};
-WebsocketConfig WebsocketCfg = {false, true, true, "127.0.0.1", 24, {}};
+WebsocketConfig WebsocketCfg = {"eth1", true, true, "127.0.0.1", 24};
 vector<InternalCameraConfig> CamerasInternal;
 
 template<class T>
@@ -159,14 +159,12 @@ void InitConfig()
 
 	Setting& Websocket = EnsureExistCfg(root, "Websocket", Setting::Type::TypeGroup, 0);
 	{
-		CopyDefaultCfg(Websocket, "Unix", Setting::TypeBoolean, WebsocketCfg.Unix);
+		CopyDefaultCfg(Websocket, "Interface", Setting::TypeString, WebsocketCfg.Interface);
 		CopyDefaultCfg(Websocket, "TCP", Setting::TypeBoolean, WebsocketCfg.TCP);
 		CopyDefaultCfg(Websocket, "Server", Setting::TypeBoolean, WebsocketCfg.Server);
 
 		CopyDefaultCfg(Websocket, "IP", Setting::TypeString, WebsocketCfg.IP);
 		CopyDefaultCfg(Websocket, "Port", Setting::TypeInt, WebsocketCfg.Port);
-
-		CopyDefaultVector(Websocket, "URLs", Setting::TypeString, WebsocketCfg.URLs);
 	}
 
 	Setting& CamerasSett = EnsureExistCfg(root, "InternalCameras", Setting::Type::TypeList, 0);
@@ -305,17 +303,10 @@ UMat& GetArucoImage(int id)
 	return MarkerImages[id];
 }
 
-WebsocketConfig GetWebsocketConfig()
+WebsocketConfig& GetWebsocketConfig()
 {
 	InitConfig();
-	Setting& Websocket = cfg.getRoot()["Websocket"];
-	WebsocketConfig wscfg;
-	wscfg.Unix = Websocket["Unix"];
-	wscfg.TCP = Websocket["TCP"];
-	wscfg.Server = Websocket["Server"];
-	wscfg.IP = (std::string)Websocket["IP"];
-	wscfg.Port = Websocket["Port"];
-	return wscfg;
+	return WebsocketCfg;
 }
 
 vector<InternalCameraConfig> GetInternalCameraPositionsConfig()

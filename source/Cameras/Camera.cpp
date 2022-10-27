@@ -28,7 +28,7 @@ vector<CameraSettings> Camera::autoDetectCameras(CameraStartType Start, String F
 {
 	vector<v4l2::devices::DEVICE_INFO> devices;
 
-    v4l2::devices::list(devices);
+	v4l2::devices::list(devices);
 
 	if (!silent)
 	{
@@ -51,7 +51,7 @@ vector<CameraSettings> Camera::autoDetectCameras(CameraStartType Start, String F
 	}
 	
 
-    vector<CameraSettings> detected;
+	vector<CameraSettings> detected;
 	for (const auto & device : devices)
 	{
 		//v4l2-ctl --list-formats-ext
@@ -93,7 +93,7 @@ vector<CameraSettings> Camera::autoDetectCameras(CameraStartType Start, String F
 			detected.push_back(settings);
 		}
 	}
-    return detected;
+	return detected;
 }
 
 

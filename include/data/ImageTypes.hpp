@@ -10,7 +10,7 @@
 //Progression status for a buffer
 struct BufferStatus
 {
-    bool HasGrabbed;
+	bool HasGrabbed;
 	bool HasCaptured;
 	bool HasUndistorted;
 	bool HasResized;

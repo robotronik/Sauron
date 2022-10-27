@@ -83,18 +83,18 @@ void BoardViz2D::OverlayImage(cuda::GpuMat& ImageToOverlay, FVector2D<float> pos
 	FVector2D<float> width = FVector2D<float>(ImageToOverlay.cols, 0);
 	FVector2D<float> height = FVector2D<float>(0, ImageToOverlay.rows);
 	Point2f srcTri[3];
-    srcTri[0] = GetImageCenter(ImageToOverlay);
-    srcTri[1] = FVector2D<float>(srcTri[0]) - width;
-    srcTri[2] = FVector2D<float>(srcTri[0]) - height;
+	srcTri[0] = GetImageCenter(ImageToOverlay);
+	srcTri[1] = FVector2D<float>(srcTri[0]) - width;
+	srcTri[2] = FVector2D<float>(srcTri[0]) - height;
 
 	FVector2D<float> TargetSize = ImageSize/Extent*FVector2D<int>(image.size());
 	FVector2D<int> Oversize = TargetSize * sqrt(2); //oversize to guarantee no cropping
 	cuda::GpuMat OverlayRotated(Oversize.ToSize(), ImageToOverlay.type());
 
-    Point2f dstTri[3];
-    dstTri[0] = GetImageCenter(OverlayRotated);
-    dstTri[1] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(TargetSize.x,0), rotation);
-    dstTri[2] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(0,TargetSize.y), rotation);
+	Point2f dstTri[3];
+	dstTri[0] = GetImageCenter(OverlayRotated);
+	dstTri[1] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(TargetSize.x,0), rotation);
+	dstTri[2] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(0,TargetSize.y), rotation);
 	Mat warp_mat = getAffineTransform( srcTri, dstTri );
 
 	cuda::warpAffine(ImageToOverlay, OverlayRotated, warp_mat, OverlayRotated.size());

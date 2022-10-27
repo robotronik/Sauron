@@ -49,18 +49,19 @@ int main(int argc, char** argv )
 		"{cuda           |      | print cuda info}"
 		"{board          |      | runs boardview test}"
 		"{viz3d          |      | runs viz3d test}"
-        ;
+		"{server s       |      | force server/client state}"
+		;
 	CommandLineParser parser(argc, argv, keys);
 
 	if (parser.has("help"))
-    {
-        parser.printMessage();
-        exit(EXIT_SUCCESS);
-    }
+	{
+		parser.printMessage();
+		exit(EXIT_SUCCESS);
+	}
 	if (parser.has("build"))
 	{
 		cout << getBuildInformation() << endl;
-        exit(EXIT_SUCCESS);
+		exit(EXIT_SUCCESS);
 	}
 	
 	
@@ -109,7 +110,7 @@ int main(int argc, char** argv )
 		}
 		exit(EXIT_SUCCESS);
 	}
-    
+	
 	vector<CameraSettings> CamSettings = Camera::autoDetectCameras(GetCaptureMethod(), GetCaptureConfig().filter, "", false);
 	/*vector<CameraSettings> CamSettings;
 	CameraSettings fakedcam;
@@ -145,6 +146,11 @@ int main(int argc, char** argv )
 	}
 
 	bool direct = parser.has("direct");
+
+	if(parser.has("server"))
+	{
+		GetWebsocketConfig().Server = parser.get<bool>("server");
+	}
 	
 	
 	//hsvtest();

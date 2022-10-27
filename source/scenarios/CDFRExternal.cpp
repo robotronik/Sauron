@@ -5,9 +5,9 @@
 
 void CDFRExternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v3d)
 {
-    Ptr<aruco::Dictionary> dictionary = GetArucoDict();
+	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
-    vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);
+	vector<VideoCaptureCamera*> physicalCameras = StartCameras<VideoCaptureCamera>(CameraSettings);
 
 	cout << "Start grabbing " << physicalCameras.size() << " physical" << endl
 		<< "Press ESC to terminate" << endl;
@@ -19,7 +19,7 @@ void CDFRExternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v
 	if (direct)
 	{
 		board = new BoardViz2D(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
-        namedWindow("Cameras", WINDOW_NORMAL);
+		namedWindow("Cameras", WINDOW_NORMAL);
 		setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 		BoardViz2D::InitImages();
 	}
@@ -32,7 +32,7 @@ void CDFRExternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v
 	}
 
 	ObjectTracker tracker;
-    
+	
 	WebSender sender;
 
 	StaticObject* boardobj = new StaticObject(false, "board");

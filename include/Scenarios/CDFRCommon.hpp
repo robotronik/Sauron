@@ -28,4 +28,4 @@ using namespace std;
 
 
 void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, 
-    Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry);
+	Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry);

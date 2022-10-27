@@ -16,22 +16,22 @@ SerialSender::SerialSender(bool SelfDetectSerial)
 		return;
 	}
 	vector<String> SerialPorts = SerialSender::autoDetectTTYUSB();
-    for (size_t i = 0; i < SerialPorts.size(); i++)
-    {
-        cout << "Serial port found at " << SerialPorts[i] << endl;
-    }
-    
+	for (size_t i = 0; i < SerialPorts.size(); i++)
+	{
+		cout << "Serial port found at " << SerialPorts[i] << endl;
+	}
+		
 	serialib* bridge = new serialib();
-    if (SerialPorts.size() > 0)
-    {
-        int success = bridge->openDevice(SerialPorts[0].c_str(), SerialTransmission::BaudRate);
-        cout << "Result opening serial bridge : " << success << endl;
+	if (SerialPorts.size() > 0)
+	{
+		int success = bridge->openDevice(SerialPorts[0].c_str(), SerialTransmission::BaudRate);
+		cout << "Result opening serial bridge : " << success << endl;
 		if (success != 1)
 		{
 			cout << "Failed to open the serial bridge, make sure your user is in the dialout group" <<endl;
 			cout << "run this ->   sudo usermod -a -G dialout $USER    <- then restart your PC." << endl;
 		}
-    }
+	}
 	Bridge = bridge;
 }
 

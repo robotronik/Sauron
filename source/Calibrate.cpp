@@ -6,7 +6,7 @@
 
 #include <filesystem>
 
-#include <opencv2/core.hpp>     // Basic OpenCV structures (cv::Mat, Scalar)
+#include <opencv2/core.hpp>		// Basic OpenCV structures (cv::Mat, Scalar)
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
@@ -86,7 +86,7 @@ vector<String> CalibrationImages()
 {
 	vector<String> pathos;
 	for (const auto & entry : fs::directory_iterator(TempImgPath))
-    {
+	{
 		pathos.push_back(entry.path().string());
 		//cout << entry.path().string() << endl;
 	}

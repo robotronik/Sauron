@@ -161,9 +161,9 @@ bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Ve
 
 void Affine3dToVictor(PositionPacket &InPacket, Affine3d position)
 {
-    Vec3d pos3d = position.translation() * 1000.0; //convert to mm
-    InPacket.X = pos3d(0);
-    InPacket.Y = pos3d(1);
-    double angle = GetRotZ(position.linear()) * 180.f / M_PI;
-    InPacket.rotation = angle;
+	Vec3d pos3d = position.translation() * 1000.0; //convert to mm
+	InPacket.X = pos3d(0);
+	InPacket.Y = pos3d(1);
+	double angle = GetRotZ(position.linear()) * 180.f / M_PI;
+	InPacket.rotation = angle;
 }

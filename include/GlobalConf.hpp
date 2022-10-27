@@ -8,12 +8,12 @@ enum class CameraStartType;
 
 struct CaptureConfig
 {
-    int StartType;
-    cv::Size FrameSize;
-    cv::Rect CropRegion;
-    int CaptureFramerate;
-    int FramerateDivider;
-    std::string filter;
+	int StartType;
+	cv::Size FrameSize;
+	cv::Rect CropRegion;
+	int CaptureFramerate;
+	int FramerateDivider;
+	std::string filter;
 };
 
 cv::Ptr<cv::aruco::Dictionary> GetArucoDict();
@@ -40,20 +40,19 @@ cv::UMat& GetArucoImage(int id);
 
 struct WebsocketConfig
 {
-    bool Unix;
-    bool TCP;
-    bool Server;
-    cv::String IP;
-    int Port; 
-    std::vector<std::string> URLs;
+	std::string Interface;
+	bool TCP;
+	bool Server;
+	std::string IP;
+	int Port; 
 };
 
-WebsocketConfig GetWebsocketConfig();
+WebsocketConfig& GetWebsocketConfig();
 
 struct InternalCameraConfig
 {
-    std::string CameraName;
-    cv::Affine3d LocationRelative;
+	std::string CameraName;
+	cv::Affine3d LocationRelative;
 };
 
 std::vector<InternalCameraConfig> GetInternalCameraPositionsConfig();

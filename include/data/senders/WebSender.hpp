@@ -1,20 +1,21 @@
 #pragma once
 
 #include "data/senders/DataSender.hpp"
-
-#include <nng/nng.h>
+#include "data/senders/Transport/GenericTransport.hpp"
+#include <thread>
+#include <shared_mutex>
 
 class WebSender : public PositionDataSender
 {
 private:
-	nng_socket nngsock;
-	nng_listener nnglistener;
-	int sockfd;
-	vector<int> connectionfd;
-	bool connected = false;
+	GenericTransport* TransportLayer;
 public:
 	WebSender();
 	~WebSender();
+
+	void ServerListen();
+	
+public:
 
 	void SendPacket() final;
 };

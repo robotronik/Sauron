@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>   // for strings
 #include <vector>
-#include <opencv2/core.hpp>     // Basic OpenCV structures (Mat, Scalar)
+#include <opencv2/core.hpp>		// Basic OpenCV structures (Mat, Scalar)
 #include <opencv2/highgui.hpp>  // OpenCV window I/O
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/affine.hpp>
@@ -115,14 +115,14 @@ class ArucoCamera : public Camera
 
 public:
 
-    ArucoCamera(CameraSettings InCameraSettings)
-    :Camera(InCameraSettings)
-    {}
+	ArucoCamera(CameraSettings InCameraSettings)
+	:Camera(InCameraSettings)
+	{}
 
 	//Create lower-resolution copies of the frame to be used in aruco detection
 	virtual void RescaleFrames(int BufferIdx);
 
-    //detect markers using the lower resolutions and improve accuracy using the higher-resolution image
+	//detect markers using the lower resolutions and improve accuracy using the higher-resolution image
 	virtual void detectMarkers(int BufferIndex, cv::Ptr<cv::aruco::Dictionary> dict, cv::Ptr<cv::aruco::DetectorParameters> params);
 
 	//Gather detected markers in screen space
