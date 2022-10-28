@@ -27,7 +27,10 @@ TCPTransport::TCPTransport(bool inServer, string inIP, int inPort, string inInte
 		cerr << "Failed to create socket" << endl;
 	}
 	
-    setsockopt( sockfd, SOL_SOCKET, SO_BINDTODEVICE, Interface.c_str(), Interface.size() );
+    if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, Interface.c_str(), Interface.size()))
+    {
+        cerr << "Failed to set socket opt : " << errno << endl;
+    }
     struct sockaddr_in serverAddress;
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(Port);
@@ -69,6 +72,19 @@ TCPTransport::TCPTransport(bool inServer, string inIP, int inPort, string inInte
     }
 }
 
+TCPTransport::~TCPTransport()
+{
+    for (int i = 0; i < connectionfd.size(); i++)
+    {
+        close(connectionfd[i]);
+    }
+    if (sockfd != -1)
+    {
+        close(sockfd);
+    }
+    
+}
+
 void TCPTransport::Broadcast(const void *buffer, int length)
 {
 	if (!Connected)
@@ -82,19 +98,43 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 		shared_lock lock(listenmutex);
         for (int i = 0; i < connectionfd.size(); i++)
         {
-            int err = send(connectionfd[i], buffer, length, 0);
+            int err = send(connectionfd[i], buffer, length, MSG_NOSIGNAL);
             if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
             {
-                cerr << "Server failed to send data to client " << i << " : " << errno << endl;
+                char buffer[100];
+                inet_ntop(AF_INET, &connectionaddresses[i], buffer, sizeof(sockaddr_in));
+                if (errno == EPIPE)
+                {
+                    cout << "Client " << buffer << " disconnected." <<endl;
+                    close(connectionfd[i]);
+                    connectionfd.erase(next(connectionfd.begin(), i));
+                    connectionaddresses.erase(next(connectionaddresses.begin(), i));
+                    i--;
+                }
+                else
+                {
+                    cerr << "Server failed to send data to client " << buffer << " : " << errno << endl;
+                }
             }
         }
 	}
 	else
 	{
-		int err = send(sockfd, buffer, length, 0);
+		int err = send(sockfd, buffer, length, MSG_NOSIGNAL);
 		if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
 		{
-			cerr << "Failed to send data : " << errno << endl;
+            if (errno == EPIPE)
+            {
+                cout << "Server has disconnected" << endl;
+                close(sockfd);
+                sockfd = -1;
+                Connected = false;
+                //todo : reconnect
+            }
+            else
+            {
+                cerr << "Failed to send data : " << errno << endl;
+            }
 		}
 	}
 }
@@ -106,8 +146,8 @@ int TCPTransport::Receive(const void *buffer, int maxlength)
 
 void TCPTransport::receiveThread()
 {
-	cout << "Webserver thread started..." << endl;
-	char dataReceived[1024];
+	cout << "TCP thread started..." << endl;
+	char dataReceived[1025];
 	int n;
 	while (1)
 	{

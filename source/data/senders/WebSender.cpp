@@ -13,8 +13,15 @@ using namespace std;
 WebSender::WebSender()
 {
 	WebsocketConfig config = GetWebsocketConfig();
-	
-	TransportLayer = new UDPTransport(config.Server, config.IP, config.Port, config.Interface);
+
+	if (config.TCP)
+	{
+		TransportLayer = new TCPTransport(config.Server, config.IP, config.Port, config.Interface);
+	}
+	else
+	{
+		TransportLayer = new UDPTransport(config.Server, config.IP, config.Port, config.Interface);
+	}
 }
 
 WebSender::~WebSender()
@@ -35,7 +42,7 @@ void WebSender::SendPacket()
 
 	ostringstream sendbuff;
 
-	if (true)
+	if (false)
 	{
 		int buffersize = sizeof(int64) + sizeof(uint32_t) + sizeof(PositionPacket) * packets.size();
 		char* buffer = reinterpret_cast<char*>(malloc(buffersize));
@@ -70,6 +77,4 @@ void WebSender::SendPacket()
 		//cout << "Sending " << outp << endl;
 		TransportLayer->Broadcast(outp.c_str(), outp.length());
 	}
-
-	
 }

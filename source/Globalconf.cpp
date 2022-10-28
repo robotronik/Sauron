@@ -173,7 +173,7 @@ void InitConfig()
 		for (int i = 0; i < CamerasSett.getLength(); i++)
 		{
 			CamerasInternal.push_back(InternalCameraConfig());
-			CamerasInternal[i].LocationRelative = Affine3d::Identity();
+			CamerasInternal[i].LocationRelative = Affine3d::Identity().translate(Vec3d(0.1,0.2,0.3));
 			CopyDefaultCfg(CamerasSett[i], "Name", Setting::TypeString, CamerasInternal[i].CameraName);
 			Setting& Loc = EnsureExistCfg(CamerasSett[i], "Location", Setting::Type::TypeList, 0);
 

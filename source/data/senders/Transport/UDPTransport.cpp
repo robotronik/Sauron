@@ -66,6 +66,15 @@ UDPTransport::UDPTransport(bool inServer, std::string inIP, int inPort, std::str
     }
 }
 
+UDPTransport::~UDPTransport()
+{
+    if (sockfd != -1)
+    {
+        close(sockfd);
+    }
+    
+}
+
 void UDPTransport::Broadcast(const void *buffer, int length)
 {
 	if (!Connected)
@@ -105,7 +114,7 @@ int UDPTransport::Receive(const void *buffer, int maxlength)
 void UDPTransport::receiveThread()
 {
 	cout << "Webserver thread started..." << endl;
-	char dataReceived[1024];
+	char dataReceived[1025];
 	int n;
 	while (1)
 	{
@@ -138,6 +147,9 @@ void UDPTransport::receiveThread()
                 
             //cout << "Received " << n << " bytes..." << endl;
             //printBuffer(dataReceived, n);
+            //string rcvstr(dataReceived, n);
+            //cout << rcvstr << endl;
+            
         }
 	}
 	

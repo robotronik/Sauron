@@ -25,6 +25,9 @@ public:
 
 	TCPTransport(bool inServer, std::string inIP, int inPort, std::string inInterface);
 
+	~TCPTransport();
+
+
 	virtual void Broadcast(const void *buffer, int length) override;
 
 	virtual int Receive(const void *buffer, int maxlength) override;
