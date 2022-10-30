@@ -141,7 +141,6 @@ bool VideoCaptureCamera::Grab(int BufferIndex)
 {
 	if (!connected)
 	{
-		
 		return false;
 	}
 	bool grabsuccess = false;
@@ -150,11 +149,13 @@ bool VideoCaptureCamera::Grab(int BufferIndex)
 	{
 		FrameBuffer[BufferIndex].Status.HasGrabbed = true;
 		FrameBuffer[BufferIndex].CaptureTick = getCPUTickCount();
+		RegisterNoError();
 	}
 	else
 	{
 		cerr << "Failed to grab frame for camera " << Settings.DeviceInfo.device_description << " with buffer " << BufferIndex <<endl;
 		FrameBuffer[BufferIndex].Status = BufferStatus();
+		RegisterError();
 	}
 	
 	return grabsuccess;
@@ -192,9 +193,10 @@ bool VideoCaptureCamera::Read(int BufferIndex)
 		buff.FrameRaw = MixedFrame();
 		buff.FrameUndistorted = MixedFrame();
 		buff.rescaledFrames.resize(0);
+		RegisterError();
 		return false;
 	}
-	
+	RegisterNoError();
 	return true;
 }
 

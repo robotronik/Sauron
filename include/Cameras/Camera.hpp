@@ -44,6 +44,9 @@ protected:
 	cv::cuda::GpuMat UndistMap1, UndistMap2;
 
 public:
+	int errors;
+
+public:
 	cv::Affine3d Location;
 
 protected:
@@ -58,6 +61,7 @@ public:
 
 	Camera(CameraSettings InSettings)
 		:Settings(InSettings),
+		errors(0),
 		Location(cv::Affine3d::Identity()),
 		connected(false),
 		FrameBuffer()
@@ -69,7 +73,10 @@ public:
 		
 	}
 
-	static std::vector<CameraSettings> autoDetectCameras(CameraStartType Start, cv::String Filter, cv::String CalibrationFile, bool silent = true);
+protected:
+	void RegisterError();
+	void RegisterNoError();
+public:
 
 	//Get the settings used to start this camera
 	virtual CameraSettings GetCameraSettings();
