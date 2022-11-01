@@ -50,12 +50,12 @@ void TCPTransport::CreateSocket()
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1)
 	{
-		cerr << "Failed to create socket" << endl;
+		cerr << "TCP Failed to create socket, port " << Port << endl;
 	}
 	
 	if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, Interface.c_str(), Interface.size()))
 	{
-		cerr << "Failed to set socket opt : " << errno << endl;
+		cerr << "TCP Failed to set socket opt : " << errno << endl;
 	}
 }
 
@@ -68,20 +68,20 @@ bool TCPTransport::Connect()
 	string ip = Server ? "0.0.0.0" : IP;
 
 	if (inet_pton(AF_INET, ip.c_str(), &serverAddress.sin_addr) <= 0) {
-		cerr << "ERROR : Invalid address/ Address not supported \n" << endl;
+		cerr << "TCP ERROR : Invalid address/ Address not supported \n" << endl;
 	}
 
 	if (Server)
 	{
-		cout << "Binding TCP socket..." << endl;
+		//cout << "TCP Binding socket..." << endl;
 		if (bind(sockfd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1) 
 		{
-			cerr << "Can't bind to IP/port, errno " << errno << endl;
+			cerr << "TCP Can't bind to IP/port, errno " << errno << endl;
 		}
-		cout << "Marking TCP socket for listening..." << endl;
+		//cout << "TCP Marking socket for listening" << endl;
 		if (listen(sockfd, SOMAXCONN) == -1)
 		{
-			cerr << "Can't listen !" << endl;
+			cerr << "TCP Can't listen !" << endl;
 		}
 		Connected = true;
 		return true;
@@ -137,7 +137,7 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 				inet_ntop(AF_INET, &connectionaddresses[i].sin_addr, buffer, sizeof(sockaddr_in));
 				if (errno == EPIPE)
 				{
-					cout << "Client " << buffer << " disconnected." <<endl;
+					cout << "TCP Client " << buffer << " disconnected." <<endl;
 					close(connectionfd[i]);
 					connectionfd.erase(next(connectionfd.begin(), i));
 					connectionaddresses.erase(next(connectionaddresses.begin(), i));
@@ -145,7 +145,7 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 				}
 				else
 				{
-					cerr << "Server failed to send data to client " << buffer << " : " << errno << endl;
+					cerr << "TCP Server failed to send data to client " << buffer << " : " << errno << endl;
 				}
 			}
 		}
@@ -164,7 +164,7 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 			}
 			else
 			{
-				cerr << "Failed to send data : " << errno << endl;
+				cerr << "TCP Failed to send data : " << errno << endl;
 			}
 		}
 	}
@@ -201,7 +201,7 @@ int TCPTransport::Receive(void *buffer, int maxlength)
 
 void TCPTransport::receiveThread()
 {
-	cout << "TCP thread started..." << endl;
+	//cout << "TCP Webserver thread started..." << endl;
 	int n;
 	while (1)
 	{
@@ -217,7 +217,7 @@ void TCPTransport::receiveThread()
 			{
 				char buffer[100];
 				inet_ntop(AF_INET, &client.sin_addr, buffer, clientSize);
-				cout << "Client connecting from " << buffer << " fd=" << ret << endl;
+				cout << "TCP Client connecting from " << buffer << " fd=" << ret << endl;
 				unique_lock lock(listenmutex);
 				connectionfd.push_back(ret);
 				connectionaddresses.push_back(client);
@@ -230,7 +230,7 @@ void TCPTransport::receiveThread()
 				}
 				else
 				{
-					cerr << "Unhandled error on TCP accept: " << errno << endl;
+					cerr << "TCP Unhandled error on accept: " << errno << endl;
 				}
 			}
 			

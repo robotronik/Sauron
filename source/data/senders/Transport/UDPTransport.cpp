@@ -25,7 +25,7 @@ UDPTransport::UDPTransport(bool inServer, std::string inIP, int inPort, std::str
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sockfd == -1)
 	{
-		cerr << "Failed to create socket" << endl;
+		cerr << "Failed to create socket, port " << Port << endl;
 	}
 
     string interface = "eth1";
@@ -37,15 +37,15 @@ UDPTransport::UDPTransport(bool inServer, std::string inIP, int inPort, std::str
     string ip = config.Server ? "0.0.0.0" : config.IP;
 
     if (inet_pton(AF_INET, ip.c_str(), &serverAddress.sin_addr) <= 0) {
-        cerr << "ERROR : Invalid address/ Address not supported \n" << endl;
+        cerr << "UDP ERROR : Invalid address/ Address not supported \n" << endl;
     }
 
     if (Server)
     {
-        cout << "Binding UDP socket..." << endl;
+        //cout << "UDP Binding socket" << endl;
         if (bind(sockfd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1) 
         {
-            cerr << "Can't bind to IP/port, errno " << errno << endl;
+            cerr << "UDP Can't bind to IP/port, errno " << errno << endl;
         }
         Connected = true;
         ReceiveThreadHandle = new thread([this](){receiveThread();});
@@ -55,7 +55,7 @@ UDPTransport::UDPTransport(bool inServer, std::string inIP, int inPort, std::str
         // communicates with listen
         if(connect(sockfd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) == -1)
         {
-            cerr << "Failed to connect to server" << endl;
+            cerr << "UDP Failed to connect to server" << endl;
         }
         else
         {
@@ -91,7 +91,7 @@ void UDPTransport::Broadcast(const void *buffer, int length)
             int err = sendto(sockfd, buffer, length, 0, (struct sockaddr*)&connectionaddresses[i], sizeof(sockaddr_in));
             if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
             {
-                cerr << "Server failed to send data to client " << i << " : " << errno << endl;
+                cerr << "UDP Server failed to send data to client " << i << " : " << errno << endl;
             }
         }
 	}
@@ -101,7 +101,7 @@ void UDPTransport::Broadcast(const void *buffer, int length)
 		int err = send(sockfd, buffer, length, 0);
 		if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
 		{
-			cerr << "Failed to send data : " << errno << endl;
+			cerr << "UDP Failed to send data : " << errno << endl;
 		}
 	}
 }
@@ -113,12 +113,12 @@ int UDPTransport::Receive(void *buffer, int maxlength)
 	
 void UDPTransport::receiveThread()
 {
-	cout << "Webserver thread started..." << endl;
+	//cout << "UDP Webserver thread started" << endl;
 	char dataReceived[1025];
 	int n;
 	while (1)
 	{
-		this_thread::sleep_for(chrono::milliseconds(10));
+		this_thread::sleep_for(chrono::milliseconds(100));
         
         sockaddr_in client;
         socklen_t clientSize = sizeof(client);
@@ -141,7 +141,7 @@ void UDPTransport::receiveThread()
                 connectionaddresses.push_back(client);
                 char buffer[100];
                 inet_ntop(AF_INET, &client.sin_addr, buffer, clientSize);
-                cout << "Client connecting from " << buffer << endl;
+                cout << "UDP Client connecting from " << buffer << endl;
             }
             dataReceived[n] = 0;
                 
