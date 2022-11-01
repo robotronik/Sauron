@@ -21,5 +21,5 @@ public:
 
 	virtual void Broadcast(const void *buffer, int length) override;
 
-	virtual int Receive(const void *buffer, int maxlength) override;
+	virtual int Receive(void *buffer, int maxlength) override;
 };

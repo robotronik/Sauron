@@ -106,7 +106,7 @@ void UDPTransport::Broadcast(const void *buffer, int length)
 	}
 }
 
-int UDPTransport::Receive(const void *buffer, int maxlength)
+int UDPTransport::Receive(void *buffer, int maxlength)
 {
     return -1;
 }
@@ -140,7 +140,7 @@ void UDPTransport::receiveThread()
             {
                 connectionaddresses.push_back(client);
                 char buffer[100];
-                inet_ntop(AF_INET, &client, buffer, clientSize);
+                inet_ntop(AF_INET, &client.sin_addr, buffer, clientSize);
                 cout << "Client connecting from " << buffer << endl;
             }
             dataReceived[n] = 0;

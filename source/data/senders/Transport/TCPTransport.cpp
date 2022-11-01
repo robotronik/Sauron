@@ -134,7 +134,7 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 			if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
 			{
 				char buffer[100];
-				inet_ntop(AF_INET, &connectionaddresses[i], buffer, sizeof(sockaddr_in));
+				inet_ntop(AF_INET, &connectionaddresses[i].sin_addr, buffer, sizeof(sockaddr_in));
 				if (errno == EPIPE)
 				{
 					cout << "Client " << buffer << " disconnected." <<endl;
@@ -170,19 +170,42 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 	}
 }
 
-int TCPTransport::Receive(const void *buffer, int maxlength)
+int TCPTransport::Receive(void *buffer, int maxlength)
 {
+	int n = -1;
+	memset(buffer, '0' , maxlength);
+	if (Server)
+	{
+		shared_lock lock(listenmutex);
+		for (int i = 0; i < connectionfd.size(); i++)
+		{
+			if ((n = read(connectionfd[i], buffer, maxlength)) > 0)
+			{
+				//cout << "Received " << n << " bytes..." << endl;
+				//printBuffer(dataReceived, n);
+				return n;
+			}
+		}
+	}
+	else
+	{
+		if ((n = read(sockfd, buffer, maxlength)) > 0)
+		{
+			//cout << "Received " << n << " bytes..." << endl;
+			//printBuffer(dataReceived, n);
+			return n;
+		}
+	}
 	return -1;
 }
 
 void TCPTransport::receiveThread()
 {
 	cout << "TCP thread started..." << endl;
-	char dataReceived[1025];
 	int n;
 	while (1)
 	{
-		this_thread::sleep_for(chrono::milliseconds(10));
+		this_thread::sleep_for(chrono::milliseconds(100));
 		CheckConnection();
 		if (Server)
 		{
@@ -193,7 +216,7 @@ void TCPTransport::receiveThread()
 			if (ret > 0)
 			{
 				char buffer[100];
-				inet_ntop(AF_INET, &client, buffer, clientSize);
+				inet_ntop(AF_INET, &client.sin_addr, buffer, clientSize);
 				cout << "Client connecting from " << buffer << " fd=" << ret << endl;
 				unique_lock lock(listenmutex);
 				connectionfd.push_back(ret);
@@ -210,32 +233,8 @@ void TCPTransport::receiveThread()
 					cerr << "Unhandled error on TCP accept: " << errno << endl;
 				}
 			}
-			shared_lock lock(listenmutex);
-			for (int i = 0; i < connectionfd.size(); i++)
-			{
-				memset(dataReceived, '0' ,sizeof(dataReceived));
-				while ((n = read(connectionfd[i], dataReceived, sizeof(dataReceived)-1)) > 0)
-				{
-					dataReceived[n] = 0;
-					
-					//cout << "Received " << n << " bytes..." << endl;
-					//printBuffer(dataReceived, n);
-				}
-			}
+			
 		}
-		else
-		{
-			memset(dataReceived, '0' ,sizeof(dataReceived));
-			while ((n = read(sockfd, dataReceived, sizeof(dataReceived)-1)) > 0)
-			{
-				dataReceived[n] = 0;
-				
-				//cout << "Received " << n << " bytes..." << endl;
-				//printBuffer(dataReceived, n);
-			}
-		}
-		
-		
 	}
 	
 }
