@@ -1,6 +1,5 @@
 #include <string>
 #include <opencv2/core.hpp>
-#include <fstream>
 #include <iostream>
 
 
@@ -9,7 +8,7 @@ static bool readCameraParameters(std::string filename, cv::Mat& camMatrix, cv::M
 	cv::FileStorage fs(filename + ".yaml", cv::FileStorage::READ);
 	if (!fs.isOpened())
 	{
-		std::cerr << "Failed to read camera parameters for " << filename << std::endl;
+		//std::cerr << "Failed to read camera parameters for " << filename << std::endl;
 		return false;
 	}
 	

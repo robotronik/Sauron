@@ -1,23 +1,18 @@
 #include "Cameras/Camera.hpp"
 
 #include <iostream> // for standard I/O
-#include <iomanip>  // for controlling float print precision
-#include <sstream>  // string to number conversion
 #include <math.h>
 
+#include <opencv2/core.hpp>
 #include <opencv2/cudacodec.hpp>
 #include <opencv2/cudaimgproc.hpp>
 #include <opencv2/cudawarping.hpp>
 
 #include <opencv2/calib3d.hpp>
 
-#include "thirdparty/list-devices.hpp"
-#include "thirdparty/serialib.h"
-
 #include "data/Calibfile.hpp"
 #include "data/CameraView.hpp"
 
-#include "TrackedObjects/TrackedObject.hpp" //CameraView
 #include "ObjectTracker.hpp"
 #include "GlobalConf.hpp"
 #include "data/FVector2D.hpp"
@@ -99,8 +94,17 @@ void Camera::Undistort(int BufferIdx)
 	CameraSettings setcopy = GetCameraSettings();
 	if (!HasUndistortionMaps)
 	{
-		cout << "Creating undistort map using Camera Matrix " << endl << setcopy.CameraMatrix << endl 
-		<< " and Distance coeffs " << endl << setcopy.distanceCoeffs << endl;
+		Size cammatsz = setcopy.CameraMatrix.size();
+		if (cammatsz.height != 3 || cammatsz.width != 3)
+		{
+			RegisterError();
+			cerr << "Asking for undistortion but camera matrix is invalid ! Camera " << setcopy.DeviceInfo.device_description << endl;
+			return;
+		}
+		
+		
+		//cout << "Creating undistort map using Camera Matrix " << endl << setcopy.CameraMatrix << endl 
+		//<< " and Distance coeffs " << endl << setcopy.distanceCoeffs << endl;
 		Mat map1, map2, newCamMat;
 		float balance = 0.8;
 		//fisheye::estimateNewCameraMatrixForUndistortRectify(setcopy.CameraMatrix, setcopy.distanceCoeffs, setcopy.Resolution, Mat::eye(3, 3, CV_32F), newCamMat, balance);

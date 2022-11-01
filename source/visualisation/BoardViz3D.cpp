@@ -72,7 +72,7 @@ void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferId
 	CameraSettings stg = Camera->GetCameraSettings();
 	Mat CameraMatrix = stg.CameraMatrix;
 	Size2d FOV = GetCameraFOV(stg.Resolution, stg.CameraMatrix);
-	double maxfov = 100.0/180.0*M_PI;
+	double maxfov = 160.0/180.0*M_PI;
 	if (FOV.width >= maxfov || FOV.height >= maxfov)
 	{
 		CamWidget = viz::WCameraPosition(Vec2d(170,170), 0.2, color);

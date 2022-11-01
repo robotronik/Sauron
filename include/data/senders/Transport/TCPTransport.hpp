@@ -27,6 +27,11 @@ public:
 
 	~TCPTransport();
 
+private:
+	void CreateSocket();
+	bool Connect();
+	void CheckConnection();
+public:
 
 	virtual void Broadcast(const void *buffer, int length) override;
 

@@ -3,11 +3,13 @@
 #include "visualisation/BoardViz2D.hpp"
 #include <thread>
 
-void CDFRExternalMain(CameraManager* CameraMan, bool direct, bool v3d)
+void CDFRExternalMain(bool direct, bool v3d)
 {
+	CameraManager CameraMan(GetCaptureMethod(), GetCaptureConfig().filter, false);
+
 	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
 
-	vector<ArucoCamera*>& physicalCameras = CameraMan->Cameras;
+	vector<ArucoCamera*>& physicalCameras = CameraMan.Cameras;
 
 	cout << "Start grabbing " << physicalCameras.size() << " physical" << endl
 		<< "Press ESC to terminate" << endl;
@@ -66,7 +68,7 @@ void CDFRExternalMain(CameraManager* CameraMan, bool direct, bool v3d)
 	int lastmarker = 0;
 	for (;;)
 	{
-		CameraMan->Tick<VideoCaptureCamera>();
+		CameraMan.Tick<VideoCaptureCamera>();
 		
 		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
 

@@ -7,6 +7,10 @@ using namespace std;
 
 Size2d GetCameraFOV(Size Resolution, Mat CameraMatrix)
 {
+	if (CameraMatrix.size().width != 3 || CameraMatrix.size().height != 3)
+	{
+		return Size2d(M_PI/2, M_PI/2);
+	}
 	double fx = CameraMatrix.at<double>(0,0), fy = CameraMatrix.at<double>(1,1);
 	double fovx = 2*atan(Resolution.width/(2*fx)), fovy = 2*atan(Resolution.height/(2*fy));
 	return Size2d(fovx, fovy);

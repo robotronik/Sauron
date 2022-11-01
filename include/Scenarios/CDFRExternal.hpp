@@ -5,6 +5,4 @@
 
 using std::vector;
 
-class CameraManager;
-
-void CDFRExternalMain(CameraManager* CameraMan, bool direct, bool v3d);
+void CDFRExternalMain(bool direct, bool v3d);

@@ -11,13 +11,14 @@ class CameraManager
 private:
 	CameraStartType Start;
 	std::string Filter;
+	bool AllowNoCalib;
 	int scanidx;
 	std::vector<std::string> paths;
 public:
 	std::vector<ArucoCamera*> Cameras;
 
-	CameraManager(CameraStartType InStart, std::string InFilter)
-		:Start(InStart), Filter(InFilter),
+	CameraManager(CameraStartType InStart, std::string InFilter, bool InAllowNoCalib = false)
+		:Start(InStart), Filter(InFilter), AllowNoCalib(InAllowNoCalib),
 		scanidx(0)
 	{
 
@@ -60,7 +61,7 @@ public:
 	{
 		for (int i = 0; i < Cameras.size(); i++)
 		{
-			if (Cameras[i]->errors >= 100)
+			if (Cameras[i]->errors >= 20)
 			{
 				std::cerr << "Detaching camera @" << Cameras[i]->GetCameraSettings().DeviceInfo.device_paths[0] << std::endl;
 				std::string pathtofind = Cameras[i]->GetCameraSettings().DeviceInfo.device_paths[0];
@@ -87,7 +88,11 @@ public:
 					if (pos == paths.end()) //new camera
 					{
 						std::cerr << "Detected camera " << devices[i].device_description << " @" << devices[i].device_paths[0] << std::endl;
-						StartCamera<CameraType>(DeviceToSettings(devices[i], Start));
+						CameraSettings settings = DeviceToSettings(devices[i], Start);
+						if (AllowNoCalib || settings.CameraMatrix.size() == cv::Size(3,3))
+						{
+							StartCamera<CameraType>(settings);
+						}
 					}
 				}
 			}

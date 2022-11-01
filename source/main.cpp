@@ -112,9 +112,8 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
 	
-	CameraManager CameraMan(GetCaptureMethod(), GetCaptureConfig().filter);
+	vector<CameraSettings> CamSett = CameraManager::autoDetectCameras(GetCaptureMethod(), GetCaptureConfig().filter, "", false);
 
-	CameraMan.Tick<VideoCaptureCamera>();
 	/*vector<CameraSettings> CamSettings;
 	CameraSettings fakedcam;
 	fakedcam.Resolution = GetFrameSize();
@@ -123,7 +122,7 @@ int main(int argc, char** argv )
 	fakedcam.BufferSize = 2;
 	fakedcam.StartType = CameraStartType::GSTREAMER_NVARGUS;
 	CamSettings.push_back(fakedcam);*/
-	if (CameraMan.Cameras.size() == 0)
+	if (CamSett.size() == 0)
 	{
 		cerr << "No cameras detected" << endl;
 	}
@@ -133,9 +132,9 @@ int main(int argc, char** argv )
 	{
 		cout << "Starting calibration of camera index" << parser.get<int>("calibrate") <<endl;
 		int camIndex = parser.get<int>("calibrate");
-		if (0<= camIndex && camIndex < CameraMan.Cameras.size())
+		if (0<= camIndex && camIndex < CamSett.size())
 		{
-			//docalibration(CamSettings[camIndex]);
+			docalibration(CamSett[camIndex]);
 			exit(EXIT_SUCCESS);
 		}
 		else
@@ -157,7 +156,7 @@ int main(int argc, char** argv )
 	
 	
 	//hsvtest();
-	CDFRExternalMain(&CameraMan, direct, true);
+	CDFRExternalMain(direct, true);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;
