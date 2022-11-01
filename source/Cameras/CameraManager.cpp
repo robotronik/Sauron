@@ -13,6 +13,11 @@ bool CameraManager::DeviceInFilter(v4l2::devices::DEVICE_INFO device, std::strin
 		invertedFilter = true;
 		Filter = Filter.substr(1);
 	}
+	if (Filter.length() == 0)
+	{
+		return true;
+	}
+	
 	return (device.device_description.find(Filter) != string::npos) ^ invertedFilter;
 }
 

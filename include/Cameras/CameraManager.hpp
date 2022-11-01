@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "Cameras/Camera.hpp"
+#include "GlobalConf.hpp"
 
 class CameraManager
 {
@@ -91,7 +92,20 @@ public:
 						CameraSettings settings = DeviceToSettings(devices[i], Start);
 						if (AllowNoCalib || settings.CameraMatrix.size() == cv::Size(3,3))
 						{
-							StartCamera<CameraType>(settings);
+							ArucoCamera* cam = StartCamera<CameraType>(settings);
+							std::vector<InternalCameraConfig>& campos = GetInternalCameraPositionsConfig();
+							for (int j = 0; j < campos.size(); j++)
+							{
+								if (DeviceInFilter(devices[i], campos[j].CameraName))
+								{
+									cam->Location = campos[j].LocationRelative;
+									std::cout << "Using stored position " << j << " for camera " << devices[i].device_description << std::endl;
+									break;
+								}
+								
+							}
+							
+							
 						}
 					}
 				}

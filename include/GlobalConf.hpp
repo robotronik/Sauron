@@ -55,4 +55,4 @@ struct InternalCameraConfig
 	cv::Affine3d LocationRelative;
 };
 
-std::vector<InternalCameraConfig> GetInternalCameraPositionsConfig();
+std::vector<InternalCameraConfig>& GetInternalCameraPositionsConfig();
