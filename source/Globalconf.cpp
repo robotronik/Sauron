@@ -126,12 +126,12 @@ void InitConfig()
 	{
 		cfg.readFile("../config.cfg");
 	}
-		catch(const FileIOException &fioex)
+	catch(const FileIOException &fioex)
 	{
 		std::cerr << "I/O error while reading file." << std::endl;
 		err = true;
 	}
-		catch(const ParseException &pex)
+	catch(const ParseException &pex)
 	{
 		std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine()
 			<< " - " << pex.getError() << std::endl;
@@ -206,7 +206,6 @@ void InitConfig()
 			}
 		}
 	}
-
 
 	cfg.writeFile("../config.cfg");
 	

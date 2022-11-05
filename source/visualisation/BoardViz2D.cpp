@@ -6,10 +6,15 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/cuda.hpp>
+#include <opencv2/viz.hpp>
+
+#ifdef WITH_CUDA
 #include <opencv2/cudawarping.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudaimgproc.hpp>
-#include <opencv2/viz.hpp>
+#else
+#include <opencv2/imgproc.hpp>
+#endif
 
 #include "data/FrameCounter.hpp"
 #include "math3d.hpp"
@@ -20,14 +25,19 @@ using namespace cv;
 const String assetpath = "../assets/";
 
 bool BoardViz2D::ImagesLoaded;
-cuda::GpuMat BoardViz2D::table;
-cuda::GpuMat BoardViz2D::robot;
-cuda::GpuMat BoardViz2D::rouge, BoardViz2D::vert, BoardViz2D::bleu, BoardViz2D::autre;
-cuda::GpuMat BoardViz2D::camera;
+BoardImageType BoardViz2D::table;
+BoardImageType BoardViz2D::robot;
+BoardImageType BoardViz2D::rouge, BoardViz2D::vert, BoardViz2D::bleu, BoardViz2D::autre;
+BoardImageType BoardViz2D::camera;
 
-void BoardViz2D::LoadImage(cuda::GpuMat& output, String location)
+void BoardViz2D::LoadImage(BoardImageType& output, String location)
 {
+	#ifdef WITH_CUDA
 	output.upload(imread(assetpath + location, IMREAD_UNCHANGED));
+	#else
+	Mat temp = imread(assetpath + location, IMREAD_UNCHANGED);
+	temp.copyTo(output);
+	#endif
 }
 
 FVector2D<int> BoardViz2D::BoardToPixel(FVector2D<float> location)
@@ -35,7 +45,7 @@ FVector2D<int> BoardViz2D::BoardToPixel(FVector2D<float> location)
 	return (location+Center)/Extent*FVector2D<int>(image.size());
 }
 
-FVector2D<float> BoardViz2D::GetImageCenter(cuda::GpuMat& Image)
+FVector2D<float> BoardViz2D::GetImageCenter(BoardImageType& Image)
 {
 	return FVector2D<float>((Image.cols-1)/2.f, (Image.rows-1)/2.f);
 }
@@ -58,12 +68,20 @@ void BoardViz2D::InitImages()
 
 void BoardViz2D::CreateBackground(Size Resolution)
 {
+	#ifdef WITH_CUDA
 	cuda::resize(table, image, Resolution);
+	#else
+	resize(table, image, Resolution);
+	#endif
 }
 
 void BoardViz2D::GetImage(UMat& rvalue)
 {
+	#ifdef WITH_CUDA
 	image.download(rvalue);
+	#else
+	rvalue = image;
+	#endif
 }
 
 FVector2D<float> RotatePointAround(FVector2D<float> center, FVector2D<float> point, float rotation)
@@ -76,7 +94,7 @@ FVector2D<float> RotatePointAround(FVector2D<float> center, FVector2D<float> poi
 	return FVector2D<float>(x,y)*magnitude + center;
 }
 
-void BoardViz2D::OverlayImage(cuda::GpuMat& ImageToOverlay, FVector2D<float> position, float rotation, FVector2D<float> ImageSize)
+void BoardViz2D::OverlayImage(BoardImageType& ImageToOverlay, FVector2D<float> position, float rotation, FVector2D<float> ImageSize)
 {
 
 	FVector2D<int> BoardLocation = BoardToPixel(position);
@@ -89,15 +107,13 @@ void BoardViz2D::OverlayImage(cuda::GpuMat& ImageToOverlay, FVector2D<float> pos
 
 	FVector2D<float> TargetSize = ImageSize/Extent*FVector2D<int>(image.size());
 	FVector2D<int> Oversize = TargetSize * sqrt(2); //oversize to guarantee no cropping
-	cuda::GpuMat OverlayRotated(Oversize.ToSize(), ImageToOverlay.type());
+	BoardImageType OverlayRotated(Oversize.ToSize(), ImageToOverlay.type());
 
 	Point2f dstTri[3];
 	dstTri[0] = GetImageCenter(OverlayRotated);
 	dstTri[1] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(TargetSize.x,0), rotation);
 	dstTri[2] = RotatePointAround(dstTri[0], FVector2D<float>(dstTri[0]) - FVector2D<float>(0,TargetSize.y), rotation);
 	Mat warp_mat = getAffineTransform( srcTri, dstTri );
-
-	cuda::warpAffine(ImageToOverlay, OverlayRotated, warp_mat, OverlayRotated.size());
 
 	FVector2D<int> halfsize = Oversize/2;
 	
@@ -113,16 +129,20 @@ void BoardViz2D::OverlayImage(cuda::GpuMat& ImageToOverlay, FVector2D<float> pos
 	{
 		return;
 	}
+
+	#ifdef WITH_CUDA
+	cuda::warpAffine(ImageToOverlay, OverlayRotated, warp_mat, OverlayRotated.size());
+	cuda::alphaComp(BoardImageType(OverlayRotated, ROIrobot), BoardImageType(image, ROIImage), BoardImageType(image, ROIImage), cuda::ALPHA_OVER);
+	#else
+	warpAffine(ImageToOverlay, BoardImageType(image, ROIImage), warp_mat, OverlayRotated.size());
+	#endif
 	
 
 	//printf("img1 type = %d, img2 type = %d should be %d %d %d %d\n", OverlayRotated.type(), image.type(), CV_8UC4, CV_16UC4, CV_32SC4, CV_32FC4);
-
-	cuda::alphaComp(cuda::GpuMat(OverlayRotated, ROIrobot), cuda::GpuMat(image, ROIImage), cuda::GpuMat(image, ROIImage), cuda::ALPHA_OVER);
-
 	//cuda::alphaComp(OverlayRotated, image, image, cuda::ALPHA_OVER);
 }
 
-void BoardViz2D::OverlayImage(cuda::GpuMat& ImageToOverlay, Affine3d position, FVector2D<float> ImageSize)
+void BoardViz2D::OverlayImage(BoardImageType& ImageToOverlay, Affine3d position, FVector2D<float> ImageSize)
 {
 	Vec3d translation3d;
 	position.translation(translation3d);
@@ -140,12 +160,12 @@ FVector2D<float> BoardViz2D::GetCenter()
 	return Center;
 }
 
-cuda::GpuMat& BoardViz2D::GetRobotImage()
+BoardImageType& BoardViz2D::GetRobotImage()
 {
 	return robot;
 }
 
-cuda::GpuMat& BoardViz2D::GetPalet(PaletCouleur type)
+BoardImageType& BoardViz2D::GetPalet(PaletCouleur type)
 {
 	switch (type)
 	{
@@ -162,22 +182,28 @@ cuda::GpuMat& BoardViz2D::GetPalet(PaletCouleur type)
 	}
 }
 
-cuda::GpuMat& BoardViz2D::GetCamera()
+BoardImageType& BoardViz2D::GetCamera()
 {
 	return camera;
 }
 
 void BoardViz2D::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
-	cuda::GpuMat resizedgpu;
+	BoardImageType resizedgpu;
 
 	double fx = image.cols / winsize.width;
 	double fy = image.rows / winsize.height;
 	double fz = max(fx, fy);
 
+	#ifdef WITH_CUDA
 	cuda::resize(image, resizedgpu, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
 	cuda::cvtColor(resizedgpu, resizedgpu, COLOR_BGRA2BGR);
 	resizedgpu.download(OutFrame);
+	#else
+	UMat resized;
+	resize(image, resized, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
+	cvtColor(resized, OutFrame, COLOR_BGRA2BGR);
+	#endif
 	//cout << "Resize OK" <<endl;
 }
 

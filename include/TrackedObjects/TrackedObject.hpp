@@ -19,9 +19,11 @@ struct ArucoMarker
 	int number;
 	cv::Affine3d Pose;
 
+	vector<cv::Point3d> ObjectPointsNoOffset;
+
 	static vector<cv::Point3d> GetObjectPointsNoOffset(float SideLength);
 
-	vector<cv::Point3d> GetObjectPointsNoOffset();
+	vector<cv::Point3d>& GetObjectPointsNoOffset();
 
 	ArucoMarker()
 		:sideLength(0.05),
@@ -32,13 +34,15 @@ struct ArucoMarker
 	ArucoMarker(float InSideLength, int InNumber)
 		:sideLength(InSideLength),
 		number(InNumber),
-		Pose(cv::Affine3d::Identity())
+		Pose(cv::Affine3d::Identity()),
+		ObjectPointsNoOffset(GetObjectPointsNoOffset(InSideLength))
 	{}
 
 	ArucoMarker(float InSideLength, int InNumber, cv::Affine3d InPose)
 		:sideLength(InSideLength),
 		number(InNumber),
-		Pose(InPose)
+		Pose(InPose),
+		ObjectPointsNoOffset(GetObjectPointsNoOffset(InSideLength))
 	{}
 
 	void DisplayMarker(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName);

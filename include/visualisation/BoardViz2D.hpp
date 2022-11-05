@@ -14,19 +14,25 @@ enum class PaletCouleur
 	bleu=13
 };
 
+#ifdef WITH_CUDA
+using BoardImageType = cv::cuda::GpuMat;
+#else
+using BoardImageType = cv::UMat;
+#endif
+
 class BoardViz2D : public OutputImage
 {
 private:
 	static bool ImagesLoaded;
-	static cv::cuda::GpuMat table;
-	static cv::cuda::GpuMat robot;
-	static cv::cuda::GpuMat rouge, vert, bleu, autre;
-	static cv::cuda::GpuMat camera;
+	static BoardImageType table;
+	static BoardImageType robot;
+	static BoardImageType rouge, vert, bleu, autre;
+	static BoardImageType camera;
 
 private:
 	FVector2D<float> Extent;
 	FVector2D<float> Center;
-	cv::cuda::GpuMat image;
+	BoardImageType image;
 
 
 public:
@@ -39,9 +45,9 @@ public:
 
 private:
 
-	static void LoadImage(cv::cuda::GpuMat& output, cv::String location);
+	static void LoadImage(BoardImageType& output, cv::String location);
 	FVector2D<int> BoardToPixel(FVector2D<float> location);
-	FVector2D<float> GetImageCenter(cv::cuda::GpuMat& Image);
+	FVector2D<float> GetImageCenter(BoardImageType& Image);
 
 public:
 
@@ -55,18 +61,18 @@ public:
 	void GetImage(cv::UMat& rvalue);
 
 	//Ajoute une image par dessus le reste, le centre de l'image se trouvant à Position dans le terrain
-	void OverlayImage(cv::cuda::GpuMat& ImageToOverlay, FVector2D<float> position, float rotation, FVector2D<float> ImageSize);
+	void OverlayImage(BoardImageType& ImageToOverlay, FVector2D<float> position, float rotation, FVector2D<float> ImageSize);
 
 	//Ajoute une image, assume que X+ correspond au X+ de l'image, Y+ correspond au Y+ de l'image, et Z correspond à la rotation
 	//Pour une image, le X+ va à droite et le Y+ va vers le bas
-	void OverlayImage(cv::cuda::GpuMat& ImageToOverlay, cv::Affine3d position, FVector2D<float> ImageSize);
+	void OverlayImage(BoardImageType& ImageToOverlay, cv::Affine3d position, FVector2D<float> ImageSize);
 
 	FVector2D<float> GetCenter();
 	FVector2D<float> GetExtent();
 
-	static cv::cuda::GpuMat& GetRobotImage();
-	static cv::cuda::GpuMat& GetPalet(PaletCouleur type);
-	static cv::cuda::GpuMat& GetCamera();
+	static BoardImageType& GetRobotImage();
+	static BoardImageType& GetPalet(PaletCouleur type);
+	static BoardImageType& GetCamera();
 
 	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Size winsize) override;
 };

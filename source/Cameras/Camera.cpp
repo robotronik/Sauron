@@ -4,11 +4,15 @@
 #include <math.h>
 
 #include <opencv2/core.hpp>
+#include <opencv2/calib3d.hpp>
+
+#ifdef WITH_CUDA
 #include <opencv2/cudacodec.hpp>
 #include <opencv2/cudaimgproc.hpp>
 #include <opencv2/cudawarping.hpp>
-
-#include <opencv2/calib3d.hpp>
+#else
+#include <opencv2/imgproc.hpp>
+#endif
 
 #include "data/Calibfile.hpp"
 #include "data/CameraView.hpp"
@@ -110,8 +114,13 @@ void Camera::Undistort(int BufferIdx)
 		//fisheye::estimateNewCameraMatrixForUndistortRectify(setcopy.CameraMatrix, setcopy.distanceCoeffs, setcopy.Resolution, Mat::eye(3, 3, CV_32F), newCamMat, balance);
 		initUndistortRectifyMap(setcopy.CameraMatrix, setcopy.distanceCoeffs, Mat::eye(3,3, CV_64F), 
 		setcopy.CameraMatrix, setcopy.Resolution, CV_32FC1, map1, map2);
+		#ifdef WITH_CUDA
 		UndistMap1.upload(map1);
 		UndistMap2.upload(map2);
+		#else
+		map1.copyTo(UndistMap1);
+		map2.copyTo(UndistMap2);
+		#endif
 		HasUndistortionMaps = true;
 	}
 
@@ -122,6 +131,7 @@ void Camera::Undistort(int BufferIdx)
 		return;
 	}
 	
+	#ifdef WITH_CUDA
 	if (!buff.FrameRaw.MakeGPUAvailable())
 	{
 		return;
@@ -132,6 +142,14 @@ void Camera::Undistort(int BufferIdx)
 	cuda::remap(buff.FrameRaw.GPUFrame, buff.FrameUndistorted.GPUFrame, UndistMap1, UndistMap2, INTER_LINEAR);
 	buff.FrameUndistorted.HasGPU = true;
 	buff.FrameUndistorted.HasCPU = false;
+	#else
+	if (!buff.FrameRaw.MakeCPUAvailable())
+	{
+		return;
+	}
+	remap(buff.FrameRaw.CPUFrame, buff.FrameUndistorted.CPUFrame, UndistMap1, UndistMap2, INTER_LINEAR);
+	buff.FrameUndistorted.HasCPU = true;
+	#endif
 	buff.Status.HasUndistorted = true;
 }
 
@@ -182,12 +200,16 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 		double fx = (double)winsize.width / basesize.width;
 		double fy = (double)winsize.height / basesize.height;
 		fz = min(fx, fy);
+		#ifdef WITH_CUDA
 		if (buff.FrameUndistorted.HasGPU)
 		{
 			cuda::GpuMat resz;
 			cuda::resize(buff.FrameUndistorted.GPUFrame, resz, Size(), fz, fz, INTER_AREA);
 			resz.download(OutFrame);
 		}
+		#else
+		if(0){}
+		#endif
 		else
 		{
 			resize(buff.FrameUndistorted.CPUFrame, OutFrame, Size(), fz, fz, INTER_AREA);
@@ -220,22 +242,33 @@ void ArucoCamera::RescaleFrames(int BufferIdx)
 	{
 		return;
 	}
-	
+	#ifdef WITH_CUDA
 	if (!buff.FrameUndistorted.MakeGPUAvailable())
 	{
 		return;
 	}
-
+	#else
+	if (!buff.FrameUndistorted.MakeCPUAvailable())
+	{
+		return;
+	}
+	#endif
 	vector<Size> rescales = GetArucoReductions();
 	buff.rescaledFrames.resize(rescales.size());
 
 	for (int i = 0; i < rescales.size(); i++)
 	{
+		#ifdef WITH_CUDA
 		cuda::GpuMat rescaled;
 		cuda::resize(buff.FrameUndistorted.GPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
 		cuda::cvtColor(rescaled, buff.rescaledFrames[i].GPUFrame, rescaled.channels() == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
 		buff.rescaledFrames[i].HasGPU = true;
 		buff.rescaledFrames[i].HasCPU = false;
+		#else
+		UMat rescaled;
+		resize(buff.FrameUndistorted.CPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
+		cvtColor(rescaled, buff.rescaledFrames[i].CPUFrame, rescaled.channels() == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
+		#endif
 	}
 	buff.Status.HasResized = true;
 }

@@ -9,7 +9,9 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/affine.hpp>
 
+#ifdef WITH_CUDA
 #include <opencv2/cudacodec.hpp>
+#endif
 
 #include "data/OutputImage.hpp"
 #include "data/ImageTypes.hpp"
@@ -41,8 +43,12 @@ protected:
 	CameraSettings Settings;
 
 	bool HasUndistortionMaps;
+	
+	#ifdef WITH_CUDA
 	cv::cuda::GpuMat UndistMap1, UndistMap2;
-
+	#else
+	cv::UMat UndistMap1, UndistMap2;
+	#endif
 public:
 	int errors;
 
@@ -61,6 +67,7 @@ public:
 
 	Camera(CameraSettings InSettings)
 		:Settings(InSettings),
+		HasUndistortionMaps(false),
 		errors(0),
 		Location(cv::Affine3d::Identity()),
 		connected(false),

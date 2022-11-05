@@ -11,7 +11,11 @@ bool CameraSettings::IsValid()
 
 bool MixedFrame::IsValid()
 {
-	return HasCPU || HasGPU;
+	return HasCPU 
+	#ifdef WITH_CUDA 
+	|| HasGPU
+	#endif
+	;
 }
 
 Size MixedFrame::GetSize()
@@ -20,10 +24,12 @@ Size MixedFrame::GetSize()
 	{
 		return CPUFrame.size();
 	}
+	#ifdef WITH_CUDA
 	if (HasGPU)
 	{
 		return GPUFrame.size();
 	}
+	#endif
 	return Size();
 }
 
@@ -37,6 +43,7 @@ bool MixedFrame::GetCPUFrame(UMat& frame)
 	return true;
 }
 
+#ifdef WITH_CUDA
 bool MixedFrame::GetGPUFrame(cuda::GpuMat& frame)
 {
 	if (!MakeGPUAvailable())
@@ -46,21 +53,27 @@ bool MixedFrame::GetGPUFrame(cuda::GpuMat& frame)
 	frame = GPUFrame;
 	return true;
 }
+#endif
 
 bool MixedFrame::MakeCPUAvailable()
 {
 	if (!HasCPU)
 	{
+		#ifdef WITH_CUDA
 		if (!HasGPU)
 		{
 			return false;
 		}
 		GPUFrame.download(CPUFrame);
 		HasCPU = true;
+		#else
+		return false;
+		#endif
 	}
 	return true;
 }
 
+#ifdef WITH_CUDA
 bool MixedFrame::MakeGPUAvailable()
 {
 	if (!HasGPU)
@@ -75,6 +88,7 @@ bool MixedFrame::MakeGPUAvailable()
 	}
 	return true;
 }
+#endif
 
 bool BufferedFrame::GetFrameRaw(MixedFrame& OutFrame)
 {

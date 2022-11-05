@@ -1,7 +1,10 @@
 #pragma once
 
 #include <opencv2/core.hpp>
+
+#ifdef WITH_CUDA
 #include <opencv2/cudacodec.hpp>
+#endif
 
 #include "thirdparty/list-devices.hpp"
 #include "data/CameraView.hpp"
@@ -75,28 +78,38 @@ class MixedFrame
 
 public:
 	cv::UMat CPUFrame;
+	#ifdef WITH_CUDA
 	cv::cuda::GpuMat GPUFrame;
+	#endif
 	//Is the CPUFrame valid ?
 	bool HasCPU;
+
+	#ifdef WITH_CUDA
 	//Is the GPU frame valid ?
 	bool HasGPU;
-
+	#endif
 	MixedFrame()
-	:HasCPU(false),
-	HasGPU(false)
+	:HasCPU(false)
+	#ifdef WITH_CUDA
+	,HasGPU(false)
+	#endif
 	{}
 
 	MixedFrame(cv::UMat& InCPUFrame)
 	:CPUFrame(InCPUFrame),
-	HasCPU(true),
-	HasGPU(false)
+	HasCPU(true)
+	#ifdef WITH_CUDA
+	,HasGPU(false)
+	#endif
 	{}
 
+	#ifdef WITH_CUDA
 	MixedFrame(cv::cuda::GpuMat& InGPUFrame)
 	:GPUFrame(InGPUFrame),
 	HasGPU(true),
 	HasCPU(false)
 	{}
+	#endif
 
 	//Are any of the frames valid ?
 	bool IsValid();
@@ -107,19 +120,24 @@ public:
 	//Avoid using because it causes copies
 	//Make the frame available on the CPU side then copy into memory
 	bool GetCPUFrame(cv::UMat& frame);
+
+	#ifdef WITH_CUDA
 	//Avoid using because it causes copies
 	//Make the frame available on the GPU suide then copy into memory
 	bool GetGPUFrame(cv::cuda::GpuMat& frame);
+	#endif
 
 	//If the frame is available on the CPU do nothing
 	//If it's available on the GPU, download it
 	//If not we're fucked
 	bool MakeCPUAvailable();
 
+	#ifdef WITH_CUDA
 	//If the frame is available on the GPU do nothing
 	//If it's available on the CPU, upload it
 	//If not we're fucked
 	bool MakeGPUAvailable();
+	#endif
 
 };
 

@@ -65,15 +65,17 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
 	
-	
+	#ifdef WITH_CUDA
 	cuda::setDevice(0);
-	ocl::setUseOpenCL(true);
+	#endif
+	//ocl::setUseOpenCL(true);
 	#ifdef WITH_X11
 	XInitThreads();
 	cout << "Detected screen resolution : " << GetScreenSize() << endl;
 	#endif
 	if (parser.has("cuda"))
 	{
+		#ifdef WITH_CUDA
 		int cuda_devices_number = cuda::getCudaEnabledDeviceCount();
 		cout << "CUDA Device(s) Number: "<< cuda_devices_number << endl;
 		if (cuda_devices_number > 0)
@@ -83,6 +85,9 @@ int main(int argc, char** argv )
 			cout << "CUDA Device(s) Compatible: " << _is_device_compatible << endl;
 			cuda::printShortCudaDeviceInfo(cuda::getDevice());
 		}
+		#else
+		cout << "CUDA is not enabled or detected on this device" << endl;
+		#endif
 		exit(EXIT_SUCCESS);
 	}
 	if (parser.has("board"))

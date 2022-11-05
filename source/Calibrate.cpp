@@ -13,7 +13,9 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 
+#ifdef WITH_CUDA
 #include <opencv2/cudawarping.hpp>
+#endif
 
 #include "thirdparty/serialib.h"
 #include "GlobalConf.hpp"
@@ -245,8 +247,10 @@ bool docalibration(CameraSettings CamSett)
 	{
 		UMat frame, frameresized;
 		bool CaptureImageThisFrame = false;
+		#ifdef WITH_CUDA
 		cuda::GpuMat gpuframe, gpuresized;
 		cuda::Stream resizestream;
+		#endif
 		
 		if (!CamToCalib->Read(0))
 		{
@@ -282,9 +286,13 @@ bool docalibration(CameraSettings CamSett)
 		
 		if (GetScreenSize() != CamSett.Resolution)
 		{
+			#ifdef WITH_CUDA
 			gpuframe.upload(frame, resizestream);
 			cuda::resize(gpuframe, gpuresized, GetScreenSize(), 0, 0, 1, resizestream);
 			gpuresized.download(frameresized);
+			#else
+			resize(frame, frameresized, GetScreenSize());
+			#endif
 		}
 		else
 		{
@@ -361,8 +369,10 @@ bool docalibration(CameraSettings CamSett)
 			imwrite(TempImgPath + "/" + to_string(nextIdx++) + ".png", frame);
 			putText(frame, "Image captured !", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(255,0,0), 4);
 		}
+		#ifdef WITH_CUDA
 		resizestream.waitForCompletion();
-		
+		#endif
+
 		fps.AddFpsToImage(frameresized, fps.GetDeltaTime());
 		imshow(CalibWindowName, frameresized);
 	}

@@ -1,10 +1,21 @@
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRCommon.hpp"
 #include "visualisation/BoardViz2D.hpp"
+#include "data/ManualProfiler.hpp"
 #include <thread>
 
 void CDFRExternalMain(bool direct, bool v3d)
 {
+	ManualProfiler prof;
+	int ps = 0;
+	prof.NameSection(ps++, "Init");
+	prof.NameSection(ps++, "CameraMan Tick");
+	prof.NameSection(ps++, "Camera Pipeline");
+	prof.NameSection(ps++, "3D solve setup");
+	prof.NameSection(ps++, "3D solve");
+	prof.NameSection(ps++, "V3D display");
+	prof.NameSection(ps++, "Position packet");
+	prof.EnterSection(0);
 	CameraManager CameraMan(GetCaptureMethod(), GetCaptureConfig().filter, false);
 
 	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
@@ -68,10 +79,12 @@ void CDFRExternalMain(bool direct, bool v3d)
 	int lastmarker = 0;
 	for (;;)
 	{
+		ps = 1;
+		prof.EnterSection(ps++);
 		CameraMan.Tick<VideoCaptureCamera>();
-		
+		prof.EnterSection(ps++);
 		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
-
+		prof.EnterSection(ps++);
 		if (direct)
 		{
 			board->CreateBackground(Size(1500, 1000));
@@ -134,11 +147,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 			//cout << "Camera" << i << " location : " << cam->Location.translation() << endl;
 			
 		}
-		
+		prof.EnterSection(ps++);
 		tracker.SolveLocationsPerObject(arucoDatas);
 
 		double deltaTime = fps.GetDeltaTime();
-
+		prof.EnterSection(ps++);
 		if (v3d)
 		{
 			if (board3d.wasStopped())
@@ -167,7 +180,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			imshow("Cameras", image);
 		}
 		
-		
+		prof.EnterSection(ps++);
 		sender.SendPacket();
 		//sender.PrintCSV(printfile);
 		/*sender.SendPacket();
@@ -186,5 +199,13 @@ void CDFRExternalMain(bool direct, bool v3d)
 		{
 			break;
 		}
+		prof.EnterSection(-1);
+		if (prof.ShouldPrint())
+		{
+			cout << fps.GetFPSString(deltaTime) << endl;
+			prof.PrintIfShould();
+		}
+		
+		
 	}
 }

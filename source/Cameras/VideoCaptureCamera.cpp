@@ -6,11 +6,6 @@
 #include <sstream>  // string to number conversion
 #include <opencv2/imgproc.hpp>
 
-#include <opencv2/cudacodec.hpp>
-#include <opencv2/cudaarithm.hpp>
-#include <opencv2/cudaimgproc.hpp>
-#include <opencv2/cudawarping.hpp>
-
 #include <opencv2/calib3d.hpp>
 
 #include "thirdparty/list-devices.hpp"
@@ -169,7 +164,10 @@ bool VideoCaptureCamera::Read(int BufferIndex)
 		return false;
 	}
 	bool ReadSuccess = false;
-	buff.FrameRaw.HasCPU = false; buff.FrameRaw.HasGPU = false;
+	buff.FrameRaw.HasCPU = false; 
+	#ifdef WITH_CUDA
+	buff.FrameRaw.HasGPU = false;
+	#endif
 	if (buff.Status.HasGrabbed)
 	{
 		ReadSuccess = feed->retrieve(buff.FrameRaw.CPUFrame);
@@ -205,7 +203,9 @@ bool VideoCaptureCamera::InjectImage(int BufferIndex, UMat& frame)
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
 	buff.FrameRaw.CPUFrame = frame;
 	buff.FrameRaw.HasCPU = true;
+	#ifdef WITH_CUDA
 	buff.FrameRaw.HasGPU = false;
+	#endif
 	buff.Status = BufferStatus();
 	buff.Status.HasCaptured = true;
 	return true;

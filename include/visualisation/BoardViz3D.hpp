@@ -1,10 +1,8 @@
 #pragma once
 
 #include <opencv2/core.hpp>
-#include <opencv2/core/cuda.hpp>
 #include <opencv2/viz.hpp>
 #include <opencv2/core/affine.hpp>
-
 
 class Camera;
 

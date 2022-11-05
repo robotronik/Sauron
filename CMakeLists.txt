@@ -12,6 +12,13 @@ find_package(OpenCV REQUIRED)
 find_package(X11 REQUIRED)
 add_compile_definitions(WITH_X11)
 
+find_package(CUDAToolkit)
+if(CUDAToolkit_FOUND)
+    add_compile_definitions(WITH_CUDA)
+    message(STATUS "CUDA found, assuming OpenCV was built with CUDA")
+endif(CUDAToolkit_FOUND)
+
+
 # If the package has been found, several variables will
 # be set, you can find the full list with descriptions
 # in the OpenCVConfig.cmake file.
@@ -51,6 +58,7 @@ add_executable(Robotronikaruco ${SOURCES})
 message(STATUS "Sources found : ${SOURCES}")
 
 set_target_properties(Robotronikaruco PROPERTIES CXX_STANDARD 17)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 
 # Link your application with OpenCV libraries
 
@@ -60,5 +68,3 @@ target_link_libraries(Robotronikaruco
 	${X11_LIBRARIES}
 	config++
 )
-
-message(STATUS "Cuda libs : ${CUDA_LIBRARIES}")

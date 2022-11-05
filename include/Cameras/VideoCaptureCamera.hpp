@@ -7,7 +7,6 @@
 #include <opencv2/aruco.hpp>
 #include <opencv2/core/affine.hpp>
 
-#include <opencv2/cudacodec.hpp>
 
 #include "Cameras/Camera.hpp"
 #include "data/ImageTypes.hpp"

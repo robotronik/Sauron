@@ -28,9 +28,9 @@ vector<Point3d> ArucoMarker::GetObjectPointsNoOffset(float SideLength)
 	};
 }
 
-vector<Point3d> ArucoMarker::GetObjectPointsNoOffset()
+vector<Point3d>& ArucoMarker::GetObjectPointsNoOffset()
 {
-	return GetObjectPointsNoOffset(sideLength);
+	return ObjectPointsNoOffset;
 }
 
 void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
