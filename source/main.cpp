@@ -68,7 +68,7 @@ int main(int argc, char** argv )
 	#ifdef WITH_CUDA
 	cuda::setDevice(0);
 	#endif
-	//ocl::setUseOpenCL(true);
+	ocl::setUseOpenCL(true);
 	#ifdef WITH_X11
 	XInitThreads();
 	cout << "Detected screen resolution : " << GetScreenSize() << endl;
