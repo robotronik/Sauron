@@ -58,7 +58,7 @@ add_executable(Robotronikaruco ${SOURCES})
 message(STATUS "Sources found : ${SOURCES}")
 
 set_target_properties(Robotronikaruco PROPERTIES CXX_STANDARD 17)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 
 # Link your application with OpenCV libraries
 
