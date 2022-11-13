@@ -6,8 +6,9 @@
 #include <opencv2/core.hpp>		// Basic OpenCV structures (Mat, Scalar)
 #include <opencv2/viz.hpp>
 
+#include "TrackedObjects/ObjectIdentity.hpp"
+
 class ArucoCamera;
-struct PositionPacket;
 class BoardViz2D;
 struct CameraView;
 struct CameraArucoData;
@@ -82,7 +83,7 @@ public:
 
 	virtual void DisplayRecursive(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName);
 
-	virtual vector<PositionPacket> ToPacket(int BaseNumeral);
+	virtual vector<ObjectData> ToObjectData(int BaseNumeral);
 };
 
 

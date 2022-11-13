@@ -33,7 +33,7 @@ void CDFRInternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v
 
 	ObjectTracker tracker;
 	
-	SerialSender sender(true);
+	PositionDataSender* sender = new PositionDataSender;
 
 	StaticObject* boardobj = new StaticObject(true, "board");
 	tracker.RegisterTrackedObject(boardobj);
@@ -43,13 +43,8 @@ void CDFRInternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v
 	tracker.RegisterTrackedObject(robot1);
 	tracker.RegisterTrackedObject(robot2);
 
-	sender.RegisterTrackedObject(robot1);
-	sender.RegisterTrackedObject(robot2);
-
-	ofstream printfile;
-	printfile.open("logpos.csv", ios::out);
-
-	sender.PrintCSVHeader(printfile);
+	sender->RegisterTrackedObject(robot1);
+	sender->RegisterTrackedObject(robot2);
 	
 	int hassent = 0;
 	for (;;)
@@ -107,25 +102,9 @@ void CDFRInternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v
 		viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
 		board3d.showWidget("fps", fpstext);
 		board3d.spinOnce(1, true);
-		sender.PrintCSV(printfile);
 
 		const size_t rcvbuffsize = 1<<20;
 		char rcvbuff[rcvbuffsize];
-		if (!hassent)
-		{
-			hassent = 1;
-			sender.SendPacket();
-		}
-		
-		
-		if (sender.GetBridge()->available() > 0)
-		{
-			int out = sender.GetBridge()->readString(rcvbuff, '\n', rcvbuffsize, 1);
-			if (out > 0)
-			{
-				printf("Received from serial : %*s", out, rcvbuff);
-			}
-		}
 
 		if (waitKey(1) == 27 || board3d.wasStopped())
 		{

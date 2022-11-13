@@ -190,7 +190,8 @@ bool VideoCaptureCamera::Read(int BufferIndex)
 		buff.Status = BufferStatus();
 		buff.FrameRaw = MixedFrame();
 		buff.FrameUndistorted = MixedFrame();
-		buff.rescaledFrames.resize(0);
+		buff.GrayFrame = MixedFrame();
+		buff.RescaledFrame = MixedFrame();
 		RegisterError();
 		return false;
 	}

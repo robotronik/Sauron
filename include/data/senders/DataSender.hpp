@@ -2,8 +2,11 @@
 
 #include <vector>
 #include <fstream>
+#include <thread>
+#include <mutex>
 #include "TrackedObjects/TrackedObject.hpp"
-
+#include "data/senders/Encoders/GenericEncoder.hpp"
+#include "data/senders/Transport/GenericTransport.hpp"
 
 class PositionDataSender
 {
@@ -12,18 +15,26 @@ protected:
 
 	int64 StartTick;
 
+	std::thread *ReceiveThread;
+	std::mutex ReceiveKillMutex;
+
 public:
+	GenericEncoder *encoder;
+	GenericTransport *transport; 
+
+
 	PositionDataSender();
 
-	virtual ~PositionDataSender(){};
+	virtual ~PositionDataSender();
 
 	int64 GetTick();
 
 	virtual void RegisterTrackedObject(TrackedObject* object);
 
-	virtual void SendPacket() = 0;
+	virtual void SendPacket(int64 GrabTick);
 
-	virtual void PrintCSVHeader(std::ofstream &file);
+	void ThreadRoutine();
 
-	virtual void PrintCSV(std::ofstream &file);
+	void StartReceiveThread();
+	void StopReceiveThread();
 };

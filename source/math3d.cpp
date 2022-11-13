@@ -1,5 +1,4 @@
 #include "math3d.hpp"
-#include "data/SerialPacket.hpp"
 #include <math.h>
 
 using namespace cv;
@@ -161,13 +160,4 @@ bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Ve
 	Line1Point = Line1Orig + s * Line1Dir;
 	Line2Point = Line2Orig + t * Line2Dir;
 	return true;*/
-}
-
-void Affine3dToVictor(PositionPacket &InPacket, Affine3d position)
-{
-	Vec3d pos3d = position.translation() * 1000.0; //convert to mm
-	InPacket.X = pos3d(0);
-	InPacket.Y = pos3d(1);
-	double angle = GetRotZ(position.linear()) * 180.f / M_PI;
-	InPacket.rotation = angle;
 }

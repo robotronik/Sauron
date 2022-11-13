@@ -31,10 +31,10 @@ CaptureConfig GetCaptureConfig();
 CameraStartType GetCaptureMethod();
 
 //list of downscales to be done to the aruco detections
-std::vector<float> GetReductionFactor();
+float GetReductionFactor();
 
 //list of resolutions in the end
-std::vector<cv::Size> GetArucoReductions();
+cv::Size GetArucoReduction();
 
 cv::UMat& GetArucoImage(int id);
 

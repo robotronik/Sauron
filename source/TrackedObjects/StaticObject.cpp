@@ -1,7 +1,7 @@
 #include "TrackedObjects/StaticObject.hpp"
 
 #include "math3d.hpp"
-#include "data/DataPacket.hpp"
+#include "TrackedObjects/ObjectIdentity.hpp"
 
 using namespace cv;
 using namespace std;
@@ -44,12 +44,12 @@ bool StaticObject::SetLocation(Affine3d InLocation)
 	return false;
 }
 
-vector<PositionPacket> StaticObject::ToPacket(int BaseNumeral)
+vector<ObjectData> StaticObject::ToObjectData(int BaseNumeral)
 {
-	PositionPacket packet;
-	packet.type = PacketType::Reference;
-	Affine3dToVictor(packet, Location);
-	packet.numeral = BaseNumeral;
+	ObjectData packet;
+	packet.identity.type = Relative ? PacketType::ReferenceRelative : PacketType::ReferenceAbsolute;
+	packet.identity.numeral = BaseNumeral;
+	packet.location = Location;
 	return {packet};
 }
 

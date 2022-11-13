@@ -184,16 +184,25 @@ void Camera::GetFrame(int BufferIndex, UMat& OutFrame)
 void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
-	if (!buff.FrameUndistorted.IsValid())
+	MixedFrame& frametoUse = buff.FrameUndistorted;
+	if (!frametoUse.IsValid())
 	{
 		return;
 	}
 	double fz = 1;
-	Size basesize = buff.FrameUndistorted.GetSize();
+	Size basesize = frametoUse.GetSize();
 	if (winsize == basesize)
 	{
-		buff.FrameUndistorted.MakeCPUAvailable();
-		buff.FrameUndistorted.CPUFrame.copyTo(OutFrame);
+		frametoUse.MakeCPUAvailable();
+		if (frametoUse.CPUFrame.channels() != 3)
+		{
+			cvtColor(frametoUse.CPUFrame, OutFrame, COLOR_GRAY2BGR);
+		}
+		else
+		{
+			frametoUse.CPUFrame.copyTo(OutFrame);
+		}
+		
 	}
 	else
 	{
@@ -201,10 +210,10 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 		double fy = (double)winsize.height / basesize.height;
 		fz = min(fx, fy);
 		#ifdef WITH_CUDA
-		if (buff.FrameUndistorted.HasGPU)
+		if (frametoUse.HasGPU)
 		{
 			cuda::GpuMat resz;
-			cuda::resize(buff.FrameUndistorted.GPUFrame, resz, Size(), fz, fz, INTER_AREA);
+			cuda::resize(frametoUse.GPUFrame, resz, Size(), fz, fz, INTER_AREA);
 			resz.download(OutFrame);
 		}
 		#else
@@ -212,7 +221,7 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 		#endif
 		else
 		{
-			resize(buff.FrameUndistorted.CPUFrame, OutFrame, Size(), fz, fz, INTER_AREA);
+			resize(frametoUse.CPUFrame, OutFrame, Size(), fz, fz, INTER_AREA);
 		}
 	}
 	if (FrameBuffer[BufferIndex].Status.HasAruco)
@@ -238,10 +247,6 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 void ArucoCamera::RescaleFrames(int BufferIdx)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIdx];
-	if (!buff.Status.HasUndistorted)
-	{
-		return;
-	}
 	#ifdef WITH_CUDA
 	if (!buff.FrameUndistorted.MakeGPUAvailable())
 	{
@@ -253,158 +258,89 @@ void ArucoCamera::RescaleFrames(int BufferIdx)
 		return;
 	}
 	#endif
-	vector<Size> rescales = GetArucoReductions();
-	buff.rescaledFrames.resize(rescales.size());
+	Size rescale = GetArucoReduction();
 
-	for (int i = 0; i < rescales.size(); i++)
+	#ifdef WITH_CUDA
+	cuda::cvtColor(buff.FrameUndistorted.GPUFrame, buff.GrayFrame.GPUFrame, buff.FrameUndistorted.GPUFrame.channels() == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
+	if (rescale == buff.FrameUndistorted.GPUFrame.size())
 	{
-		#ifdef WITH_CUDA
-		cuda::GpuMat rescaled;
-		cuda::resize(buff.FrameUndistorted.GPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
-		cuda::cvtColor(rescaled, buff.rescaledFrames[i].GPUFrame, rescaled.channels() == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
-		buff.rescaledFrames[i].HasGPU = true;
-		buff.rescaledFrames[i].HasCPU = false;
-		#else
-		UMat rescaled;
-		resize(buff.FrameUndistorted.CPUFrame, rescaled, rescales[i], 0, 0, INTER_AREA);
-		cvtColor(rescaled, buff.rescaledFrames[i].CPUFrame, rescaled.channels() == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
-		#endif
+		buff.RescaledFrame = MixedFrame(buff.GrayFrame.GPUFrame);
 	}
+	else
+	{
+		cuda::resize(buff.GrayFrame.GPUFrame, buff.RescaledFrame.GPUFrame, rescale, 0, 0, INTER_AREA);
+	}
+	buff.GrayFrame.HasGPU = true;
+	buff.GrayFrame.HasCPU = false;
+	buff.RescaledFrame.HasGPU = true;
+	buff.RescaledFrame.HasCPU = false;
+	#else
+	bool rgb = buff.FrameUndistorted.CPUFrame.channels() == 3;
+	cvtColor(buff.FrameUndistorted.CPUFrame, buff.GrayFrame.CPUFrame, rgb ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
+	
+	if (rescale == buff.FrameUndistorted.CPUFrame.size())
+	{
+		buff.RescaledFrame = MixedFrame(buff.GrayFrame.CPUFrame);
+	}
+	else
+	{
+		resize(buff.GrayFrame.CPUFrame, buff.RescaledFrame.CPUFrame, rescale, 0, 0, INTER_AREA);
+	}
+	buff.GrayFrame.HasCPU = true;
+	buff.RescaledFrame.HasCPU = true;
+	#endif
 	buff.Status.HasResized = true;
 }
 
 void ArucoCamera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
 {
-	/*cuda::GpuMat framegpu; framegpu.upload(frame);
-	cuda::cvtColor(framegpu, framegpu, COLOR_BGR2GRAY);
-	cuda::threshold(framegpu, framegpu, 127, 255, THRESH_BINARY);
-	UMat framethreshed; framegpu.download(framethreshed);*/
-
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
 
-	//the first vectors is for each resolution
-	//the second vector is for each tag
-	//all the positions are in pixels of the base frame
-
-	//corners of the tags, in pixel position
-	vector<vector<vector<Point2f>>> AllCorners;
-	//ids of the tags
-	vector<vector<int>> AllIDs;
-	//centers of the tags, in pixel position
-	vector<vector<FVector2D<double>>> Centers;
-	int nbframes = buff.rescaledFrames.size();
-	AllCorners.resize(nbframes);
-	AllIDs.resize(nbframes);
-	Centers.resize(nbframes);
 	Size framesize = GetFrameSize();
-	vector<Size> rescaled = GetArucoReductions();
+	Size rescaled = GetArucoReduction();
 
-
-	
-	
-
-	//Range InRange(0, nbframes);
-	parallel_for_(Range(0,nbframes), [&](const Range InRange)
+	if(!buff.GrayFrame.MakeCPUAvailable())
 	{
-		for (size_t i = InRange.start; i < InRange.end; i++)
+		return;
+	}
+	if(!buff.RescaledFrame.MakeCPUAvailable())
+	{
+		return;
+	}
+	
+
+	vector<vector<Point2f>> &corners = buff.markerCorners;
+	corners.clear();
+	vector<int> &IDs = buff.markerIDs;
+	IDs.clear();
+	aruco::detectMarkers(buff.RescaledFrame.CPUFrame, dict, corners, IDs, params);
+
+	FVector2D scalefactor = FVector2D(framesize)/FVector2D(rescaled);
+
+	for (int j = 0; j < corners.size(); j++)
+	{
+		for (size_t k = 0; k < 4; k++)
 		{
-			vector<vector<Point2f>> corners;
-			vector<int>& IDs = AllIDs[i];
-			MixedFrame frameM;
-			UMat frame;
-			if (!buff.GetRescaledFrame(i, frameM))
-			{
-				continue;
-			}
-			frameM.GetCPUFrame(frame);
-			aruco::detectMarkers(frame, dict, corners, IDs, params);
-
-			//cout << "Height " << i << " found " << corners.size() << " arucos" << endl;
-
-			AllCorners[i].resize(corners.size());
-			Centers[i].resize(corners.size());
-
-			FVector2D scalefactor = FVector2D(framesize)/FVector2D(rescaled[i]);
-
-			for (int j = 0; j < corners.size(); j++)
-			{
-				FVector2D<double> sum = 0;
-				AllCorners[i][j].resize(4);
-				for (size_t k = 0; k < 4; k++)
-				{
-					FVector2D pos = FVector2D(corners[j][k]) * scalefactor;
-					AllCorners[i][j][k] = pos;
-					sum = sum + pos;
-				}
-				Centers[i][j] = sum /4;
-			}
-			
+			FVector2D pos = FVector2D(corners[j][k]) * scalefactor;
+			corners[j][k] = pos;
 		}
-	});
+	}
 
-	vector<vector<Point2f>> corners;
-	vector<int> markerIDs;
-	vector<float> reductionFactors = GetReductionFactor();
+	float reductionFactors = GetReductionFactor();
 
-	if (rescaled[0] == Settings.Resolution && nbframes == 1) //fast path for running at native res
+	if (rescaled == Settings.Resolution) //fast path for running at native res
 	{
-		buff.markerCorners = AllCorners[0];
-		buff.markerIDs = AllIDs[0];
 	}
 	else
 	{
-		UMat framebase, framegray;
-		if (!buff.FrameUndistorted.GetCPUFrame(framebase))
-		{
-			return;
-		}
-		cvtColor(framebase, framegray, framebase.channels() == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY);
+		UMat &framegray = buff.GrayFrame.CPUFrame;
 
-		//Lower resolution processing to increase accuracy while keeping speed
-		for (int Lower = 0; Lower < nbframes; Lower++)
+		for (int ArucoIdx = 0; ArucoIdx < IDs.size(); ArucoIdx++)
 		{
-			for (int ArucoLower = 0; ArucoLower < AllIDs[Lower].size(); ArucoLower++)
-			{
-				markerIDs.push_back(AllIDs[Lower][ArucoLower]);
-				vector<Point2f> cornersTemp = AllCorners[Lower][ArucoLower];
-				Size window = Size(reductionFactors[Lower], reductionFactors[Lower]);
-				cornerSubPix(framegray, cornersTemp, window, Size(-1,-1), TermCriteria(TermCriteria::COUNT | TermCriteria::EPS, 100, 0.01));
-				corners.push_back(cornersTemp);
-				//cout << "Found aruco " << AllIDs[Lower][ArucoLower] << " at height " << Lower << endl;
-
-				//If there are lower-resolution appearances of this tag, remove them as they'll have a lower accuracy
-				for (int Higher = Lower +1; Higher < nbframes; Higher++)
-				{
-					for (int ArucoHigher = 0; ArucoHigher < AllIDs[Higher].size(); ArucoHigher++)
-					{
-						//check same id
-						if (AllIDs[Lower][ArucoLower] == AllIDs[Higher][ArucoHigher])
-						{
-							//check they are not too far apart on the frame
-							if ((Centers[Lower][ArucoLower] - Centers[Higher][ArucoHigher]).TaxicabLength() < 10)
-							{
-								Centers[Higher].erase(Centers[Higher].begin() + ArucoHigher);
-								AllIDs[Higher].erase(AllIDs[Higher].begin() + ArucoHigher);
-								AllCorners[Higher].erase(AllCorners[Higher].begin() + ArucoHigher);
-								break;
-								ArucoHigher--;
-							}
-							
-						}
-						
-					}
-					
-				}
-				
-			}
-			
+			Size window = Size(reductionFactors, reductionFactors);
+			cornerSubPix(framegray, corners[ArucoIdx], window, Size(-1,-1), TermCriteria(TermCriteria::COUNT | TermCriteria::EPS, 100, 0.01));
 		}
-		
-		buff.markerCorners = corners;
-		buff.markerIDs = markerIDs;
 	}
-	
-	
 	buff.Status.HasAruco = true;
 }
 

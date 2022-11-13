@@ -89,21 +89,3 @@ bool MixedFrame::MakeGPUAvailable()
 	return true;
 }
 #endif
-
-bool BufferedFrame::GetFrameRaw(MixedFrame& OutFrame)
-{
-	OutFrame = FrameRaw;
-	return FrameRaw.IsValid();
-}
-
-bool BufferedFrame::GetFrameUndistorted(MixedFrame& OutFrame)
-{
-	OutFrame = FrameUndistorted;
-	return FrameUndistorted.IsValid();
-}
-
-bool BufferedFrame::GetRescaledFrame(int index, MixedFrame& OutFrame)
-{
-	OutFrame = rescaledFrames[index];
-	return rescaledFrames[index].IsValid();
-}

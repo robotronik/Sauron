@@ -1,7 +1,8 @@
 #include "TrackedObjects/TrackerCube.hpp"
 
+#include "TrackedObjects/ObjectIdentity.hpp"
+
 #include "math3d.hpp"
-#include "data/DataPacket.hpp"
 
 using namespace cv;
 using namespace std;
@@ -28,12 +29,12 @@ TrackerCube::~TrackerCube()
 {
 }
 
-vector<PositionPacket> TrackerCube::ToPacket(int BaseNumeral)
+vector<ObjectData> TrackerCube::ToObjectData(int BaseNumeral)
 {
-	PositionPacket robot;
-	robot.type = PacketType::Robot;
-	Affine3dToVictor(robot, Location);
-	robot.numeral = BaseNumeral;
+	ObjectData robot;
+	robot.identity.numeral = BaseNumeral;
+	robot.identity.type = PacketType::Robot;
+	robot.location = Location;
 	return {robot};
 }
 

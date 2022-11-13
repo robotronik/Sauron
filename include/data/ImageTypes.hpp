@@ -152,7 +152,8 @@ public:
 	MixedFrame FrameUndistorted;
 	BufferStatus Status;
 
-	std::vector<MixedFrame> rescaledFrames;
+	MixedFrame GrayFrame;
+	MixedFrame RescaledFrame;
 
 	std::vector<int> markerIDs;
 	std::vector<std::vector<cv::Point2f>> markerCorners;
@@ -163,11 +164,5 @@ public:
 	BufferedFrame()
 		:Status()
 	{}
-
-	bool GetFrameRaw(MixedFrame& OutFrame);
-
-	bool GetFrameUndistorted(MixedFrame& OutFrame);
-
-	bool GetRescaledFrame(int index, MixedFrame& OutFrame);
 
 };

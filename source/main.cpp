@@ -18,6 +18,7 @@
 #include "Calibrate.hpp"
 #include "visualisation/BoardViz2D.hpp"
 #include "visualisation/BoardViz3D.hpp"
+#include "visualisation/BoardGL.hpp"
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRInternal.hpp"
 
@@ -34,13 +35,6 @@ using namespace cv;
 
 int main(int argc, char** argv )
 {
-	//{
-	//	ArgusCamera* CamTest = new ArgusCamera(CameraSettings());
-	//	CamTest->StartFeed();
-	//	//CamTest->Read(0);
-	//	exit(EXIT_SUCCESS);
-	//}
-	//return ArgusEGLImage(argc, argv);
 	const string keys = 
 		"{help h usage ? |      | print this message}"
 		"{direct d       |      | show direct camera output}"
@@ -50,6 +44,7 @@ int main(int argc, char** argv )
 		"{cuda           |      | print cuda info}"
 		"{board          |      | runs boardview test}"
 		"{viz3d          |      | runs viz3d test}"
+		"{opengl ogl     |      | runs opengl test}"
 		"{server s       |      | force server/client state}"
 		;
 	CommandLineParser parser(argc, argv, keys);
@@ -97,8 +92,6 @@ int main(int argc, char** argv )
 	}
 	if (parser.has("viz3d"))
 	{
-		TestViz3D();
-		Tracker3DTest();
 		exit(EXIT_SUCCESS);
 	}
 	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
@@ -161,7 +154,7 @@ int main(int argc, char** argv )
 	
 	
 	//hsvtest();
-	CDFRExternalMain(direct, true);
+	CDFRExternalMain(direct, false);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

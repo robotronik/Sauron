@@ -19,9 +19,7 @@
 #include "data/FrameCounter.hpp"
 #include "data/CameraView.hpp"
 
-#include "data/SerialPacket.hpp"
-#include "data/senders/SerialSender.hpp"
-#include "data/senders/WebSender.hpp"
+#include "data/senders/DataSender.hpp"
 
 
 using namespace cv;

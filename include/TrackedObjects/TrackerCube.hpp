@@ -10,7 +10,7 @@ public:
 	TrackerCube(vector<int> MarkerIdx, float MarkerSize, cv::Point3d CubeSize, cv::String InName);
 	~TrackerCube();
 
-	virtual vector<PositionPacket> ToPacket(int BaseNumeral) override;
+	virtual vector<ObjectData> ToObjectData(int BaseNumeral) override;
 
 	virtual void DisplayRecursive(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName) override;
 };

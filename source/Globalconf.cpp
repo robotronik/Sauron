@@ -19,7 +19,7 @@ Config cfg;
 
 //Default values
 CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), Rect(0,0,0,0), 120, 4, ""};
-vector<float> Reductions = {2};
+float Reductions = 2;
 WebsocketConfig WebsocketCfg = {"eth1", true, true, "127.0.0.1", 24};
 vector<InternalCameraConfig> CamerasInternal;
 
@@ -153,7 +153,7 @@ void InitConfig()
 		CopyDefaultCfg(Capture, "Framerate", Setting::TypeInt, CaptureCfg.CaptureFramerate);
 		CopyDefaultCfg(Capture, "FramerateDivider", Setting::TypeInt, CaptureCfg.FramerateDivider);
 		CopyDefaultCfg(Capture, "Method", Setting::TypeInt, CaptureCfg.StartType);
-		CopyDefaultVector(Resolution, "Reductions", Setting::TypeFloat, Reductions);
+		CopyDefaultCfg(Resolution, "Reduction", Setting::TypeFloat, Reductions);
 		CopyDefaultCfg(Capture, "CameraFilter", Setting::TypeString, CaptureCfg.filter);
 	}
 
@@ -226,7 +226,8 @@ Ptr<aruco::DetectorParameters> GetArucoParams()
 	if (parameters.empty())
 	{
 		parameters = aruco::DetectorParameters::create();
-		parameters->cornerRefinementMethod = GetArucoReductions()[0] == GetFrameSize() ? aruco::CORNER_REFINE_CONTOUR : aruco::CORNER_REFINE_NONE;
+		parameters->cornerRefinementMethod = GetArucoReduction() == GetFrameSize() ? aruco::CORNER_REFINE_CONTOUR : aruco::CORNER_REFINE_NONE;
+		parameters->useAruco3Detection = true;
 		//parameters->adaptiveThreshWinSizeMin = 5;
 		//parameters->adaptiveThreshWinSizeMax = 5;
 		//parameters->adaptiveThreshWinSizeStep = 10;
@@ -271,23 +272,19 @@ CaptureConfig GetCaptureConfig()
 	return CaptureCfg;
 }
 
-vector<float> GetReductionFactor()
+float GetReductionFactor()
 {
 	InitConfig();
 	return Reductions;
 }
 
-vector<Size> GetArucoReductions()
+Size GetArucoReduction()
 {
-	vector<Size> reductions;
+	Size reduction;
 	Size basesize = GetFrameSize();
-	vector<float> reductionFactors  = GetReductionFactor();
-	reductions.resize(reductionFactors.size());
-	for (int i = 0; i < reductionFactors.size(); i++)
-	{
-		reductions[i] = Size(basesize.width / reductionFactors[i], basesize.height / reductionFactors[i]);
-	}
-	return reductions;
+	float reductionFactor = GetReductionFactor();
+	reduction = Size(basesize.width / reductionFactor, basesize.height / reductionFactor);
+	return reduction;
 }
 
 UMat& GetArucoImage(int id)

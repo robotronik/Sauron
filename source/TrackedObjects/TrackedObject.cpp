@@ -10,7 +10,6 @@
 #include "math3d.hpp"
 #include "Cameras/Camera.hpp"
 #include "GlobalConf.hpp"
-#include "data/SerialPacket.hpp"
 #include "data/CameraView.hpp"
 #include "visualisation/BoardViz2D.hpp"
 
@@ -282,9 +281,9 @@ void TrackedObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocati
 	
 }
 
-vector<PositionPacket> TrackedObject::ToPacket(int BaseNumeral)
+vector<ObjectData> TrackedObject::ToObjectData(int BaseNumeral)
 {
-	cerr << "WARNING: Call to base TrackedObject::ToPacket function. That function is uninplemented. Override it." <<endl;
+	cerr << "WARNING: Call to base TrackedObject::ToObjectData function. That function is uninplemented. Override it." <<endl;
 	return {};
 }
 

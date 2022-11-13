@@ -1,5 +1,4 @@
 #include "data/senders/DataSender.hpp"
-#include "data/DataPacket.hpp"
 #include <cinttypes>
 #include <iostream>
 #include <string>
@@ -9,8 +8,26 @@ using namespace cv;
 using namespace std;
 
 PositionDataSender::PositionDataSender()
+	:encoder(nullptr), transport(nullptr), ReceiveThread(nullptr)
 {
 	StartTick = getTickCount();
+}
+
+PositionDataSender::~PositionDataSender()
+{
+	if (ReceiveThread != nullptr)
+	{
+		StopReceiveThread();
+	}
+	
+	if (encoder != nullptr)
+	{
+		delete encoder;
+	}
+	if (transport != nullptr)
+	{
+		delete transport;
+	}
 }
 
 int64 PositionDataSender::GetTick()
@@ -23,38 +40,69 @@ void PositionDataSender::RegisterTrackedObject(TrackedObject* object)
 	RegisteredObjects.push_back(object);
 }
 
-
-
-void PositionDataSender::PrintCSVHeader(ofstream &file)
+void PositionDataSender::SendPacket(int64 GrabTick)
 {
-	file << "ms" << ", ";
-	for (size_t i = 0; i < RegisteredObjects.size(); i++)
+	if (encoder == nullptr)
 	{
-		file << "numeral, X , Y, rot(deg)";
-		if (i != RegisteredObjects.size() -1)
-		{
-			file << ", ";
-		}
-		
+		cerr << "PDS Encoder is null, no data will be sent." << endl;
+		return;
 	}
-	file << endl;
+	if (transport == nullptr)
+	{
+		cerr << "PDS transport is null, no data will be sent." << endl;
+		return;
+	}
+	DecodedData data;
+	data.GrabTime = GrabTick;
+	data.objects = RegisteredObjects;
+	EncodedData encoded = encoder->Encode(&data);
+	if (!encoded.valid)
+	{
+		cerr << "PDS encoded data is invalid, no data will be sent." << endl;
+		return;
+	}
+	transport->Broadcast(encoded.buffer, encoded.length);
+	free(encoded.buffer);
 }
 
-void PositionDataSender::PrintCSV(ofstream &file)
+void PositionDataSender::ThreadRoutine()
 {
-	uint32_t ms = (getTickCount() - StartTick) *1000 / getTickFrequency();
-	file << ms << ", ";
-	for (size_t i = 0; i < RegisteredObjects.size(); i++)
+	while (1)
 	{
-		vector<PositionPacket> packets = RegisteredObjects[i]->ToPacket(i);
-		for (size_t j = 0; j < packets.size(); j++)
+		this_thread::sleep_for(chrono::milliseconds(100));
+		if (!ReceiveKillMutex.try_lock())
 		{
-			file << packets[j].ToCSV();
-			if ((i != RegisteredObjects.size() -1) || (j != packets.size() -1))
-			{
-				file << ", ";
-			}
+			break;
 		}
+		
+		if (transport == nullptr)
+		{
+			continue;
+		}
+		char buff[1024];
+		int n;
+		while((n = transport->Receive(buff, sizeof(buff)))>-1)
+		{
+			//GenericTransport::printBuffer(buff, n);
+			string bufs(buff, n);
+			cout << "Received string \"" << bufs << "\"" << endl;
+		}
+		ReceiveKillMutex.unlock();
 	}
-	file << endl;
+	
+}
+
+void PositionDataSender::StartReceiveThread()
+{
+	if (ReceiveThread != nullptr)
+	{
+		return;
+	}
+	ReceiveKillMutex.unlock();
+	ReceiveThread = new thread([this](){ThreadRoutine();});
+}
+
+void PositionDataSender::StopReceiveThread()
+{
+	ReceiveKillMutex.lock();
 }

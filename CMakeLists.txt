@@ -9,14 +9,21 @@ project(Robotronikaruco)
 # via the command line or GUI
 find_package(OpenCV REQUIRED)
 
+#Window manager, used to get the screen resolution
 find_package(X11 REQUIRED)
 add_compile_definitions(WITH_X11)
 
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
-    add_compile_definitions(WITH_CUDA)
+    #add_compile_definitions(WITH_CUDA)
     message(STATUS "CUDA found, assuming OpenCV was built with CUDA")
 endif(CUDAToolkit_FOUND)
+
+# OpenGL
+find_package(OpenGL REQUIRED)
+find_package(GLUT REQUIRED)
+find_package(GLEW REQUIRED)
+
 
 
 # If the package has been found, several variables will
@@ -47,7 +54,10 @@ message(STATUS "include directories : ${INCLUDES}")
 
 include_directories(
 	${OPENCV_INCLUDE_DIRS}
-	${CMAKE_SOURCE_DIR}/include)
+	${INCLUDES}
+    ${OPENGL_INCLUDE_DIRS}
+    ${GLUT_INCLUDE_DIRS}
+    ${GLEW_INCLUDE_DIRS})
 
 file(GLOB_RECURSE SOURCES "source/*.cpp")
 
@@ -67,4 +77,9 @@ target_link_libraries(Robotronikaruco
 	stdc++fs
 	${X11_LIBRARIES}
 	config++
+    pthread
+    ${OPENGL_LIBRARIES} 
+    GLUT::GLUT
+    GLEW::glew
+    assimp
 )

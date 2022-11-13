@@ -1,5 +1,7 @@
 #include "Scenarios/CDFRCommon.hpp"
+#include "data/ManualProfiler.hpp"
 
+ManualProfiler mp("Pipeline ", {"Read", "Undistort", "Rescale", "ArucoDetect", "ArucoSolve"});
 
 void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry)
 {
@@ -17,23 +19,39 @@ void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, Ptr<ar
 		
 	}
 	//Range range(0, numCams*Camera::FrameBufferSize);
+	vector<ManualProfiler> mps;
+	mps.resize(BufToCamMap.size());
 	parallel_for_(Range(0, BufToCamMap.size()), [&](const Range& range)
 	{
 		for (int i = range.start; i < range.end; i++)
 		{
+			ManualProfiler& localprof = mps[i];
+			int pf = 0;
+			localprof.EnterSection(pf++);
 			int CamIdx = BufToCamMap[i];
 			ArucoCamera* cam = Cameras[CamIdx];
 			int Buffer0 = BufIdxMap[i];
 			int BufferIdx = (BufferCaptureIdx + Buffer0) % cam->GetCameraSettings().BufferSize;
 			//Detect aruco
 			cam->Read(BufferIdx);
+			localprof.EnterSection(pf++);
 			cam->Undistort(BufferIdx);
+			localprof.EnterSection(pf++);
 			cam->RescaleFrames(BufferIdx);
+			localprof.EnterSection(pf++);
 			cam->detectMarkers(BufferIdx, dict, params);
-			cam->SolveMarkers(BufferIdx, CamIdx, registry);
+			//localprof.EnterSection(pf++);
+			//cam->SolveMarkers(BufferIdx, CamIdx, registry);
+			localprof.EnterSection(-1);
 			
 			
 		}
 		//cout << "Aruco stripe from " << range.start << " to " << range.end << endl;
 	}, BufToCamMap.size());
+	for (int i = 0; i < BufToCamMap.size(); i++)
+	{
+		mp += mps[i];
+	}
+	mp.PrintIfShould();
+	
 } 

@@ -2,11 +2,14 @@
 #include "Scenarios/CDFRCommon.hpp"
 #include "visualisation/BoardViz2D.hpp"
 #include "data/ManualProfiler.hpp"
+#include "data/senders/Encoders/MinimalEncoder.hpp"
+#include "data/senders/Transport/TCPTransport.hpp"
+#include "data/senders/Transport/UDPTransport.hpp"
 #include <thread>
 
 void CDFRExternalMain(bool direct, bool v3d)
 {
-	ManualProfiler prof;
+	ManualProfiler prof("frames ");
 	int ps = 0;
 	prof.NameSection(ps++, "Init");
 	prof.NameSection(ps++, "CameraMan Tick");
@@ -46,7 +49,21 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 	ObjectTracker tracker;
 	
-	WebSender sender;
+	PositionDataSender sender;
+	{
+		WebsocketConfig wscfg = GetWebsocketConfig();
+		sender.encoder = new MinimalEncoder;
+		if (wscfg.TCP)
+		{
+			sender.transport = new TCPTransport(wscfg.Server, wscfg.IP, wscfg.Port, wscfg.Interface);
+		}
+		else
+		{
+			sender.transport = new UDPTransport(wscfg.Server, wscfg.IP, wscfg.Port, wscfg.Interface);
+		}
+		sender.StartReceiveThread();
+	}
+	
 
 	StaticObject* boardobj = new StaticObject(false, "board");
 	tracker.RegisterTrackedObject(boardobj); 
@@ -63,11 +80,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 	//sender.PrintCSVHeader(printfile);
 
-	vector<OutputImage*> OutputTargets;
-	for (int i = 0; i < physicalCameras.size(); i++)
-	{
-		OutputTargets.push_back(physicalCameras[i]);
-	}
+	
 	//OutputTargets.push_back(board);
 
 
@@ -83,6 +96,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		prof.EnterSection(ps++);
 		CameraMan.Tick<VideoCaptureCamera>();
 		prof.EnterSection(ps++);
+		int64 GrabTick = getTickCount();
 		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
 		prof.EnterSection(ps++);
 		if (direct)
@@ -171,7 +185,16 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 		if (direct)
 		{
-			
+			vector<OutputImage*> OutputTargets;
+			for (int i = 0; i < physicalCameras.size(); i++)
+			{
+				if (!physicalCameras[i]->GetStatus(0).HasCaptured)
+				{
+					continue;
+				}
+				
+				OutputTargets.push_back(physicalCameras[i]);
+			}
 			UMat image = ConcatCameras(0, OutputTargets, OutputTargets.size());
 			//board.GetOutputFrame(0, image, GetFrameSize());
 			//cout << "Concat OK" <<endl;
@@ -181,7 +204,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		}
 		
 		prof.EnterSection(ps++);
-		sender.SendPacket();
+		sender.SendPacket(GrabTick);
 		//sender.PrintCSV(printfile);
 		/*sender.SendPacket();
 		if (bridge->available() > 0)
