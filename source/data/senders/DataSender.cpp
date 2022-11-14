@@ -83,9 +83,9 @@ void PositionDataSender::ThreadRoutine()
 		int n;
 		while((n = transport->Receive(buff, sizeof(buff)))>-1)
 		{
-			//GenericTransport::printBuffer(buff, n);
-			string bufs(buff, n);
-			cout << "Received string \"" << bufs << "\"" << endl;
+			GenericTransport::printBuffer(buff, n);
+			//string bufs(buff, n);
+			//cout << "Received string \"" << bufs << "\"" << endl;
 		}
 		ReceiveKillMutex.unlock();
 	}

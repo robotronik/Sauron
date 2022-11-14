@@ -22,7 +22,7 @@ using BoardImageType = cv::UMat;
 
 class BoardViz2D : public OutputImage
 {
-private:
+public:
 	static bool ImagesLoaded;
 	static BoardImageType table;
 	static BoardImageType robot;

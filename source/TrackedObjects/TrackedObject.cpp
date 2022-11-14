@@ -256,7 +256,7 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 	
 }
 
-void TrackedObject::DisplayRecursive2D(BoardViz2D visualizer, Affine3d RootLocation, String rootName)
+void TrackedObject::DisplayRecursive2D(BoardViz2D* visualizer, Affine3d RootLocation, String rootName)
 {
 	Affine3d worldlocation = RootLocation * Location;
 

@@ -53,6 +53,12 @@ vector<ObjectData> StaticObject::ToObjectData(int BaseNumeral)
 	return {packet};
 }
 
+void StaticObject::DisplayRecursive2D(BoardViz2D* visualizer, cv::Affine3d RootLocation, cv::String rootName)
+{
+	visualizer->OverlayImage(visualizer->table, RootLocation*Location, FVector2D(3.0,2.0));
+	TrackedObject::DisplayRecursive2D(visualizer, RootLocation, rootName);
+}
+
 void StaticObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
 {
 	viz::WText3D Robotext(Name, (RootLocation*Location).translation(), 0.01);

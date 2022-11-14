@@ -21,6 +21,8 @@ public:
 
 	void SolveLocationsTagByTag(vector<cv::Affine3d>& Cameras, vector<CameraView>& Tags);
 
+	void DisplayObjects2D(BoardViz2D* visualizer);
+
 	void DisplayObjects(cv::viz::Viz3d* visualizer);
 
 	//only needed for the center

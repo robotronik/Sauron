@@ -144,8 +144,7 @@ void BoardViz2D::OverlayImage(BoardImageType& ImageToOverlay, FVector2D<float> p
 
 void BoardViz2D::OverlayImage(BoardImageType& ImageToOverlay, Affine3d position, FVector2D<float> ImageSize)
 {
-	Vec3d translation3d;
-	position.translation(translation3d);
+	Vec3d translation3d = position.translation();
 	FVector2D<float> translation2d(translation3d[0], translation3d[1]);
 	float rot = GetRotZ(position.rotation());
 	OverlayImage(ImageToOverlay, translation2d, rot, ImageSize);

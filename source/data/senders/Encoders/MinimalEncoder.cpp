@@ -39,7 +39,7 @@ EncodedData MinimalEncoder::Encode(DecodedData* data)
 		Affine3dToVictor(packet, ObjectDatas[i].location);
 	}
 	
-	if (false)
+	if (true)
 	{
 		int buffersize = sizeof(MinimalPacketHeader) + sizeof(PositionPacket) * ObjectPackets.size();
 		char* buffer = reinterpret_cast<char*>(malloc(buffersize));

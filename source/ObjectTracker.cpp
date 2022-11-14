@@ -83,6 +83,14 @@ void ObjectTracker::SolveLocationsTagByTag(vector<Affine3d>& Cameras, vector<Cam
 	}
 }
 
+void ObjectTracker::DisplayObjects2D(BoardViz2D* visualizer)
+{
+	for (int i = 0; i < objects.size(); i++)
+	{
+		objects[i]->DisplayRecursive2D(visualizer, Affine3d::Identity(), "");
+	}
+}
+
 void ObjectTracker::DisplayObjects(viz::Viz3d* visualizer)
 {
 	for (int i = 0; i < objects.size(); i++)

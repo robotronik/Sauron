@@ -195,6 +195,9 @@ void CDFRExternalMain(bool direct, bool v3d)
 				
 				OutputTargets.push_back(physicalCameras[i]);
 			}
+			OutputTargets.push_back(board);
+			board->CreateBackground(Size(1500, 1000));
+			tracker.DisplayObjects2D(board);
 			UMat image = ConcatCameras(0, OutputTargets, OutputTargets.size());
 			//board.GetOutputFrame(0, image, GetFrameSize());
 			//cout << "Concat OK" <<endl;

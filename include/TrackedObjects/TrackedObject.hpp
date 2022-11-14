@@ -6,6 +6,7 @@
 #include <opencv2/core.hpp>		// Basic OpenCV structures (Mat, Scalar)
 #include <opencv2/viz.hpp>
 
+#include "visualisation/BoardViz2D.hpp"
 #include "TrackedObjects/ObjectIdentity.hpp"
 
 class ArucoCamera;
@@ -79,7 +80,7 @@ public:
 	//Given corners, solve this object's location using multiple tags at once
 	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface);
 
-	virtual void DisplayRecursive2D(BoardViz2D visualizer, cv::Affine3d RootLocation, cv::String rootName);
+	virtual void DisplayRecursive2D(BoardViz2D* visualizer, cv::Affine3d RootLocation, cv::String rootName);
 
 	virtual void DisplayRecursive(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName);
 

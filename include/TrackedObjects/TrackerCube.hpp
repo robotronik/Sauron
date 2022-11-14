@@ -12,5 +12,7 @@ public:
 
 	virtual vector<ObjectData> ToObjectData(int BaseNumeral) override;
 
+	virtual void DisplayRecursive2D(BoardViz2D* visualizer, cv::Affine3d RootLocation, cv::String rootName) override;
+
 	virtual void DisplayRecursive(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName) override;
 };
