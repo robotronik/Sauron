@@ -14,14 +14,11 @@
 struct BufferStatus
 {
 	bool HasGrabbed;
-	bool HasCaptured;
-	bool HasUndistorted;
-	bool HasResized;
 	bool HasAruco;
 	bool HasViews;
 
 	BufferStatus()
-	:HasGrabbed(false), HasCaptured(false), HasUndistorted(false), HasResized(false), HasAruco(false), HasViews(false)
+	:HasGrabbed(false), HasAruco(false), HasViews(false)
 	{}
 };
 

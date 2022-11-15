@@ -126,11 +126,6 @@ void Camera::Undistort(int BufferIdx)
 
 	BufferedFrame& buff = FrameBuffer[BufferIdx];
 	
-	if (!buff.Status.HasCaptured)
-	{
-		return;
-	}
-	
 	#ifdef WITH_CUDA
 	if (!buff.FrameRaw.MakeGPUAvailable())
 	{
@@ -150,16 +145,11 @@ void Camera::Undistort(int BufferIdx)
 	remap(buff.FrameRaw.CPUFrame, buff.FrameUndistorted.CPUFrame, UndistMap1, UndistMap2, INTER_LINEAR);
 	buff.FrameUndistorted.HasCPU = true;
 	#endif
-	buff.Status.HasUndistorted = true;
 }
 
 void Camera::GetFrameUndistorted(int BufferIndex, UMat& frame)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
-	if (!buff.Status.HasUndistorted)
-	{
-		return;
-	}
 	if (!buff.FrameUndistorted.MakeCPUAvailable())
 	{
 		return;
@@ -289,7 +279,6 @@ void ArucoCamera::RescaleFrames(int BufferIdx)
 	buff.GrayFrame.HasCPU = true;
 	buff.RescaledFrame.HasCPU = true;
 	#endif
-	buff.Status.HasResized = true;
 }
 
 void ArucoCamera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)

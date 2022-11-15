@@ -11,14 +11,12 @@ void CDFRExternalMain(bool direct, bool v3d)
 {
 	ManualProfiler prof("frames ");
 	int ps = 0;
-	prof.NameSection(ps++, "Init");
 	prof.NameSection(ps++, "CameraMan Tick");
 	prof.NameSection(ps++, "Camera Pipeline");
 	prof.NameSection(ps++, "3D solve setup");
 	prof.NameSection(ps++, "3D solve");
-	prof.NameSection(ps++, "V3D display");
+	prof.NameSection(ps++, "Visualizer");
 	prof.NameSection(ps++, "Position packet");
-	prof.EnterSection(0);
 	CameraManager CameraMan(GetCaptureMethod(), GetCaptureConfig().filter, false);
 
 	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
@@ -92,7 +90,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 	int lastmarker = 0;
 	for (;;)
 	{
-		ps = 1;
+		ps = 0;
 		prof.EnterSection(ps++);
 		CameraMan.Tick<VideoCaptureCamera>();
 		prof.EnterSection(ps++);
@@ -129,10 +127,10 @@ void CDFRExternalMain(bool direct, bool v3d)
 				continue;
 			}
 			
-			if (!cam->GetCameraViews(0, CameraViews))
+			/*if (!cam->GetCameraViews(0, CameraViews))
 			{
 				continue;
-			}
+			}*/
 
 			bool hasposition = false;
 			float surface;
@@ -186,17 +184,13 @@ void CDFRExternalMain(bool direct, bool v3d)
 		if (direct)
 		{
 			vector<OutputImage*> OutputTargets;
+			OutputTargets.reserve(physicalCameras.size()+1);
 			for (int i = 0; i < physicalCameras.size(); i++)
 			{
-				if (!physicalCameras[i]->GetStatus(0).HasCaptured)
-				{
-					continue;
-				}
-				
 				OutputTargets.push_back(physicalCameras[i]);
 			}
 			OutputTargets.push_back(board);
-			board->CreateBackground(Size(1500, 1000));
+			board->CreateBackground(Size(750, 500));
 			tracker.DisplayObjects2D(board);
 			UMat image = ConcatCameras(0, OutputTargets, OutputTargets.size());
 			//board.GetOutputFrame(0, image, GetFrameSize());

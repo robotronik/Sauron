@@ -55,7 +55,10 @@ vector<ObjectData> StaticObject::ToObjectData(int BaseNumeral)
 
 void StaticObject::DisplayRecursive2D(BoardViz2D* visualizer, cv::Affine3d RootLocation, cv::String rootName)
 {
-	visualizer->OverlayImage(visualizer->table, RootLocation*Location, FVector2D(3.0,2.0));
+	if (Relative)
+	{
+		visualizer->OverlayImage(visualizer->table, RootLocation*Location, FVector2D(3.0,2.0));
+	}
 	TrackedObject::DisplayRecursive2D(visualizer, RootLocation, rootName);
 }
 

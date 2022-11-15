@@ -182,7 +182,6 @@ bool VideoCaptureCamera::Read(int BufferIndex)
 	if (ReadSuccess)
 	{
 		buff.Status = BufferStatus();
-		buff.Status.HasCaptured = true;
 	}
 	else
 	{
@@ -208,6 +207,5 @@ bool VideoCaptureCamera::InjectImage(int BufferIndex, UMat& frame)
 	buff.FrameRaw.HasGPU = false;
 	#endif
 	buff.Status = BufferStatus();
-	buff.Status.HasCaptured = true;
 	return true;
 }

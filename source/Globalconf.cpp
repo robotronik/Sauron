@@ -22,6 +22,7 @@ CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,7
 float Reductions = 2;
 WebsocketConfig WebsocketCfg = {"eth1", true, true, "127.0.0.1", 24};
 vector<InternalCameraConfig> CamerasInternal;
+Size screensize(-1,-1);
 
 template<class T>
 Setting& EnsureExistCfg(Setting& Location, const char *FieldName, Setting::Type SettingType, T DefaultValue)
@@ -227,7 +228,7 @@ Ptr<aruco::DetectorParameters> GetArucoParams()
 	{
 		parameters = aruco::DetectorParameters::create();
 		parameters->cornerRefinementMethod = GetArucoReduction() == GetFrameSize() ? aruco::CORNER_REFINE_CONTOUR : aruco::CORNER_REFINE_NONE;
-		parameters->useAruco3Detection = true;
+		parameters->useAruco3Detection = false;
 		//parameters->adaptiveThreshWinSizeMin = 5;
 		//parameters->adaptiveThreshWinSizeMax = 5;
 		//parameters->adaptiveThreshWinSizeStep = 10;
@@ -238,10 +239,13 @@ Ptr<aruco::DetectorParameters> GetArucoParams()
 Size GetScreenSize()
 {
 	#ifdef WITH_X11
-	Display* d = XOpenDisplay(NULL);
-	Screen*  s = DefaultScreenOfDisplay(d);
-	Size screensize = Size(s->width, s->height);
-	XCloseDisplay(d);
+	if (screensize == Size(-1,-1))
+	{
+		Display* d = XOpenDisplay(NULL);
+		Screen*  s = DefaultScreenOfDisplay(d);
+		screensize = Size(s->width, s->height);
+		XCloseDisplay(d);
+	}
 	return screensize;
 	#else
 	return Size(1920,1080);

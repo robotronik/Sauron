@@ -188,20 +188,28 @@ BoardImageType& BoardViz2D::GetCamera()
 
 void BoardViz2D::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
-	BoardImageType resizedgpu;
+	BoardImageType resizedgpu, recoloredgpu;
 
-	double fx = image.cols / winsize.width;
-	double fy = image.rows / winsize.height;
-	double fz = max(fx, fy);
+	Size &insize = winsize;
+	Size bssize = image.size();
+	int wmax = bssize.width*winsize.height/bssize.height;
+	wmax = min(insize.width, wmax);
+	int hmax = bssize.height*winsize.width/bssize.width;
+	hmax = min(insize.height, hmax);
+	
+	Size outsize(wmax, hmax);
+
+	Size szdiff = insize-outsize;
+	Rect roi(szdiff.width/2,szdiff.height/2, outsize.width, outsize.height);
 
 	#ifdef WITH_CUDA
-	cuda::resize(image, resizedgpu, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
-	cuda::cvtColor(resizedgpu, resizedgpu, COLOR_BGRA2BGR);
-	resizedgpu.download(OutFrame);
+	cuda::resize(image, resizedgpu, outsize, 0, 0, INTER_LINEAR);
+	cuda::cvtColor(resizedgpu, recoloredgpu, COLOR_BGRA2BGR);
+	recoloredgpu.download(OutFrame(roi));
 	#else
 	UMat resized;
-	resize(image, resized, Size(winsize.width, winsize.height), fz, fz, INTER_LINEAR);
-	cvtColor(resized, OutFrame, COLOR_BGRA2BGR);
+	resize(image, resized, outsize, 0, 0, INTER_LINEAR);
+	cvtColor(resized, OutFrame(roi), COLOR_BGRA2BGR);
 	#endif
 	//cout << "Resize OK" <<endl;
 }
