@@ -2,7 +2,7 @@ sudo apt-get install -y cmake ninja-build
 sudo apt-get install -y libconfig++-dev
 sudo apt-get install -y build-essential cmake git unzip pkg-config zlib1g-dev
 sudo apt-get install -y gcc-multilib g++-multilib
-sudo apt-get install -y libassimp-dev freeglut3-dev libglew-dev
+sudo apt-get install -y libassimp-dev freeglut3-dev libglew-dev libglm-dev libglfw3-dev
 sudo apt-get install -y libjpeg-dev libjpeg8-dev libjpeg-turbo8-dev libpng-dev libtiff-dev
 sudo apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libglew-dev
 sudo apt-get install -y libgtk2.0-dev libgtk-3-dev libgtkglext1-dev libcanberra-gtk*

@@ -80,11 +80,6 @@ void BoardViz3D::ShowCamera(viz::Viz3d& Visualizer, Camera* Camera, int BufferId
 	{
 		CamWidget = viz::WCameraPosition(Vec2d(170,170), 0.2, color);
 	}
-	else if (BufferIdx != -1 && false)
-	{
-		UMat Frame;Camera->GetOutputFrame(BufferIdx, Frame, Size(640,480));
-		CamWidget = viz::WCameraPosition((Matx33d)(Camera->GetCameraSettings().CameraMatrix), Frame, 1.0, color);
-	}
 	else
 	{
 		//CamWidget = viz::WCameraPosition(Vec2d(Camera->CameraMatrix.at<double>(0,0), Camera->CameraMatrix.at<double>(1,1)), 0.2, color);

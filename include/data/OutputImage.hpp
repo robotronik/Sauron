@@ -15,7 +15,7 @@ public:
 
 	virtual void GetFrame(int BufferIndex, cv::UMat& frame);
 
-	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Size winsize);
+	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Rect window);
 };
 
 cv::UMat ConcatCameras(int BufferIndex, std::vector<OutputImage*> Cameras, int NumCams);

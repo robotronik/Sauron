@@ -118,7 +118,7 @@ public:
 
 	virtual void GetFrame(int BufferIndex, cv::UMat& frame) override;
 
-	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Size winsize) override;
+	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Rect window) override;
 
 	vector<ObjectData> ToObjectData(int BaseNumeral);
 };

@@ -98,10 +98,17 @@ public:
 					auto pos = std::find(paths.begin(), paths.end(), pathtofind);
 					if (pos == paths.end()) //new camera
 					{
-						std::cerr << "Detected camera " << devices[i].device_description << " @" << devices[i].device_paths[0] << std::endl;
+						
 						CameraSettings settings = DeviceToSettings(devices[i], Start);
-						if (AllowNoCalib || settings.CameraMatrix.size() == cv::Size(3,3))
+						if (!settings.IsValid()) //no valid settings
 						{
+							std::cerr << "Failed to open camera " << devices[i].device_description << " @" << devices[i].device_paths[0] << " : Invalid settings" << std::endl;
+							continue;
+						}
+						bool HasCalib = settings.IsValidCalibration();
+						if (AllowNoCalib || HasCalib)
+						{
+							std::cout << "Detected camera " << devices[i].device_description << " @" << devices[i].device_paths[0] << std::endl;
 							if (OnConnect)
 							{
 								if (!OnConnect(settings))
@@ -127,9 +134,12 @@ public:
 							{
 								PostCameraConnect(cam);
 							}
-							
-							
 						}
+						else
+						{
+							std::cerr << "Did not open camera " << devices[i].device_description << " @" << devices[i].device_paths[0] << " : Camera has no calibration" << std::endl;
+						}
+						
 					}
 				}
 			}

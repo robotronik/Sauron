@@ -277,7 +277,7 @@ bool docalibration(CameraSettings CamSett)
 			UMat frameundist;
 			CamToCalib->Undistort(0);
 
-			CamToCalib->GetOutputFrame(0, frame, CamSett.Resolution);
+			CamToCalib->GetOutputFrame(0, frame, Rect(Point2i(0,0), CamSett.Resolution));
 		}
 		else
 		{

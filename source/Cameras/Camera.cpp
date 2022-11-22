@@ -171,7 +171,7 @@ void Camera::GetFrame(int BufferIndex, UMat& OutFrame)
 	FrameBuffer[BufferIndex].FrameRaw.GetCPUFrame(OutFrame);
 }
 
-void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
+void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Rect window)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
 	MixedFrame& frametoUse = buff.FrameUndistorted;
@@ -181,16 +181,17 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 	}
 	double fz = 1;
 	Size basesize = frametoUse.GetSize();
+	Size winsize = window.size();
 	if (winsize == basesize)
 	{
 		frametoUse.MakeCPUAvailable();
 		if (frametoUse.CPUFrame.channels() != 3)
 		{
-			cvtColor(frametoUse.CPUFrame, OutFrame, COLOR_GRAY2BGR);
+			cvtColor(frametoUse.CPUFrame, OutFrame(window), COLOR_GRAY2BGR);
 		}
 		else
 		{
-			frametoUse.CPUFrame.copyTo(OutFrame);
+			frametoUse.CPUFrame.copyTo(OutFrame(window));
 		}
 		
 	}
@@ -206,25 +207,26 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 			UMat dl;
 			cuda::resize(frametoUse.GPUFrame, resz, Size(), fz, fz, INTER_AREA);
 			resz.download(dl);
-			dl.copyTo(OutFrame);
+			dl.copyTo(OutFrame(window));
 		}
 		#else
 		if(0){}
 		#endif
 		else
 		{
-			resize(frametoUse.CPUFrame, OutFrame, Size(), fz, fz, INTER_AREA);
+			resize(frametoUse.CPUFrame, OutFrame(window), Size(), fz, fz, INTER_AREA);
 		}
 	}
 	if (FrameBuffer[BufferIndex].Status.HasAruco)
 	{
 		vector<vector<Point2f>> raruco;
+		Point2f offset(window.x, window.y);
 		for (int i = 0; i < FrameBuffer[BufferIndex].markerCorners.size(); i++)
 		{
 			vector<Point2f> marker;
 			for (int j = 0; j < FrameBuffer[BufferIndex].markerCorners[i].size(); j++)
 			{
-				marker.push_back(FrameBuffer[BufferIndex].markerCorners[i][j]*fz);
+				marker.push_back(FrameBuffer[BufferIndex].markerCorners[i][j]*fz + offset);
 			}
 			raruco.push_back(marker);
 		}

@@ -5,10 +5,10 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/core/cuda.hpp>
 #include <opencv2/viz.hpp>
 
 #ifdef WITH_CUDA
+#include <opencv2/core/cuda.hpp>
 #include <opencv2/cudawarping.hpp>
 #include <opencv2/cudaarithm.hpp>
 #include <opencv2/cudaimgproc.hpp>
@@ -134,7 +134,7 @@ void BoardViz2D::OverlayImage(BoardImageType& ImageToOverlay, FVector2D<float> p
 	cuda::warpAffine(ImageToOverlay, OverlayRotated, warp_mat, OverlayRotated.size());
 	cuda::alphaComp(BoardImageType(OverlayRotated, ROIrobot), BoardImageType(image, ROIImage), BoardImageType(image, ROIImage), cuda::ALPHA_OVER);
 	#else
-	warpAffine(ImageToOverlay, BoardImageType(image, ROIImage), warp_mat, OverlayRotated.size());
+	warpAffine(ImageToOverlay, BoardImageType(image, ROIImage), warp_mat, OverlayRotated.size(), 1, BORDER_TRANSPARENT);
 	#endif
 	
 
@@ -189,7 +189,12 @@ BoardImageType& BoardViz2D::GetCamera()
 void BoardViz2D::DisplayData(std::vector<ObjectData> &objects)
 {
 	InitImages();
+	Size matsize(1500, 1000);
+	#ifdef WITH_CUDA
 	image = cuda::createContinuous(1500, 1000, CV_8UC4);
+	#else
+	image = UMat(matsize, CV_8UC3, Scalar(0,0,255));
+	#endif
 	for (int i = 0; i < objects.size(); i++)
 	{
 		ObjectData &object = objects[i];
@@ -217,21 +222,21 @@ void BoardViz2D::DisplayData(std::vector<ObjectData> &objects)
 	
 }
 
-void BoardViz2D::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
+void BoardViz2D::GetOutputFrame(int BufferIndex, UMat& OutFrame, Rect window)
 {
 	BoardImageType resizedgpu, recoloredgpu;
 
-	Size &insize = winsize;
+	Size insize = window.size();
 	Size bssize = image.size();
-	int wmax = bssize.width*winsize.height/bssize.height;
+	int wmax = bssize.width*insize.height/bssize.height;
 	wmax = min(insize.width, wmax);
-	int hmax = bssize.height*winsize.width/bssize.width;
+	int hmax = bssize.height*insize.width/bssize.width;
 	hmax = min(insize.height, hmax);
 	
 	Size outsize(wmax, hmax);
 
 	Size szdiff = insize-outsize;
-	Rect roi(szdiff.width/2,szdiff.height/2, outsize.width, outsize.height);
+	Rect roi(szdiff.width/2 + window.x,szdiff.height/2 + window.y, outsize.width, outsize.height);
 
 	#ifdef WITH_CUDA
 	cuda::resize(image, resizedgpu, outsize, 0, 0, INTER_LINEAR);

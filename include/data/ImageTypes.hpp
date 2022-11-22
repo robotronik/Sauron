@@ -66,6 +66,7 @@ struct CameraSettings
 	BufferSize(0), ApiID(-1)
 	{}
 
+	bool IsValidCalibration();
 	bool IsValid();
 };
 

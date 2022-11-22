@@ -6,8 +6,6 @@ using namespace std;
 
 ObjectTracker::ObjectTracker(/* args */)
 {
-	ArucoMap = new int[100];
-	ArucoSizes = new float[100];
 
 	for (int i = 0; i < 100; i++)
 	{
@@ -19,8 +17,6 @@ ObjectTracker::ObjectTracker(/* args */)
 
 ObjectTracker::~ObjectTracker()
 {
-	delete[] ArucoMap;
-	delete[] ArucoSizes;
 }
 
 void ObjectTracker::RegisterTrackedObject(TrackedObject* object)

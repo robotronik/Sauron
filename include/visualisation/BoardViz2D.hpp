@@ -1,7 +1,9 @@
 #pragma once
 
 #include <opencv2/core.hpp>
+#ifdef WITH_CUDA
 #include <opencv2/core/cuda.hpp>
+#endif
 #include <opencv2/core/affine.hpp>
 #include "data/FVector2D.hpp"
 #include "data/OutputImage.hpp"
@@ -77,7 +79,7 @@ public:
 
 	void DisplayData(std::vector<ObjectData> &objects);
 
-	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Size winsize) override;
+	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Rect window) override;
 };
 
 

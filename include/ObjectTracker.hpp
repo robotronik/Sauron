@@ -8,8 +8,8 @@ class ObjectTracker
 {
 private:
 	vector<TrackedObject*> objects;
-	int* ArucoMap;
-	float* ArucoSizes;
+	int ArucoMap[100];
+	float ArucoSizes[100];
 
 public:
 	ObjectTracker(/* args */);
