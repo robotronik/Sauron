@@ -256,31 +256,6 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 	
 }
 
-void TrackedObject::DisplayRecursive2D(BoardViz2D* visualizer, Affine3d RootLocation, String rootName)
-{
-	Affine3d worldlocation = RootLocation * Location;
-
-	for (int i = 0; i < childs.size(); i++)
-	{
-		childs[i]->DisplayRecursive2D(visualizer, worldlocation, rootName + "/" + Name);
-	}
-}
-
-void TrackedObject::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
-{
-	Affine3d worldlocation = RootLocation * Location;
-	for (int i = 0; i < markers.size(); i++)
-	{
-		markers[i].DisplayMarker(visualizer, worldlocation, rootName + "/" + Name);
-	}
-	
-	for (int i = 0; i < childs.size(); i++)
-	{
-		childs[i]->DisplayRecursive(visualizer, worldlocation, rootName + "/" + Name);
-	}
-	
-}
-
 vector<ObjectData> TrackedObject::ToObjectData(int BaseNumeral)
 {
 	cerr << "WARNING: Call to base TrackedObject::ToObjectData function. That function is uninplemented. Override it." <<endl;
@@ -309,15 +284,5 @@ Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, ArucoCa
 Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<Point2f> Corners, ArucoCamera* Cam)
 {
 	return Tag.Pose * GetTagTransform(Tag.sideLength, Corners, Cam).inv();
-}
-
-void Tracker3DTest()
-{
-	viz::Viz3d env("3D tracker position check");
-	viz::WCoordinateSystem coords(0.1);
-	env.showWidget("coordinate", coords);
-	TrackerCube* cube = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Cube");
-	cube->DisplayRecursive(&env, Affine3d::Identity(), String());
-	env.spin();
 }
 

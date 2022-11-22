@@ -66,7 +66,7 @@ UMat ConcatCameras(int BufferIndex, vector<OutputImage*> Cameras, int NumCams)
 			{
 				continue;
 			}*/
-			UMat region = concatenated(roi);
+			UMat &region = concatenated(roi);
 			Cameras[i]->GetOutputFrame(0, region, Size(winWidth, winHeight));
 			Size offset = (Size(winWidth, winHeight) - region.size())/2;
 			//region.copyTo(concatenated(Rect(roi.x+offset.width, roi.y+offset.height, region.cols, region.rows)));

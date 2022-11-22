@@ -1,7 +1,8 @@
+echo "Déverouillage admin, ca sert pour installer"
 ./InstallRequirement.sh
 cd ..
-echo "Déverouillage admin, ca sert pour installer"
 sudo -v 
+sudo usermod -a -G dialout $USER
 git clone https://gitlab.kitware.com/vtk/vtk.git || echo "Failed to clone vtk : already exists"
 cd vtk/
 git checkout v9.2.2

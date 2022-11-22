@@ -35,12 +35,7 @@ int64 PositionDataSender::GetTick()
 	return getTickCount() - StartTick;
 }
 
-void PositionDataSender::RegisterTrackedObject(TrackedObject* object)
-{
-	RegisteredObjects.push_back(object);
-}
-
-void PositionDataSender::SendPacket(int64 GrabTick)
+void PositionDataSender::SendPacket(int64 GrabTick, vector<ObjectData> &Data)
 {
 	if (encoder == nullptr)
 	{
@@ -52,10 +47,7 @@ void PositionDataSender::SendPacket(int64 GrabTick)
 		cerr << "PDS transport is null, no data will be sent." << endl;
 		return;
 	}
-	DecodedData data;
-	data.GrabTime = GrabTick;
-	data.objects = RegisteredObjects;
-	EncodedData encoded = encoder->Encode(&data);
+	EncodedData encoded = encoder->Encode(GrabTick, Data);
 	if (!encoded.valid)
 	{
 		cerr << "PDS encoded data is invalid, no data will be sent." << endl;
@@ -72,6 +64,7 @@ void PositionDataSender::ThreadRoutine()
 		this_thread::sleep_for(chrono::milliseconds(100));
 		if (!ReceiveKillMutex.try_lock())
 		{
+			cout << "Killing PDS receive thread";
 			break;
 		}
 		

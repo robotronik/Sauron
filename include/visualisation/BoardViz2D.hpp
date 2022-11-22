@@ -5,6 +5,7 @@
 #include <opencv2/core/affine.hpp>
 #include "data/FVector2D.hpp"
 #include "data/OutputImage.hpp"
+#include "TrackedObjects/ObjectIdentity.hpp"
 
 enum class PaletCouleur
 {
@@ -73,6 +74,8 @@ public:
 	static BoardImageType& GetRobotImage();
 	static BoardImageType& GetPalet(PaletCouleur type);
 	static BoardImageType& GetCamera();
+
+	void DisplayData(std::vector<ObjectData> &objects);
 
 	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Size winsize) override;
 };

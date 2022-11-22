@@ -20,14 +20,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 	CameraManager CameraMan(GetCaptureMethod(), GetCaptureConfig().filter, false);
 
 	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
+	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
 
 	vector<ArucoCamera*>& physicalCameras = CameraMan.Cameras;
 
-	cout << "Start grabbing " << physicalCameras.size() << " physical" << endl
-		<< "Press ESC to terminate" << endl;
-
-	
-	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
+	//display/debug section
 	FrameCounter fps;
 	BoardViz2D* board = nullptr;
 	if (direct)
@@ -38,19 +35,40 @@ void CDFRExternalMain(bool direct, bool v3d)
 		BoardViz2D::InitImages();
 	}
 	
-	viz::Viz3d board3d;
+	viz::Viz3d viz3dhandle("3D board");
+	BoardViz3D board3d(&viz3dhandle);
 	if (v3d)
 	{
-		board3d = viz::Viz3d("3D board");
-		BoardViz3D::SetupTerrain(board3d);
+		BoardViz3D::SetupTerrain(viz3dhandle);
 	}
 
 	ObjectTracker tracker;
+
+	StaticObject* boardobj = new StaticObject(false, "board");
+	tracker.RegisterTrackedObject(boardobj); 
+	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
+	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot2");
+	tracker.RegisterTrackedObject(robot1);
+	tracker.RegisterTrackedObject(robot2);
 	
+	//track and untrack cameras dynamically
+	CameraMan.PostCameraConnect = [&tracker](ArucoCamera* cam) -> bool
+	{
+		tracker.RegisterTrackedObject(cam);
+		cout << "Registering new camera @" << cam << endl;
+		return true;
+	};
+	CameraMan.OnDisconnect = [&tracker](ArucoCamera* cam) -> bool
+	{
+		tracker.UnregisterTrackedObject(cam);
+		cout << "Unregistering camera @" << cam << endl;
+		return true;
+	};
+
 	PositionDataSender sender;
 	{
 		WebsocketConfig wscfg = GetWebsocketConfig();
-		sender.encoder = new MinimalEncoder;
+		sender.encoder = new MinimalEncoder(UINT8_MAX-(uint8_t)PacketType::Camera);
 		if (wscfg.TCP)
 		{
 			sender.transport = new TCPTransport(wscfg.Server, wscfg.IP, wscfg.Port, wscfg.Interface);
@@ -61,32 +79,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		}
 		sender.StartReceiveThread();
 	}
-	
 
-	StaticObject* boardobj = new StaticObject(false, "board");
-	tracker.RegisterTrackedObject(boardobj); 
-	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
-	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot2");
-	tracker.RegisterTrackedObject(robot1);
-	tracker.RegisterTrackedObject(robot2);
-
-	sender.RegisterTrackedObject(robot1);
-	sender.RegisterTrackedObject(robot2);
-
-	//ofstream printfile;
-	//printfile.open("logpos.csv", ios::out);
-
-	//sender.PrintCSVHeader(printfile);
-
-	
-	//OutputTargets.push_back(board);
-
-
-	if (v3d)
-	{
-		//board3d.spin();
-	}
-	
 	int lastmarker = 0;
 	for (;;)
 	{
@@ -97,25 +90,13 @@ void CDFRExternalMain(bool direct, bool v3d)
 		int64 GrabTick = getTickCount();
 		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
 		prof.EnterSection(ps++);
-		if (direct)
-		{
-			board->CreateBackground(Size(1500, 1000));
-		}
 		int NumCams = physicalCameras.size();
-		vector<CameraView> views;
 		vector<CameraArucoData> arucoDatas;
 		vector<Affine3d> cameraLocations;
 		vector<bool> CamerasWithPosition;
 		cameraLocations.resize(NumCams);
 		arucoDatas.resize(NumCams);
 		CamerasWithPosition.resize(NumCams);
-		int viewsize = 0;
-		for (int i = 0; i < NumCams; i++)
-		{
-			viewsize += physicalCameras[i]->GetCameraViewsSize(0);
-		}
-		
-		views.resize(viewsize);
 		int viewsidx = 0;
 
 		for (int i = 0; i < NumCams; i++)
@@ -126,34 +107,16 @@ void CDFRExternalMain(bool direct, bool v3d)
 			{
 				continue;
 			}
-			
-			/*if (!cam->GetCameraViews(0, CameraViews))
-			{
-				continue;
-			}*/
 
 			bool hasposition = false;
 			float surface;
 			Affine3d boardloc = boardobj->GetObjectTransform(arucoDatas[i], surface);
 			if (surface > 0)
 			{
-				cam->Location = boardloc.inv();
+				cam->SetLocation(boardloc.inv());
 				hasposition = true;
 			}
-			/*
-			for (int mark = 0; mark < CameraViews.size(); mark++)
-			{
-				int markerid = CameraViews[mark].TagID;
-				if (markerid == center.number)
-				{
-					CamTransform = center.Pose * CameraViews[mark].TagTransform.inv();
-					cam->Location = CamTransform;
-					hasposition = true;
-				}
-				views[viewsidx++] = CameraViews[mark];
-				
-			}*/
-			cameraLocations[i] = cam->Location;
+			cameraLocations[i] = cam->GetLocation();
 			CamerasWithPosition[i] = hasposition;
 			
 			//cout << "Camera" << i << " location : " << cam->Location.translation() << endl;
@@ -161,24 +124,21 @@ void CDFRExternalMain(bool direct, bool v3d)
 		}
 		prof.EnterSection(ps++);
 		tracker.SolveLocationsPerObject(arucoDatas);
+		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
 
 		double deltaTime = fps.GetDeltaTime();
 		prof.EnterSection(ps++);
 		if (v3d)
 		{
-			if (board3d.wasStopped())
+			if (viz3dhandle.wasStopped())
 			{
 				break;
 			}
 			
-			tracker.DisplayObjects(&board3d);
+			board3d.DisplayData(ObjData);
 			viz::WText fpstext(FrameCounter::GetFPSString(deltaTime), Point2i(100,150));
-			board3d.showWidget("fps", fpstext);
-			for (int i = 0; i < NumCams; i++)
-			{
-				BoardViz3D::ShowCamera(board3d, physicalCameras[i], 0, cameraLocations[i], CamerasWithPosition[i] ? viz::Color::green() : viz::Color::red());
-			}
-			board3d.spinOnce(1, true);
+			viz3dhandle.showWidget("fps", fpstext);
+			viz3dhandle.spinOnce(1, true);
 		}
 
 		if (direct)
@@ -190,8 +150,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 				OutputTargets.push_back(physicalCameras[i]);
 			}
 			OutputTargets.push_back(board);
-			board->CreateBackground(Size(750, 500));
-			tracker.DisplayObjects2D(board);
+			board->DisplayData(ObjData);
 			UMat image = ConcatCameras(0, OutputTargets, OutputTargets.size());
 			//board.GetOutputFrame(0, image, GetFrameSize());
 			//cout << "Concat OK" <<endl;
@@ -201,21 +160,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 		}
 		
 		prof.EnterSection(ps++);
-		sender.SendPacket(GrabTick);
-		//sender.PrintCSV(printfile);
-		/*sender.SendPacket();
-		if (bridge->available() > 0)
-		{
-			int out = bridge->readString(rcvbuff, '\n', rcvbuffsize, 1);
-			if (out > 0)
-			{
-				printf("Received from serial : %*s", out, rcvbuff);
-			}
-		}*/
+		sender.SendPacket(GrabTick, ObjData);
 		
 		
 		
-		if (waitKey(1) == 27)
+		if (waitKey(1) == '\e')
 		{
 			break;
 		}

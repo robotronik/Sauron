@@ -5,4 +5,4 @@
 
 using std::vector;
 
-void CDFRInternalMain(vector<CameraSettings> CameraSettings, bool direct, bool v3d);
+void CDFRInternalMain(bool direct, bool v3d);

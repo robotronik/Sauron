@@ -64,6 +64,7 @@ protected:
 public:
 
 	TrackedObject()
+		:Location(cv::Affine3d::Identity())
 	{};
 
 	virtual bool SetLocation(cv::Affine3d InLocation);
@@ -80,10 +81,6 @@ public:
 	//Given corners, solve this object's location using multiple tags at once
 	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface);
 
-	virtual void DisplayRecursive2D(BoardViz2D* visualizer, cv::Affine3d RootLocation, cv::String rootName);
-
-	virtual void DisplayRecursive(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName);
-
 	virtual vector<ObjectData> ToObjectData(int BaseNumeral);
 };
 
@@ -94,5 +91,3 @@ cv::Affine3d GetTagTransform(float SideLength, std::vector<cv::Point2f> Corners,
 cv::Affine3d GetTagTransform(float SideLength, std::vector<cv::Point2f> Corners, ArucoCamera* Cam);
 
 cv::Affine3d GetTransformRelativeToTag(ArucoMarker& Tag, std::vector<cv::Point2f> Corners, ArucoCamera* Cam);
-
-void Tracker3DTest();

@@ -16,6 +16,8 @@ private:
 	int scanidx;
 	std::vector<std::string> paths;
 public:
+	std::function<bool(CameraSettings)> OnConnect;
+	std::function<bool(ArucoCamera*)> PostCameraConnect, OnDisconnect;
 	std::vector<ArucoCamera*> Cameras;
 
 	CameraManager(CameraStartType InStart, std::string InFilter, bool InAllowNoCalib = false)
@@ -66,6 +68,14 @@ public:
 			{
 				std::cerr << "Detaching camera @" << Cameras[i]->GetCameraSettings().DeviceInfo.device_paths[0] << std::endl;
 				std::string pathtofind = Cameras[i]->GetCameraSettings().DeviceInfo.device_paths[0];
+				if (OnDisconnect)
+				{
+					if (!OnDisconnect(Cameras[i]))
+					{
+						continue;
+					}
+				}
+				
 				auto pos = std::find(paths.begin(), paths.end(), pathtofind);
 				if (pos != paths.end())
 				{
@@ -92,17 +102,30 @@ public:
 						CameraSettings settings = DeviceToSettings(devices[i], Start);
 						if (AllowNoCalib || settings.CameraMatrix.size() == cv::Size(3,3))
 						{
+							if (OnConnect)
+							{
+								if (!OnConnect(settings))
+								{
+									continue;
+								}
+								
+							}
+							
 							ArucoCamera* cam = StartCamera<CameraType>(settings);
 							std::vector<InternalCameraConfig>& campos = GetInternalCameraPositionsConfig();
 							for (int j = 0; j < campos.size(); j++)
 							{
 								if (DeviceInFilter(devices[i], campos[j].CameraName))
 								{
-									cam->Location = campos[j].LocationRelative;
+									cam->SetLocation(campos[j].LocationRelative);
 									std::cout << "Using stored position " << j << " for camera " << devices[i].device_description << std::endl;
 									break;
 								}
 								
+							}
+							if (PostCameraConnect)
+							{
+								PostCameraConnect(cam);
 							}
 							
 							

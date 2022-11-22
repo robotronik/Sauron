@@ -203,8 +203,10 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 		if (frametoUse.HasGPU)
 		{
 			cuda::GpuMat resz;
+			UMat dl;
 			cuda::resize(frametoUse.GPUFrame, resz, Size(), fz, fz, INTER_AREA);
-			resz.download(OutFrame);
+			resz.download(dl);
+			dl.copyTo(OutFrame);
 		}
 		#else
 		if(0){}
@@ -228,6 +230,15 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 		}
 		aruco::drawDetectedMarkers(OutFrame, raruco, FrameBuffer[BufferIndex].markerIDs);
 	}
+}
+
+vector<ObjectData> Camera::ToObjectData(int BaseNumeral)
+{
+	ObjectData robot;
+	robot.identity.numeral = BaseNumeral;
+	robot.identity.type = PacketType::Camera;
+	robot.location = Location;
+	return {robot};
 }
 
 ///////////////////////////////

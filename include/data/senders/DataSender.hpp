@@ -11,7 +11,6 @@
 class PositionDataSender
 {
 protected:
-	std::vector<TrackedObject*> RegisteredObjects;
 
 	int64 StartTick;
 
@@ -29,9 +28,7 @@ public:
 
 	int64 GetTick();
 
-	virtual void RegisterTrackedObject(TrackedObject* object);
-
-	virtual void SendPacket(int64 GrabTick);
+	virtual void SendPacket(int64 GrabTick, std::vector<ObjectData> &Data);
 
 	void ThreadRoutine();
 

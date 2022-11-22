@@ -19,8 +19,8 @@ ObjectTracker::ObjectTracker(/* args */)
 
 ObjectTracker::~ObjectTracker()
 {
-	delete ArucoMap;
-	delete ArucoSizes;
+	delete[] ArucoMap;
+	delete[] ArucoSizes;
 }
 
 void ObjectTracker::RegisterTrackedObject(TrackedObject* object)
@@ -30,12 +30,27 @@ void ObjectTracker::RegisterTrackedObject(TrackedObject* object)
 	RegisterArucoRecursive(object, index);
 }
 
+void ObjectTracker::UnregisterTrackedObject(TrackedObject* object)
+{
+	auto objpos = find(objects.begin(), objects.end(), object);
+	if (objpos != objects.end() && object->markers.size() == 0)
+	{
+		objects.erase(objpos);
+	}
+	
+}
+
 void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 {
-	parallel_for_(Range(0, objects.size()), [&](const Range& range)
-	{
+	/*parallel_for_(Range(0, objects.size()), [&](const Range& range)
+	{*/
+		Range range(0, objects.size());
 		for(int ObjIdx = range.start; ObjIdx < range.end; ObjIdx++)
 		{
+			if (objects[ObjIdx]->markers.size() == 0)
+			{
+				continue;
+			}
 			float AreaMax = 0;
 			for (int CameraIdx = 0; CameraIdx < CameraData.size(); CameraIdx++)
 			{
@@ -48,7 +63,7 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 				}
 			}
 		}
-	});
+	/*});*/
 }
 
 void ObjectTracker::SolveLocationsTagByTag(vector<Affine3d>& Cameras, vector<CameraView>& Tags)
@@ -83,20 +98,20 @@ void ObjectTracker::SolveLocationsTagByTag(vector<Affine3d>& Cameras, vector<Cam
 	}
 }
 
-void ObjectTracker::DisplayObjects2D(BoardViz2D* visualizer)
+vector<ObjectData> ObjectTracker::GetObjectDataVector()
 {
-	for (int i = 0; i < objects.size(); i++)
-	{
-		objects[i]->DisplayRecursive2D(visualizer, Affine3d::Identity(), "");
-	}
-}
+	vector<ObjectData> ObjectDatas;
+	ObjectDatas.reserve(objects.size()*2);
 
-void ObjectTracker::DisplayObjects(viz::Viz3d* visualizer)
-{
 	for (int i = 0; i < objects.size(); i++)
 	{
-		objects[i]->DisplayRecursive(visualizer, Affine3d::Identity(), "");
+		vector<ObjectData> lp = objects[i]->ToObjectData(i);
+		for (int j = 0; j < lp.size(); j++)
+		{
+			ObjectDatas.push_back(lp[j]);
+		}
 	}
+	return ObjectDatas;
 }
 
 void ObjectTracker::SetArucoSize(int number, float SideLength)

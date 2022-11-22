@@ -19,27 +19,27 @@ void MinimalEncoder::Affine3dToVictor(PositionPacket &InPacket, Affine3d positio
 	InPacket.rotation = angle;
 }
 
-EncodedData MinimalEncoder::Encode(DecodedData* data)
+EncodedData MinimalEncoder::Encode(int64 GrabTime, std::vector<ObjectData> &objects)
 {
-    vector<ObjectData> ObjectDatas;
-
-	for (int i = 0; i < data->objects.size(); i++)
-	{
-		vector<ObjectData> lp = data->objects[i]->ToObjectData(i);
-		ObjectDatas.insert(ObjectDatas.end(), lp.begin(), lp.end());
-	}
+	vector<ObjectData>& ObjectDatas = objects;
 
 	vector<PositionPacket> ObjectPackets;
-	ObjectPackets.resize(ObjectDatas.size());
+	ObjectPackets.reserve(ObjectDatas.size());
 
 	for (size_t i = 0; i < ObjectDatas.size(); i++)
 	{
-		PositionPacket &packet = ObjectPackets[i];
-		packet.identity = ObjectDatas[i].identity;
-		Affine3dToVictor(packet, ObjectDatas[i].location);
+		if (((uint8_t)(ObjectDatas[i].identity.type) & AllowMask) != 0)
+		{
+			PositionPacket packet;
+			packet.identity = ObjectDatas[i].identity;
+			Affine3dToVictor(packet, ObjectDatas[i].location);
+			ObjectPackets.push_back(packet);
+		}
+		
+		
 	}
 	
-	if (true)
+	if (false)
 	{
 		int buffersize = sizeof(MinimalPacketHeader) + sizeof(PositionPacket) * ObjectPackets.size();
 		char* buffer = reinterpret_cast<char*>(malloc(buffersize));
@@ -49,7 +49,7 @@ EncodedData MinimalEncoder::Encode(DecodedData* data)
 		header.NumDatas = ObjectPackets.size();
 		header.TickRate = cv::getTickFrequency();
 		header.SentTick = cv::getTickCount();
-		header.Latency = header.SentTick - data->GrabTime;
+		header.Latency = header.SentTick - GrabTime;
 		memcpy(buffer, &header, sizeof(MinimalPacketHeader));
         return EncodedData(buffersize, buffer);
 	}
@@ -60,7 +60,7 @@ EncodedData MinimalEncoder::Encode(DecodedData* data)
 		header.NumDatas = ObjectPackets.size();
 		header.TickRate = cv::getTickFrequency();
 		header.SentTick = cv::getTickCount();
-		header.Latency = header.SentTick - data->GrabTime;
+		header.Latency = header.SentTick - GrabTime;
 
 		sendbuff << header.SentTick << "," << header.Latency << "," << header.TickRate << "," << header.NumDatas << "{";
 
@@ -70,13 +70,14 @@ EncodedData MinimalEncoder::Encode(DecodedData* data)
 			sendbuff << (int)packet.identity.type << "," << (int)packet.identity.numeral << "," << packet.X << "," << packet.Y << "," << packet.rotation << ";";
 		}
 
-		if (ObjectDatas.size() > 0)
+		if (ObjectPackets.size() > 0)
 		{
 			int pos = sendbuff.tellp();
 			sendbuff.seekp(pos-1);//remove trailing ;
 		}
 		sendbuff << "}";
 		string outp = sendbuff.str();
+		//cout << "sending " << outp << endl;
 		char* buffer = (char*)malloc(outp.size()+1);
 		memcpy(buffer, outp.c_str(), outp.size()+1);
         return EncodedData(outp.size()+1, buffer);

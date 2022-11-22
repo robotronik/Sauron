@@ -37,16 +37,3 @@ vector<ObjectData> TrackerCube::ToObjectData(int BaseNumeral)
 	robot.location = Location;
 	return {robot};
 }
-
-void TrackerCube::DisplayRecursive2D(BoardViz2D* visualizer, cv::Affine3d RootLocation, cv::String rootName)
-{
-	visualizer->OverlayImage(visualizer->robot, RootLocation*Location, FVector2D(0.25,0.25));
-	TrackedObject::DisplayRecursive2D(visualizer, RootLocation, rootName);
-}
-
-void TrackerCube::DisplayRecursive(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
-{
-	viz::WText3D Robotext(Name, (RootLocation*Location).translation(), 0.01);
-	visualizer->showWidget(Name, Robotext);
-	TrackedObject::DisplayRecursive(visualizer, RootLocation, rootName);
-}

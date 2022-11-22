@@ -125,6 +125,11 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 	}
 	//cout << "Sending " << length << " bytes..." << endl;
 	//printBuffer(buffer, length);
+	if (length > 1000)
+	{
+		cerr << "WARNING : Packet length over 1000, packet may be dropped" << endl;
+	}
+	
 	if (Server)
 	{
 		shared_lock lock(listenmutex);

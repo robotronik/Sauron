@@ -2,7 +2,8 @@
 
 #include "opencv2/core.hpp"
 
-GenericEncoder::GenericEncoder()
+GenericEncoder::GenericEncoder(uint8_t InAllowMask)
+    :AllowMask(InAllowMask)
 {
     CreationTick = cv::getTickCount();
 }

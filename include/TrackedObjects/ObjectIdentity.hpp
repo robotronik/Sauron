@@ -6,10 +6,11 @@
 enum class PacketType : uint8_t
 {
 	Null                = 0,
-	ReferenceAbsolute   = 0b1,
-	ReferenceRelative   = 0b11,
-	Robot               = 0b111,
-	Puck                = 0b1111
+	Camera				= 0b1,
+	ReferenceAbsolute   = 0b10,
+	ReferenceRelative   = 0b100,
+	Robot               = 0b1000,
+	Puck                = 0b10000
 };
 
 struct __attribute__ ((packed)) ObjectIdentity

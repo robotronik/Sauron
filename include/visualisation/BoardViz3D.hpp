@@ -4,6 +4,8 @@
 #include <opencv2/viz.hpp>
 #include <opencv2/core/affine.hpp>
 
+#include "TrackedObjects/ObjectIdentity.hpp"
+
 class Camera;
 
 class BoardViz3D
@@ -12,8 +14,9 @@ private:
 	static bool MeshesLoaded;
 	static cv::viz::Mesh BoardMesh, RobotMesh, CameraMesh;
 	static cv::Mat BoardMat;
+	cv::viz::Viz3d *visualizer;
 public:
-	BoardViz3D();
+	BoardViz3D(cv::viz::Viz3d *InVisualizer);
 	~BoardViz3D();
 
 	static void LoadMeshes();
@@ -29,6 +32,8 @@ public:
 	static cv::Mat GetBoardMat();
 
 	static cv::Affine3d ImageToWorld();
+
+	void DisplayData(std::vector<ObjectData> &objects);
 };
 
 void TestViz3D();

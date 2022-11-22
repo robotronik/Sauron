@@ -30,7 +30,11 @@ struct __attribute__ ((packed)) PositionPacket //palets sur l'arène uniquement
 class MinimalEncoder : public GenericEncoder
 {
 public:
+	MinimalEncoder(uint8_t InAllowMask = UINT8_MAX)
+		:GenericEncoder(InAllowMask)
+	{}
+
 	static void Affine3dToVictor(PositionPacket &InPacket, cv::Affine3d position);
 
-	virtual EncodedData Encode(DecodedData* data) override;
+	virtual EncodedData Encode(int64 GrabTime, std::vector<ObjectData> &objects) override;
 };

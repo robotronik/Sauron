@@ -6,12 +6,6 @@
 #include "TrackedObjects/ObjectIdentity.hpp"
 #include "TrackedObjects/TrackedObject.hpp"
 
-struct DecodedData
-{
-	int64 GrabTime;
-	std::vector<TrackedObject*> objects;
-};
-
 struct EncodedData
 {
 	bool valid;
@@ -32,8 +26,10 @@ struct EncodedData
 class GenericEncoder
 {
 	int64 CreationTick;
+protected:
+	uint8_t AllowMask;
 public:
-    GenericEncoder();
+    GenericEncoder(uint8_t InAllowMask = UINT8_MAX);
     int64 GetTick();
-	virtual EncodedData Encode(DecodedData* data) = 0;
+	virtual EncodedData Encode(int64 GrabTime, std::vector<ObjectData> &objects) = 0;
 };

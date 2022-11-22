@@ -186,6 +186,37 @@ BoardImageType& BoardViz2D::GetCamera()
 	return camera;
 }
 
+void BoardViz2D::DisplayData(std::vector<ObjectData> &objects)
+{
+	InitImages();
+	image = cuda::createContinuous(1500, 1000, CV_8UC4);
+	for (int i = 0; i < objects.size(); i++)
+	{
+		ObjectData &object = objects[i];
+		switch (object.identity.type)
+		{
+		case PacketType::Camera :
+			OverlayImage(camera, object.location, FVector2D(0.2,0.2));
+			break;
+		case PacketType::ReferenceAbsolute :
+			CreateBackground(Size(1500, 1000));
+			break;
+		case PacketType::ReferenceRelative :
+			OverlayImage(table, object.location, FVector2D(3.0,2.0));
+			break;
+		case PacketType::Robot :
+			OverlayImage(robot, object.location, FVector2D(0.25,0.25));
+			break;
+		case PacketType::Puck :
+			break;
+		
+		default:
+			break;
+		}
+	}
+	
+}
+
 void BoardViz2D::GetOutputFrame(int BufferIndex, UMat& OutFrame, Size winsize)
 {
 	BoardImageType resizedgpu, recoloredgpu;

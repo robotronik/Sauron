@@ -15,6 +15,7 @@
 
 #include "data/OutputImage.hpp"
 #include "data/ImageTypes.hpp"
+#include "TrackedObjects/TrackedObject.hpp"
 
 class Camera;
 struct CameraArucoData;
@@ -36,7 +37,7 @@ std::vector<CameraClass*> StartCameras(std::vector<CameraSettings> CameraSetting
 }
 
 
-class Camera : public OutputImage
+class Camera : public OutputImage, public TrackedObject
 {
 protected:
 	//config
@@ -52,9 +53,6 @@ protected:
 public:
 	int errors;
 
-public:
-	cv::Affine3d Location;
-
 protected:
 	//frame buffer, increases fps but also latency
 	std::vector<BufferedFrame> FrameBuffer;
@@ -66,10 +64,9 @@ public:
 public:
 
 	Camera(CameraSettings InSettings)
-		:Settings(InSettings),
+		:TrackedObject(), Settings(InSettings),
 		HasUndistortionMaps(false),
 		errors(0),
-		Location(cv::Affine3d::Identity()),
 		connected(false),
 		FrameBuffer()
 	{
@@ -122,6 +119,8 @@ public:
 	virtual void GetFrame(int BufferIndex, cv::UMat& frame) override;
 
 	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Size winsize) override;
+
+	vector<ObjectData> ToObjectData(int BaseNumeral);
 };
 
 class ArucoCamera : public Camera

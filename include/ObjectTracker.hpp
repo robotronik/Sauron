@@ -17,13 +17,13 @@ public:
 
 	void RegisterTrackedObject(TrackedObject* object);
 
+	void UnregisterTrackedObject(TrackedObject* object);
+
 	void SolveLocationsPerObject(vector<CameraArucoData>& CameraData);
 
 	void SolveLocationsTagByTag(vector<cv::Affine3d>& Cameras, vector<CameraView>& Tags);
 
-	void DisplayObjects2D(BoardViz2D* visualizer);
-
-	void DisplayObjects(cv::viz::Viz3d* visualizer);
+	std::vector<ObjectData> GetObjectDataVector();
 
 	//only needed for the center
 	void SetArucoSize(int number, float SideLength);
