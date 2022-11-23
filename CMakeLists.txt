@@ -15,13 +15,14 @@ add_compile_definitions(WITH_X11)
 
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
-    #add_compile_definitions(WITH_CUDA)
+    add_compile_definitions(WITH_CUDA)
     message(STATUS "CUDA found, assuming OpenCV was built with CUDA")
 endif(CUDAToolkit_FOUND)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(glm REQUIRED)
 
 
 
@@ -80,6 +81,6 @@ target_link_libraries(Robotronikaruco
     ${OPENGL_LIBRARIES} 
     glfw
     GLEW::glew
-    glm
+    glm::glm
     assimp
 )

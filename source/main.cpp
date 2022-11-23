@@ -120,6 +120,10 @@ int main(int argc, char** argv )
 	fakedcam.BufferSize = 2;
 	fakedcam.StartType = CameraStartType::GSTREAMER_NVARGUS;
 	CamSettings.push_back(fakedcam);*/
+	//BoardGL OpenGLBoard;
+	//OpenGLBoard.runTest();
+	//return EXIT_SUCCESS;
+
 	if (CamSett.size() == 0)
 	{
 		cerr << "No cameras detected" << endl;
@@ -154,7 +158,7 @@ int main(int argc, char** argv )
 	
 	
 	//hsvtest();
-	CDFRExternalMain(true, false);
+	CDFRExternalMain(false, false);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

@@ -228,23 +228,16 @@ void BoardViz2D::GetOutputFrame(int BufferIndex, UMat& OutFrame, Rect window)
 
 	Size insize = window.size();
 	Size bssize = image.size();
-	int wmax = bssize.width*insize.height/bssize.height;
-	wmax = min(insize.width, wmax);
-	int hmax = bssize.height*insize.width/bssize.width;
-	hmax = min(insize.height, hmax);
 	
-	Size outsize(wmax, hmax);
-
-	Size szdiff = insize-outsize;
-	Rect roi(szdiff.width/2 + window.x,szdiff.height/2 + window.y, outsize.width, outsize.height);
+	Rect roi = ScaleToFit(bssize, window);
 
 	#ifdef WITH_CUDA
-	cuda::resize(image, resizedgpu, outsize, 0, 0, INTER_LINEAR);
+	cuda::resize(image, resizedgpu, roi.size(), 0, 0, INTER_LINEAR);
 	cuda::cvtColor(resizedgpu, recoloredgpu, COLOR_BGRA2BGR);
 	recoloredgpu.download(OutFrame(roi));
 	#else
 	UMat resized;
-	resize(image, resized, outsize, 0, 0, INTER_LINEAR);
+	resize(image, resized, roi.size(), 0, 0, INTER_LINEAR);
 	cvtColor(resized, OutFrame(roi), COLOR_BGRA2BGR);
 	#endif
 	//cout << "Resize OK" <<endl;

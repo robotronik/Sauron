@@ -120,7 +120,9 @@ public:
 
 	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Rect window) override;
 
-	vector<ObjectData> ToObjectData(int BaseNumeral);
+	virtual vector<ObjectData> ToObjectData(int BaseNumeral) override;
+
+	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface) override;
 };
 
 class ArucoCamera : public Camera

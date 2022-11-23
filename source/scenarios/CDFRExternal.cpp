@@ -1,6 +1,7 @@
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRCommon.hpp"
 #include "visualisation/BoardViz2D.hpp"
+#include "visualisation/BoardGL.hpp"
 #include "data/ManualProfiler.hpp"
 #include "data/senders/Encoders/MinimalEncoder.hpp"
 #include "data/senders/Transport/TCPTransport.hpp"
@@ -41,6 +42,9 @@ void CDFRExternalMain(bool direct, bool v3d)
 	{
 		BoardViz3D::SetupTerrain(viz3dhandle);
 	}
+
+	BoardGL OpenGLBoard;
+	OpenGLBoard.Start();
 
 	ObjectTracker tracker;
 
@@ -113,18 +117,22 @@ void CDFRExternalMain(bool direct, bool v3d)
 			Affine3d boardloc = boardobj->GetObjectTransform(arucoDatas[i], surface);
 			if (surface > 0)
 			{
+
 				cam->SetLocation(boardloc.inv());
 				hasposition = true;
 			}
+			arucoDatas[i].CameraTransform = cam->GetLocation();
 			cameraLocations[i] = cam->GetLocation();
 			CamerasWithPosition[i] = hasposition;
 			
-			//cout << "Camera" << i << " location : " << cam->Location.translation() << endl;
+			//cout << "Camera" << i << " location : " << cameraLocations[i].translation() << endl;
 			
 		}
 		prof.EnterSection(ps++);
 		tracker.SolveLocationsPerObject(arucoDatas);
 		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
+
+
 
 		double deltaTime = fps.GetDeltaTime();
 		prof.EnterSection(ps++);
@@ -157,6 +165,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 			fps.AddFpsToImage(image, deltaTime);
 			//printf("fps : %f\n", fps);
 			imshow("Cameras", image);
+		}
+
+		if(!OpenGLBoard.Tick(ObjData))
+		{
+			break;
 		}
 		
 		prof.EnterSection(ps++);

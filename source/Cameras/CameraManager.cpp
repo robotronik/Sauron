@@ -42,10 +42,10 @@ CameraSettings CameraManager::DeviceToSettings(v4l2::devices::DEVICE_INFO device
 	string CalibrationRoot = string("../calibration/");
 	string CalibrationPath = CalibrationRoot + settings.DeviceInfo.device_description;
 
-	if (!filesystem::exists(CalibrationPath))
+	/*if (!filesystem::exists(CalibrationPath))
 	{
 		return settings;
-	}
+	}*/
 	
 
 	readCameraParameters(CalibrationPath, settings.CameraMatrix, settings.distanceCoeffs, settings.Resolution);

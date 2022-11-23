@@ -3,3 +3,4 @@ Makefile
 markers/**
 .vscode/**
 config.cfg
+*.blend1

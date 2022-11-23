@@ -51,13 +51,14 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 			for (int CameraIdx = 0; CameraIdx < CameraData.size(); CameraIdx++)
 			{
 				float AreaThis;
-				Affine3d transformProposed = objects[ObjIdx]->GetObjectTransform(CameraData[CameraIdx], AreaThis);
+				Affine3d transformProposed = CameraData[CameraIdx].CameraTransform * objects[ObjIdx]->GetObjectTransform(CameraData[CameraIdx], AreaThis);
 				if (AreaThis > AreaMax)
 				{
 					objects[ObjIdx]->SetLocation(transformProposed);
 					AreaMax = AreaThis;
 				}
 			}
+			//cout << "Object " << ObjIdx << " is at location " << objects[ObjIdx]->GetLocation().translation() << endl;
 		}
 	/*});*/
 }

@@ -79,6 +79,7 @@ public:
 	virtual void GetObjectPoints(vector<vector<cv::Point3d>>& MarkerCorners, vector<int>& MarkerIDs, cv::Affine3d rootTransform = cv::Affine3d::Identity(), vector<int> filter = {});
 
 	//Given corners, solve this object's location using multiple tags at once
+	//Output transform is given relative to the camera
 	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface);
 
 	virtual vector<ObjectData> ToObjectData(int BaseNumeral);

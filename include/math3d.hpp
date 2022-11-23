@@ -7,6 +7,10 @@
 
 struct PositionPacket;
 
+cv::Size ScaleToFit(cv::Size original, cv::Size target);
+
+cv::Rect ScaleToFit(cv::Size original, cv::Rect target);
+
 cv::Size2d GetCameraFOV(cv::Size Resolution, cv::Mat CameraMatrix);
 
 cv::Matx33d ImageToWorld();

@@ -14,6 +14,7 @@
 #include <opencv2/imgproc.hpp>
 #endif
 
+#include "math3d.hpp"
 #include "data/Calibfile.hpp"
 #include "data/CameraView.hpp"
 
@@ -182,6 +183,7 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Rect window)
 	double fz = 1;
 	Size basesize = frametoUse.GetSize();
 	Size winsize = window.size();
+	Point2f offset(window.x, window.y);
 	if (winsize == basesize)
 	{
 		frametoUse.MakeCPUAvailable();
@@ -197,30 +199,29 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Rect window)
 	}
 	else
 	{
-		double fx = (double)winsize.width / basesize.width;
-		double fy = (double)winsize.height / basesize.height;
-		fz = min(fx, fy);
+		Rect roi = ScaleToFit(basesize, window);
+		fz = (double)roi.width / basesize.width;
+		offset = roi.tl();
 		#ifdef WITH_CUDA
 		if (frametoUse.HasGPU)
 		{
 			cuda::GpuMat resz;
 			UMat dl;
-			cuda::resize(frametoUse.GPUFrame, resz, Size(), fz, fz, INTER_AREA);
-			resz.download(dl);
-			dl.copyTo(OutFrame(window));
+			cuda::resize(frametoUse.GPUFrame, resz, roi.size(), fz, fz, INTER_AREA);
+			resz.download(OutFrame(roi));
 		}
 		#else
 		if(0){}
 		#endif
 		else
 		{
-			resize(frametoUse.CPUFrame, OutFrame(window), Size(), fz, fz, INTER_AREA);
+			resize(frametoUse.CPUFrame, OutFrame(roi), roi.size(), fz, fz, INTER_AREA);
 		}
 	}
 	if (FrameBuffer[BufferIndex].Status.HasAruco)
 	{
 		vector<vector<Point2f>> raruco;
-		Point2f offset(window.x, window.y);
+		
 		for (int i = 0; i < FrameBuffer[BufferIndex].markerCorners.size(); i++)
 		{
 			vector<Point2f> marker;
@@ -241,6 +242,12 @@ vector<ObjectData> Camera::ToObjectData(int BaseNumeral)
 	robot.identity.type = PacketType::Camera;
 	robot.location = Location;
 	return {robot};
+}
+
+Affine3d Camera::GetObjectTransform(CameraArucoData& CameraData, float& Surface)
+{
+	Surface = -1;
+	return Affine3d::Identity();
 }
 
 ///////////////////////////////
