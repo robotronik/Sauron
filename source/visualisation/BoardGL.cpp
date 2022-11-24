@@ -151,6 +151,7 @@ GLuint GLLoadShaders(string vertex_file_path, string fragment_file_path){
 	
 	glDeleteShader(VertexShaderID);
 	glDeleteShader(FragmentShaderID);
+	
 
 	return ProgramID;
 }

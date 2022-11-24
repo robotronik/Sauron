@@ -1,5 +1,7 @@
 #include "Scenarios/CDFRInternal.hpp"
 #include "Scenarios/CDFRCommon.hpp"
+
+#include "visualisation/BoardGL.hpp"
 #include "data/senders/Encoders/MinimalEncoder.hpp"
 #include "data/senders/Transport/TCPTransport.hpp"
 #include "data/senders/Transport/UDPTransport.hpp"
@@ -25,6 +27,9 @@ void CDFRInternalMain(bool direct, bool v3d)
 	{
 		BoardViz3D::SetupRobot(viz3dhandle);
 	}
+
+	BoardGL OpenGLBoard;
+	OpenGLBoard.Start();
 	
 	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
 	FrameCounter fps;
@@ -96,8 +101,10 @@ void CDFRInternalMain(bool direct, bool v3d)
 			imshow("Cameras", image);
 		}
 
-		const size_t rcvbuffsize = 1<<20;
-		char rcvbuff[rcvbuffsize];
+		if (!OpenGLBoard.Tick(ObjData))
+		{
+			break;
+		}
 
 		if (waitKey(1) == '\e' || viz3dhandle.wasStopped())
 		{

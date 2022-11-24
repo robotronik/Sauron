@@ -41,12 +41,26 @@ bool Mesh::LoadFromFile(std::string path)
 		{
 			col = aiColor4D(0.5f,0,0.5f,1);
 		}
+		aiVector3D normal = mesh->mNormals[i];
 		for (int j = 0; j < 3; j++)
 		{
 			Positions.push_back(pos[j]);
 			Colors.push_back(col[j]);
+			Normals.push_back(normal[j]);
 		}
 	}
+	if (mesh->HasFaces())
+	{
+		Indices.reserve(mesh->mNumFaces *3);
+		for (int i = 0; i < mesh->mNumFaces; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				Indices.push_back(mesh->mFaces[i].mIndices[j]);
+			}
+		}
+	}
+	
 	return true;
 }
 
@@ -62,6 +76,15 @@ void Mesh::BindMesh()
 	glGenBuffers(1, &ColorBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, ColorBuffer);
 	glBufferData(GL_ARRAY_BUFFER, Colors.size() * sizeof(GLfloat), Colors.data(), GL_STATIC_DRAW);
+
+	glGenBuffers(1, &NormalBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, NormalBuffer);
+	glBufferData(GL_ARRAY_BUFFER, Normals.size() * sizeof(GLfloat), Normals.data(), GL_STATIC_DRAW);
+
+	// Generate a buffer for the indices
+	glGenBuffers(1, &IndexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.size() * sizeof(unsigned int), Indices.data(), GL_STATIC_DRAW);
 }
 
 void Mesh::Draw()
@@ -89,8 +112,27 @@ void Mesh::Draw()
 		0,                                // stride
 		(void*)0                          // array buffer offset
 	);
-	// Draw the triangle !
-	glDrawArrays(GL_TRIANGLES, 0, Positions.size()); // Starting from vertex 0; 3 vertices total -> 1 triangle
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
+
+	// 3nd attribute buffer : normals
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, ColorBuffer);
+	glVertexAttribPointer(
+		2,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		3,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
+
+	// Index buffer
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBuffer);
+
+	// Draw the triangles !
+	glDrawElements(
+		GL_TRIANGLES,      // mode
+		Indices.size(),    // count
+		GL_UNSIGNED_INT,   // type
+		(void*)0           // element array buffer offset
+	);
 }
