@@ -1,4 +1,5 @@
 echo "Déverouillage admin, ca sert pour installer"
+export STARTDIR=`pwd`
 ./InstallRequirement.sh
 cd ..
 sudo -v 
@@ -26,5 +27,5 @@ cd opencv/
 git checkout 4.6.0
 sudo -v
 cd ..
-cd jetsonMV/
+cd $STARTDIR
 ./InstallOpenCV.sh
