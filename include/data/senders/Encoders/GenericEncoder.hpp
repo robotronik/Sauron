@@ -30,6 +30,7 @@ protected:
 	uint8_t AllowMask;
 public:
     GenericEncoder(uint8_t InAllowMask = UINT8_MAX);
+	virtual ~GenericEncoder(){}
     int64 GetTick();
 	virtual EncodedData Encode(int64 GrabTime, std::vector<ObjectData> &objects) = 0;
 };

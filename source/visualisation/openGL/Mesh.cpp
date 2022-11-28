@@ -8,7 +8,7 @@
 
 using namespace std;
 
-bool Mesh::LoadFromFile(std::string path)
+bool Mesh::LoadFromFile(std::string path, std::string texturepath)
 {
 	Assimp::Importer importer;
 	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate );
@@ -19,19 +19,31 @@ bool Mesh::LoadFromFile(std::string path)
 	const aiMesh* mesh = scene->mMeshes[0];
 	if (!mesh->HasPositions())
 	{
-		cerr << "Mesh has no vertices" << endl;
+		cerr << "Mesh " << path << " has no vertices" << endl;
 		return false;
 	}
 	if (!mesh->HasVertexColors(0))
 	{
-		cerr << "Mesh has no vertex colors" << endl;
+		cerr << "Mesh " << path << " has no vertex colors" << endl;
 		//return false;
 	}
 	Positions.reserve(mesh->mNumVertices *3);
+	Normals.reserve(mesh->mNumVertices *3);
+	UVs.reserve(mesh->mNumVertices *2);
 	Colors.reserve(mesh->mNumVertices *3);
 	for (int i = 0; i < mesh->mNumVertices; i++)
 	{
 		aiVector3D pos = mesh->mVertices[i];
+		aiVector3D normal = mesh->mNormals[i];
+		aiVector3D UV;
+		if (mesh->HasTextureCoords(0))
+		{
+			UV = mesh->mTextureCoords[0][i];
+		}
+		else
+		{
+			UV = aiVector3D(0,0,0);
+		}
 		aiColor4D col;
 		if (mesh->HasVertexColors(0))
 		{
@@ -41,7 +53,8 @@ bool Mesh::LoadFromFile(std::string path)
 		{
 			col = aiColor4D(0.5f,0,0.5f,1);
 		}
-		aiVector3D normal = mesh->mNormals[i];
+		UVs.push_back(1-UV[0]);
+		UVs.push_back(1-UV[1]);
 		for (int j = 0; j < 3; j++)
 		{
 			Positions.push_back(pos[j]);
@@ -60,6 +73,12 @@ bool Mesh::LoadFromFile(std::string path)
 			}
 		}
 	}
+
+	if (texturepath != "")
+	{
+		texture.LoadFromFile(texturepath);
+	}
+	
 	
 	return true;
 }
@@ -73,57 +92,94 @@ void Mesh::BindMesh()
 	// Give our vertices to OpenGL.
 	glBufferData(GL_ARRAY_BUFFER, Positions.size() * sizeof(GLfloat), Positions.data(), GL_STATIC_DRAW);
 
-	glGenBuffers(1, &ColorBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, ColorBuffer);
-	glBufferData(GL_ARRAY_BUFFER, Colors.size() * sizeof(GLfloat), Colors.data(), GL_STATIC_DRAW);
-
 	glGenBuffers(1, &NormalBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, NormalBuffer);
 	glBufferData(GL_ARRAY_BUFFER, Normals.size() * sizeof(GLfloat), Normals.data(), GL_STATIC_DRAW);
+
+	glGenBuffers(1, &UVBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, UVBuffer);
+	glBufferData(GL_ARRAY_BUFFER, UVs.size() * sizeof(GLfloat), UVs.data(), GL_STATIC_DRAW);
+
+	glGenBuffers(1, &ColorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, ColorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, Colors.size() * sizeof(GLfloat), Colors.data(), GL_STATIC_DRAW);
 
 	// Generate a buffer for the indices
 	glGenBuffers(1, &IndexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.size() * sizeof(unsigned int), Indices.data(), GL_STATIC_DRAW);
+
+	if (texture.valid)
+	{
+		texture.Bind();
+	}
+	
 }
 
-void Mesh::Draw()
+void Mesh::Draw(GLuint ParamHandle)
 {
-	// 1st attribute buffer : vertices
-	glEnableVertexAttribArray(0);
+	int i = 0;
+
+	glEnableVertexAttribArray(i);
 	glBindBuffer(GL_ARRAY_BUFFER, PositionBuffer);
 	glVertexAttribPointer(
-	0,                   // attribute 0. No particular reason for 0, but must match the layout in the shader.
+	i,                   // attribute 0. No particular reason for 0, but must match the layout in the shader.
 	3,                   // size
 	GL_FLOAT,            // type
 	GL_FALSE,            // normalized?
 	0,                   // stride
 	(void*)0             // array buffer offset
 	);
+	i++;
 
-	// 2nd attribute buffer : colors
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, ColorBuffer);
+	glEnableVertexAttribArray(i);
+	glBindBuffer(GL_ARRAY_BUFFER, NormalBuffer);
 	glVertexAttribPointer(
-		1,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		i,                                // attribute. No particular reason for 1, but must match the layout in the shader.
 		3,                                // size
 		GL_FLOAT,                         // type
 		GL_FALSE,                         // normalized?
 		0,                                // stride
 		(void*)0                          // array buffer offset
 	);
+	i++;
 
-	// 3nd attribute buffer : normals
-	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(i);
+	glBindBuffer(GL_ARRAY_BUFFER, UVBuffer);
+	glVertexAttribPointer(
+		i,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		2,                                // size
+		GL_FLOAT,                         // type
+		GL_FALSE,                         // normalized?
+		0,                                // stride
+		(void*)0                          // array buffer offset
+	);
+	i++;
+
+	glEnableVertexAttribArray(i);
 	glBindBuffer(GL_ARRAY_BUFFER, ColorBuffer);
 	glVertexAttribPointer(
-		2,                                // attribute. No particular reason for 1, but must match the layout in the shader.
+		i,                                // attribute. No particular reason for 1, but must match the layout in the shader.
 		3,                                // size
 		GL_FLOAT,                         // type
 		GL_FALSE,                         // normalized?
 		0,                                // stride
 		(void*)0                          // array buffer offset
 	);
+	i++;
+
+	if (texture.valid)
+	{
+		glUniform1i(ParamHandle, 1);
+		texture.Draw();
+	}
+	else
+	{
+		glUniform1i(ParamHandle, 0);
+	}
+	
+	
+	
 
 	// Index buffer
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBuffer);
@@ -135,4 +191,10 @@ void Mesh::Draw()
 		GL_UNSIGNED_INT,   // type
 		(void*)0           // element array buffer offset
 	);
+
+	for (; i >= 0; i--)
+	{
+		glDisableVertexAttribArray(i);
+	}
+	
 }

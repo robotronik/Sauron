@@ -1,8 +1,10 @@
 # cmake needs this line
 cmake_minimum_required(VERSION 3.1)
 
+set(PROJECT_NAME sauron)
+
 # Define project name
-project(Robotronikaruco)
+project(${PROJECT_NAME})
 
 # Find OpenCV, you may need to set OpenCV_DIR variable
 # to the absolute path to the directory containing OpenCVConfig.cmake file
@@ -61,18 +63,18 @@ include_directories(
 
 file(GLOB_RECURSE SOURCES "source/*.cpp")
 
-add_executable(Robotronikaruco ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 
 
 message(STATUS "Sources found : ${SOURCES}")
 
-set_target_properties(Robotronikaruco PROPERTIES CXX_STANDARD 17)
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 #set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
 
 # Link your application with OpenCV libraries
 
-target_link_libraries(Robotronikaruco 
+target_link_libraries(${PROJECT_NAME} 
 	${OpenCV_LIBS} 
 	stdc++fs
 	${X11_LIBRARIES}

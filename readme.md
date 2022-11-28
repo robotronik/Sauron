@@ -1,10 +1,10 @@
-# JetsonMV
+# Sauron
 ou comment dire que c'est le code pour la machine vision de la CDFR
 
 # Installation
 Utiliser Ubuntu
 
-Avoir Cuda d'installé et dans le PATH
+Avoir Cuda d'installé et dans le PATH (optionnel)
 
 https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#introduction
 
@@ -12,37 +12,17 @@ Script une commande : `./DownloadRepos.sh` (ca installe absolument tout sauf cud
 
 
 
-Pour les dépendences, y'a soit un script `./InstallRequirement.sh`, soit la version manuelle (qui suit) :
+Pour les dépendences, y'a soit un script `./InstallRequirement.sh`.
 
-Installer cmake et Ninja (`ninja-build`)
-
-Installer tout ca, si une ligne marche pas supprimez les trucs qui veulent pas
-```console
-sudo apt-get install -y build-essential cmake git unzip pkg-config zlib1g-dev
-sudo apt-get install -y libjpeg-dev libjpeg8-dev libjpeg-turbo8-dev libpng-dev libtiff-dev
-sudo apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libglew-dev
-sudo apt-get install -y libgtk2.0-dev libgtk-3-dev libgtkglext1-dev libcanberra-gtk*
-sudo apt-get install -y python-dev python-numpy python-pip
-sudo apt-get install -y python3-dev python3-numpy python3-pip
-sudo apt-get install -y libxvidcore-dev libx264-dev libgtk-3-dev
-sudo apt-get install -y libtbb2 libtbb-dev libdc1394-22-dev libxine2-dev
-sudo apt-get install -y gstreamer1.0-tools libv4l-dev v4l-utils v4l2ucp qv4l2 
-sudo apt-get install -y libgstreamer-plugins-base1.0-dev libgstreamer-plugins-good1.0-dev
-sudo apt-get install -y libavresample-dev libvorbis-dev libxine2-dev libtesseract-dev
-sudo apt-get install -y libfaac-dev libmp3lame-dev libtheora-dev libpostproc-dev
-sudo apt-get install -y libopencore-amrnb-dev libopencore-amrwb-dev
-sudo apt-get install -y libopenblas-dev libatlas-base-dev libblas-dev
-sudo apt-get install -y liblapack-dev liblapacke-dev libeigen3-dev gfortran
-sudo apt-get install -y libhdf5-dev protobuf-compiler
-sudo apt-get install -y libprotobuf-dev libgoogle-glog-dev libgflags-dev
-```
 Télécharger opencv, renommer le ficher extrait en `opencv` et opencv_contrib en `opencv_contrib` et les mettre dans home, créer un fichier build dans `~/opencv`
 
-## VTK
+## VTK (optionnel)
 
 Télécharger [libvtk](https://vtk.org/download/), et extraire les sources dans home
 OpenCV 4.5.5 marche pas avec VTK 8.2.
 VTK 9.1 requiert un CMake supérieur à 3.12, sur Ubuntu 2.18 il est possible que le cmake soit pas à jour, si c'est la cas, suivre [ce tuto](https://askubuntu.com/questions/355565/how-do-i-install-the-latest-version-of-cmake-from-the-command-line)
+
+Attention : Certaines versions de VTK ne marcheront pas avec OpenCV, rester sur les release et non les rc (release candidate)
 
 Créer un fichier pour le build de vtk : `mkdir buildvtk`
 
@@ -128,50 +108,22 @@ Sur mon PC v4l2 est con, c'est à dire qu'il donne plus les noms des webcams, du
 
 Ci dessous je décris tous les modules de mon code.
 
-## Boardviz
+## assets
+L'endroit où se trouvent les assets utilisés par la visualisation.
 
-C'est un ancien module de visualisation 2D du terrain, utile pour quand j'arrivais pas à avoir VTK, maintenant c'est plus utile mais ca marche et c'est hella fast
+Pour exporter un obj de Blender, choisir les paramètres suivants :
 
-## BoardViz3D
+Y forward
 
-Bah y'a une classe, mais en vrai c'est des utilitaires pour viz3d
+Z up
 
-## Calibrate et Calibfile
+UV, Vertex colors, normals, triangulate faces
 
-Ca permet de calibrer les caméras et stocker les calibrations. Lors de la calibration, (`./Robotronikaruco -c`), ESPACE pour capturer une image, ESC pour quitter, et Entrée pour calculer la calibration. Les images utilisées sont stockées dans `build/TempCalib`.
-La calibration c'est important parceque ca permet de détecter les paramètres genre angle de vue et tout de la caméra, pour transformer les tags aruco dans l'espace.
-Pour calibrer, il faut imprimer un échiquier. Le coder détecte les intersections entre les carrés, et il faut absolument que la feuille avec l'échiquier soit plate, et que la largeur des cotés soit connue. La taille (en intersections) de l'échiquier et du coté des carrés est définie en haut du fichier
 
-## Camera
-
-Ca s'occupe de détecter, démarrer et configurer les caméra (tg ca marche)
-
-## FrameCounter
-
-Une classe qui permet d'afficher les fps, c'est utile
-
-## Globalconf
-
-Une classe de configuration et de boilerplate, pour les tags aruco principalement.
-
-## math3d
-
-Des fonctions de math, en 3D, no shit sherlock.
-
-## ObjectTracker et TrackedObject
-
-Alors ça, j'en suis pas peu fier: 
-TrackedObject est une classe générique qui permet de représenter des objects dans l'espace en fonction des tags aruco. Les tags aruco ont leur position par rapport à leur parent, et nécéssitent d'être enregistrés dans le TrackedObject.
-
-L'ObjectTracker permet de transformer des vues de tags Aruco en position des objets.
-
-## OutputImage
-
-C'est une classe de base qui permet d'afficher des images en mode grille quand la vue est mode direct. C'est le parent de Camera et de boardviz
-
-## position
-
-C'est une système de position 2D utilisé par boardviz. En vrai ca sert à rien.
+## calibration
+Une fois la calibration faite, si t'en es content, déplacer le fichier de calibration de /build vers ce fichier. Il aura le nom de la caméra
+Pour effectuer la calibration, lancer l'executable depuis /build `./sauron -c`. Espace enregistre une image dans build/TempCalib/, Entrée calcule la calibration à partir des images dans build/TempCalib/.
+La calibration est rendue indépendante de la résolution mais toutes les images dans le fichier doivent avoir la même résolution. Il faut prendre en photo l'échiquier en entier
 
 # Lancer le code
 

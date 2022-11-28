@@ -6,21 +6,31 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 
+#include "visualisation/openGL/Texture.hpp"
+
 struct Mesh
 {
-	std::vector<GLfloat> Positions;
+private:
 	GLuint PositionBuffer;
-	std::vector<GLfloat> Colors;
-	GLuint ColorBuffer;
-	std::vector<GLfloat> Normals;
+	GLuint UVBuffer;
 	GLuint NormalBuffer;
+	GLuint ColorBuffer;
 
-	std::vector<unsigned int> Indices;
 	GLuint IndexBuffer;
 
-	bool LoadFromFile(std::string path);
+public:
+	std::vector<GLfloat> Positions;
+	std::vector<GLfloat> UVs;
+	std::vector<GLfloat> Normals;
+	std::vector<GLfloat> Colors;
+
+	std::vector<unsigned int> Indices;
+
+	Texture texture;
+
+	bool LoadFromFile(std::string path, std::string texturepath = "");
 
 	void BindMesh();
 
-	void Draw();
+	void Draw(GLuint ParamHandle = UINT32_MAX);
 };

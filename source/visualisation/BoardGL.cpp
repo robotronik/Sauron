@@ -18,7 +18,7 @@ using namespace std;
 
 string shaderfolder = "../source/visualisation/openGL/";
 
-void GLInit()
+void BoardGL::GLInit()
 {
 	// Initialise GLFW
 	glewExperimental = true; // Needed for core profile
@@ -29,7 +29,12 @@ void GLInit()
 	}
 }
 
-GLFWwindow* GLCreateWindow(cv::Size windowsize)
+void window_size_callback(GLFWwindow* window, int width, int height)
+{
+	glViewport(0, 0, width, height);
+}
+
+GLFWwindow* BoardGL::GLCreateWindow(cv::Size windowsize)
 {
 	glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
@@ -63,6 +68,8 @@ GLFWwindow* GLCreateWindow(cv::Size windowsize)
 
 	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
 	glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GL_TRUE);
+
+	glfwSetWindowSizeCallback(window, window_size_callback);
 
 	return window;
 }
@@ -277,15 +284,13 @@ void BoardGL::Start()
 	// Create and compile our GLSL program from the shaders
 	programID = GLLoadShaders( shaderfolder + "vertexshader.vs", shaderfolder + "fragmentshader.fs" );
 
-	VertexArrayID;
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-	//TODO : load all models
 	robot.LoadFromFile("../assets/robot.obj");
 	robot.BindMesh();
 
-	arena.LoadFromFile("../assets/board.obj");
+	arena.LoadFromFile("../assets/board.obj", "../assets/boardtex.png");
 	arena.BindMesh();
 
 	brio.LoadFromFile("../assets/BRIO.obj");
@@ -310,26 +315,30 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 	glfwGetWindowSize(window, &winwidth, &winheight);
 
 	glm::mat4 CameraMatrix = glm::lookAt(
-		cameraPosition,           // Camera is here
-		cameraPosition+direction, // and looks here : at the same position, plus "direction"
-		up                  // Head is up (set to 0,-1,0 to look upside-down)
+		cameraPosition,
+		cameraPosition+direction,
+		up
 	);
 
 	glm::mat4 projectionMatrix = glm::perspective(
-		glm::radians(FoV),	// The vertical Field of View, in radians: the amount of "zoom". Think "camera lens". Usually between 90° (extra wide) and 30° (quite zoomed in)
-		(float) winwidth / (float)winheight,		// Aspect Ratio. Depends on the size of your window. Notice that 4/3 == 800/600 == 1280/960, sounds familiar ?
-		0.01f,				// Near clipping plane. Keep as big as possible, or you'll get precision issues.
-		100.0f				// Far clipping plane. Keep as little as possible.
+		glm::radians(FoV),						// The vertical Field of View, in radians
+		(float) winwidth / (float)winheight,	//Aspect ratio
+		0.01f,									// Near clipping plane.
+		100.0f									// Far clipping plane.
 	);
 
 	glm::mat4 VPMatrix = projectionMatrix * CameraMatrix;
 
-	// Clear the screen. It's not mentioned before Tutorial 02, but it can cause flickering, so it's there nonetheless.
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glUseProgram(programID);
 
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+	GLuint MatrixID = glGetUniformLocation(programID, "MVP"); //projection matrix handle
+	GLuint TextureSamplerID  = glGetUniformLocation(programID, "TextureSampler"); //texture sampler handle
+	glUniform1i(TextureSamplerID, 0); //set texture sampler to use texture 0
+	GLuint ParameterID = glGetUniformLocation(programID, "Parameters");
+
+
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &VPMatrix[0][0]);
 	axis.Draw();
 
@@ -343,15 +352,15 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 		switch (odata.identity.type)
 		{
 		case PacketType::Robot :
-			robot.Draw();
+			robot.Draw(ParameterID);
 			break;
 		case PacketType::ReferenceAbsolute :
 		case PacketType::ReferenceRelative :
-			arena.Draw();
+			arena.Draw(ParameterID);
 			break;
 		case PacketType::Camera :
-			axis.Draw();
-			brio.Draw();
+			axis.Draw(ParameterID);
+			brio.Draw(ParameterID);
 			break;
 		
 		default:

@@ -17,6 +17,9 @@ private:
     GLuint programID, VertexArrayID;
 
     Mesh robot, arena, puck, brio, axis;
+
+    void GLInit();
+    GLFWwindow* GLCreateWindow(cv::Size windowsize);
 public:
 
     bool LookingAround = false;

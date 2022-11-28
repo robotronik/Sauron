@@ -45,6 +45,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 	BoardGL OpenGLBoard;
 	OpenGLBoard.Start();
+	OpenGLBoard.Tick({});
 
 	ObjectTracker tracker;
 
