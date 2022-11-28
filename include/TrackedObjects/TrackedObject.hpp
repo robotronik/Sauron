@@ -4,8 +4,9 @@
 #include <string>   // for strings
 #include <sstream>  // string to number conversion
 #include <opencv2/core.hpp>		// Basic OpenCV structures (Mat, Scalar)
+#ifdef WITH_VTK
 #include <opencv2/viz.hpp>
-
+#endif
 #include "visualisation/BoardViz2D.hpp"
 #include "TrackedObjects/ObjectIdentity.hpp"
 
@@ -46,8 +47,9 @@ struct ArucoMarker
 		Pose(InPose),
 		ObjectPointsNoOffset(GetObjectPointsNoOffset(InSideLength))
 	{}
-
+	#ifdef WITH_VTK
 	void DisplayMarker(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName);
+	#endif
 };
 
 class TrackedObject

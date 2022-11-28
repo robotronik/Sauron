@@ -3,7 +3,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 #include <opencv2/calib3d.hpp>
-#include <opencv2/viz.hpp>
 #include <opencv2/imgproc.hpp>
 
 
@@ -32,6 +31,7 @@ vector<Point3d>& ArucoMarker::GetObjectPointsNoOffset()
 	return ObjectPointsNoOffset;
 }
 
+#ifdef WITH_VTK
 void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
 {
 	Affine3d Location = RootLocation * Pose;
@@ -39,6 +39,7 @@ void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, S
 	visualizer->showWidget(rootName + "/" + to_string(number), widget, Location * Affine3d(ImageToWorld()));
 	visualizer->showWidget(rootName + "/" + to_string(number) + "/axis", viz::WCoordinateSystem(0.01), Location);
 }
+#endif
 
 bool TrackedObject::SetLocation(Affine3d InLocation)
 {

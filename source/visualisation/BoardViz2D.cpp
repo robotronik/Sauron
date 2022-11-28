@@ -5,7 +5,6 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/viz.hpp>
 
 #ifdef WITH_CUDA
 #include <opencv2/core/cuda.hpp>
