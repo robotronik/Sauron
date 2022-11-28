@@ -16,7 +16,8 @@ private:
     GLFWwindow* window;
     GLuint programID, VertexArrayID;
 
-    Mesh robot, arena, puck, brio, axis;
+    static bool MeshesLoaded;
+    static Mesh robot, arena, puck, brio, axis;
 
     void GLInit();
     GLFWwindow* GLCreateWindow(cv::Size windowsize);
@@ -24,8 +25,8 @@ public:
 
     bool LookingAround = false;
 	float FoV = 60.f, mouseSpeed = 0.002f;
-    float horizontalAngle = 0.f, verticalAngle = 0.f;
-    glm::vec3 cameraPosition = glm::vec3(1,0,0);
+    float horizontalAngle = 0.f, verticalAngle = -M_PI_2;
+    glm::vec3 cameraPosition = glm::vec3(0,0,2);
 
     double lastTime;
 

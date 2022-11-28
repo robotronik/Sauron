@@ -16,6 +16,9 @@
 
 using namespace std;
 
+bool BoardGL::MeshesLoaded = false;
+Mesh BoardGL::robot, BoardGL::arena, BoardGL::axis, BoardGL::brio, BoardGL::puck;
+
 string shaderfolder = "../source/visualisation/openGL/";
 
 void BoardGL::GLInit()
@@ -36,7 +39,7 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 GLFWwindow* BoardGL::GLCreateWindow(cv::Size windowsize)
 {
-	glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
+	glfwWindowHint(GLFW_SAMPLES, 1); // 4x antialiasing
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
@@ -274,30 +277,34 @@ void BoardGL::HandleInputs()
 
 void BoardGL::Start()
 {
+	if (!MeshesLoaded)
+	{
+		cout << "Loading meshes" << endl;
+		robot.LoadFromFile("../assets/robot.obj");
+		arena.LoadFromFile("../assets/board.obj", "../assets/boardtex.png");
+		brio.LoadFromFile("../assets/BRIO.obj");
+		axis.LoadFromFile("../assets/axis.obj");
+		MeshesLoaded = true;
+	}
+	
+	cout << "Creating OpenGL context" << endl;
 	GLInit();
 
 	cv::Size winsize(1280,720);
 
 	window = GLCreateWindow(winsize);
 
-	
 	// Create and compile our GLSL program from the shaders
 	programID = GLLoadShaders( shaderfolder + "vertexshader.vs", shaderfolder + "fragmentshader.fs" );
 
 	glGenVertexArrays(1, &VertexArrayID);
 	glBindVertexArray(VertexArrayID);
 
-	robot.LoadFromFile("../assets/robot.obj");
 	robot.BindMesh();
-
-	arena.LoadFromFile("../assets/board.obj", "../assets/boardtex.png");
 	arena.BindMesh();
-
-	brio.LoadFromFile("../assets/BRIO.obj");
 	brio.BindMesh();
-
-	axis.LoadFromFile("../assets/axis.obj");
 	axis.BindMesh();
+	cout << "OpenGL init done!" << endl;
 }
 
 bool BoardGL::Tick(std::vector<ObjectData> data)
