@@ -36,12 +36,14 @@ void CDFRExternalMain(bool direct, bool v3d)
 		BoardViz2D::InitImages();
 	}
 	
+	#ifdef WITH_VTK
 	viz::Viz3d viz3dhandle("3D board");
 	BoardViz3D board3d(&viz3dhandle);
 	if (v3d)
 	{
 		BoardViz3D::SetupTerrain(viz3dhandle);
 	}
+	#endif
 
 	BoardGL OpenGLBoard;
 	OpenGLBoard.Start();
@@ -137,6 +139,8 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 		double deltaTime = fps.GetDeltaTime();
 		prof.EnterSection(ps++);
+		
+		#ifdef WITH_VTK
 		if (v3d)
 		{
 			if (viz3dhandle.wasStopped())
@@ -149,6 +153,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			viz3dhandle.showWidget("fps", fpstext);
 			viz3dhandle.spinOnce(1, true);
 		}
+		#endif
 
 		if (direct)
 		{

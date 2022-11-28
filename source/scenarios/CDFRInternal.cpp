@@ -21,12 +21,14 @@ void CDFRInternalMain(bool direct, bool v3d)
 		setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 	}
 	
+	#ifdef WITH_VTK
 	viz::Viz3d viz3dhandle("local robot");
 	BoardViz3D board3d(&viz3dhandle);
 	if (v3d)
 	{
 		BoardViz3D::SetupRobot(viz3dhandle);
 	}
+	#endif
 
 	BoardGL OpenGLBoard;
 	OpenGLBoard.Start();
@@ -77,14 +79,20 @@ void CDFRInternalMain(bool direct, bool v3d)
 		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
 		double deltaTime = fps.GetDeltaTime();
 
+		#ifdef WITH_VTK
 		if (v3d)
 		{
+			if (viz3dhandle.wasStopped())
+			{
+				break;
+			}
 			board3d.DisplayData(ObjData);
 
 			viz::WText fpstext(to_string(1/deltaTime), Point2i(200,100));
 			viz3dhandle.showWidget("fps", fpstext);
 			viz3dhandle.spinOnce(1, true);
 		}
+		#endif
 		
 		if (direct)
 		{
@@ -106,7 +114,7 @@ void CDFRInternalMain(bool direct, bool v3d)
 			break;
 		}
 
-		if (waitKey(1) == '\e' || viz3dhandle.wasStopped())
+		if (waitKey(1) == '\e')
 		{
 			break;
 		}

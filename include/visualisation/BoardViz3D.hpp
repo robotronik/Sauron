@@ -1,5 +1,6 @@
 #pragma once
 
+#ifdef WITH_VTK
 #include <opencv2/core.hpp>
 #include <opencv2/viz.hpp>
 #include <opencv2/core/affine.hpp>
@@ -37,3 +38,4 @@ public:
 };
 
 void TestViz3D();
+#endif

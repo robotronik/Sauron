@@ -1,5 +1,6 @@
 #include "visualisation/BoardViz3D.hpp"
 
+#ifdef WITH_VTK
 #include <string>
 
 #include <opencv2/viz.hpp>
@@ -155,3 +156,4 @@ void TestViz3D()
 	board.spin();
 	exit(EXIT_SUCCESS);
 }
+#endif
