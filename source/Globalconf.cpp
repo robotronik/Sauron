@@ -18,9 +18,8 @@ bool ConfigInitialised = false;
 Config cfg;
 
 //Default values
-CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_NVARGUS, Size(1280,720), Rect(0,0,0,0), 120, 4, ""};
-float Reductions = 2;
-WebsocketConfig WebsocketCfg = {"eth1", true, true, "127.0.0.1", 24};
+CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_CPU, Size(1920,1080), Rect(0,0,0,0), 1.f, 60, 1, ""};
+WebsocketConfig WebsocketCfg = {"eth1", true, true, "127.0.0.1", 42069};
 vector<InternalCameraConfig> CamerasInternal;
 Size screensize(-1,-1);
 
@@ -154,7 +153,7 @@ void InitConfig()
 		CopyDefaultCfg(Capture, "Framerate", Setting::TypeInt, CaptureCfg.CaptureFramerate);
 		CopyDefaultCfg(Capture, "FramerateDivider", Setting::TypeInt, CaptureCfg.FramerateDivider);
 		CopyDefaultCfg(Capture, "Method", Setting::TypeInt, CaptureCfg.StartType);
-		CopyDefaultCfg(Resolution, "Reduction", Setting::TypeFloat, Reductions);
+		CopyDefaultCfg(Resolution, "Reduction", Setting::TypeFloat, CaptureCfg.ReductionFactor);
 		CopyDefaultCfg(Capture, "CameraFilter", Setting::TypeString, CaptureCfg.filter);
 	}
 
@@ -279,7 +278,7 @@ CaptureConfig GetCaptureConfig()
 float GetReductionFactor()
 {
 	InitConfig();
-	return Reductions;
+	return CaptureCfg.ReductionFactor;
 }
 
 Size GetArucoReduction()

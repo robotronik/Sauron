@@ -17,7 +17,7 @@ add_compile_definitions(WITH_X11)
 
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
-    add_compile_definitions(WITH_CUDA)
+    #add_compile_definitions(WITH_CUDA)
     message(STATUS "CUDA found, assuming OpenCV was built with CUDA")
 endif(CUDAToolkit_FOUND)
 

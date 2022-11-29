@@ -11,6 +11,7 @@ struct CaptureConfig
 	int StartType;
 	cv::Size FrameSize;
 	cv::Rect CropRegion;
+	float ReductionFactor;
 	int CaptureFramerate;
 	int FramerateDivider;
 	std::string filter;
