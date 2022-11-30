@@ -116,8 +116,8 @@ void CDFRExternalMain(bool direct, bool v3d)
 			}
 
 			bool hasposition = false;
-			float surface;
-			Affine3d boardloc = boardobj->GetObjectTransform(arucoDatas[i], surface);
+			float surface, reprojectionError;
+			Affine3d boardloc = boardobj->GetObjectTransform(arucoDatas[i], surface, reprojectionError);
 			if (surface > 0)
 			{
 

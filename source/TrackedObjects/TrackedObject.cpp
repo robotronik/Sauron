@@ -192,13 +192,14 @@ void TrackedObject::GetObjectPoints(vector<vector<Point3d>>& MarkerCorners, vect
 	}
 }
 
-Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& Surface)
+Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& Surface, float& ReprojectionError)
 {
 	vector<vector<Point3d>> MarkerCorners3D, objectPoints; 
 	vector<int> MarkerIDs3D, IDs;
 	vector<vector<Point2f>> imagePoints;
 	GetObjectPoints(MarkerCorners3D, MarkerIDs3D, Affine3d::Identity(), CameraData.TagIDs);
 	Surface = 0;
+	ReprojectionError = INFINITY;
 	//Keep only tags which have a 3D counterpart in this object, and link them together
 	for (int index2d = 0; index2d < CameraData.TagIDs.size(); index2d++)
 	{
@@ -215,12 +216,20 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 		Surface += contourArea(CameraData.TagCorners[index2d], false);
 	}
 
-	if (IDs.size() <=0)
+	if (IDs.size() <= 0)
 	{
-		Surface = 0;
 		return Affine3d::Identity();
 	}
 	Affine3d localTransform;
+	vector<Point3d> flatobj;
+	vector<Point2f> flatimg;
+	vector<Point2d> flatreproj;
+	flatobj.reserve(IDs.size() * 4);
+	flatimg.reserve(IDs.size() * 4);
+	flatreproj.resize(IDs.size() * 4);
+	Mat rvec = Mat::zeros(3, 1, CV_64F), tvec = Mat::zeros(3, 1, CV_64F);
+	Affine3d objectToMarker = Affine3d::Identity();
+	int flags = 0;
 	if (IDs.size() == 1)
 	{
 		ArucoMarker marker; Affine3d transform;
@@ -228,15 +237,13 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 		{
 			return Affine3d::Identity();
 		}
-		Affine3d objectToMarker = transform * marker.Pose;
-		Affine3d CameraToMarker = GetTagTransform(marker.sideLength, imagePoints[0], CameraData.CameraMatrix, CameraData.DistanceCoefficients);
-		localTransform = CameraToMarker * objectToMarker.inv();
+		flatobj = marker.ObjectPointsNoOffset;
+		flatimg = imagePoints[0];
+		objectToMarker = transform * marker.Pose;
+		flags |= SOLVEPNP_IPPE_SQUARE;
 	}
 	else
 	{
-		Mat rvec = Mat::zeros(3, 1, CV_64F), tvec = Mat::zeros(3, 1, CV_64F);
-		vector<Point3d> flatobj;
-		vector<Point2f> flatimg;
 		for (int i = 0; i < IDs.size(); i++)
 		{
 			for (int j = 0; j < 4; j++)
@@ -245,12 +252,22 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 				flatimg.push_back(imagePoints[i][j]);
 			}
 		}
-		
-		solvePnP(flatobj, flatimg, CameraData.CameraMatrix, CameraData.DistanceCoefficients, rvec, tvec, false, SOLVEPNP_SQPNP);
-		Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
-		Rodrigues(rvec, rotationMatrix);
-		localTransform = Affine3d(rotationMatrix, tvec);
+		objectToMarker = Affine3d::Identity();
+		flags |= SOLVEPNP_SQPNP;
 	}
+	solvePnP(flatobj, flatimg, CameraData.CameraMatrix, CameraData.DistanceCoefficients, rvec, tvec, false, flags);
+	projectPoints(flatobj, rvec, tvec, CameraData.CameraMatrix, CameraData.DistanceCoefficients, flatreproj);
+	ReprojectionError = 0;
+	for (int i = 0; i < IDs.size()*4; i++)
+	{
+		Point2f diff = flatimg[i] - Point2f(flatreproj[i]);
+		ReprojectionError += sqrt(diff.ddot(diff));
+	}
+	ReprojectionError /= IDs.size();
+	//cout << "Reprojection error : " << ReprojectionError << endl;
+	Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag
+	Rodrigues(rvec, rotationMatrix);
+	localTransform = Affine3d(rotationMatrix, tvec) * objectToMarker.inv();
 
 	return localTransform;
 
@@ -266,7 +283,7 @@ vector<ObjectData> TrackedObject::ToObjectData(int BaseNumeral)
 Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients)
 {
 	Mat rvec, tvec;
-	Mat distCoeffs = Mat::zeros(4,1, CV_64F);
+	//Mat distCoeffs = Mat::zeros(4,1, CV_64F);
 	solvePnP(ArucoMarker::GetObjectPointsNoOffset(SideLength), Corners, 
 		CameraMatrix, DistanceCoefficients, rvec, tvec, false, SOLVEPNP_IPPE_SQUARE);
 	Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag

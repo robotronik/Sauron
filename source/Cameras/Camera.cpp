@@ -244,7 +244,7 @@ vector<ObjectData> Camera::ToObjectData(int BaseNumeral)
 	return {robot};
 }
 
-Affine3d Camera::GetObjectTransform(CameraArucoData& CameraData, float& Surface)
+Affine3d Camera::GetObjectTransform(CameraArucoData& CameraData, float& Surface, float& ReprojectionError)
 {
 	Surface = -1;
 	return Affine3d::Identity();

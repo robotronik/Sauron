@@ -122,7 +122,7 @@ public:
 
 	virtual vector<ObjectData> ToObjectData(int BaseNumeral) override;
 
-	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface) override;
+	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface, float& ReprojectionError) override;
 };
 
 class ArucoCamera : public Camera

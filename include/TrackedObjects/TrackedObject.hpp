@@ -82,7 +82,7 @@ public:
 
 	//Given corners, solve this object's location using multiple tags at once
 	//Output transform is given relative to the camera
-	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface);
+	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface, float& ReprojectionError);
 
 	virtual vector<ObjectData> ToObjectData(int BaseNumeral);
 };
