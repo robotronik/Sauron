@@ -53,7 +53,7 @@ bool Mesh::LoadFromFile(std::string path, std::string texturepath)
 		{
 			col = aiColor4D(0.5f,0,0.5f,1);
 		}
-		UVs.push_back(1-UV[0]);
+		UVs.push_back(UV[0]);
 		UVs.push_back(1-UV[1]);
 		for (int j = 0; j < 3; j++)
 		{

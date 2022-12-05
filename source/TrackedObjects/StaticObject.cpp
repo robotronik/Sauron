@@ -11,7 +11,7 @@ StaticObject::StaticObject(bool InRelative, String InName)
 	Unique = true;
 	Relative = InRelative;
 	Name = InName;
-	double yamp = 1-0.570, xamp = 1.5-0.575;
+	const double yamp = 1-0.570, xamp = 1.5-0.575;
 	double size = 0.1;
 	vector<int> numbers = {20, 22, 21, 23};
 	for (int i = 0; i < 4; i++)
@@ -25,7 +25,6 @@ StaticObject::StaticObject(bool InRelative, String InName)
 			markers.push_back(marker);
 		}
 	}
-	
 }
 
 StaticObject::~StaticObject()
