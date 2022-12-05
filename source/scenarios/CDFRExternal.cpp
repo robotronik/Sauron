@@ -128,7 +128,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			cameraLocations[i] = cam->GetLocation();
 			CamerasWithPosition[i] = hasposition;
 			
-			//cout << "Camera" << i << " location : " << cameraLocations[i].translation() << endl;
+			cout << "Camera " << i << " location : " << cameraLocations[i].translation() << " / Score: " << surface/(reprojectionError+0.1) << endl;
 			
 		}
 		prof.EnterSection(ps++);
@@ -163,8 +163,8 @@ void CDFRExternalMain(bool direct, bool v3d)
 			{
 				OutputTargets.push_back(physicalCameras[i]);
 			}
-			OutputTargets.push_back(board);
-			board->DisplayData(ObjData);
+			//OutputTargets.push_back(board);
+			//board->DisplayData(ObjData);
 			UMat image = ConcatCameras(0, OutputTargets, OutputTargets.size());
 			//board.GetOutputFrame(0, image, GetFrameSize());
 			//cout << "Concat OK" <<endl;

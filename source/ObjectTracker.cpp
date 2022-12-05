@@ -59,7 +59,7 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 					ScoreMax = ScoreThis;
 				}
 			}
-			//cout << "Object " << ObjIdx << " is at location " << objects[ObjIdx]->GetLocation().translation() << endl;
+			//cout << "Object " << ObjIdx << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << ScoreMax << endl;
 		}
 	/*});*/
 }

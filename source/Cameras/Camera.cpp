@@ -218,20 +218,42 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Rect window)
 			resize(frametoUse.CPUFrame, OutFrame(roi), roi.size(), fz, fz, INTER_AREA);
 		}
 	}
-	if (FrameBuffer[BufferIndex].Status.HasAruco)
+	if (buff.Status.HasAruco)
 	{
-		vector<vector<Point2f>> raruco;
+		int nummarkers= buff.markerCorners.size();
+		vector<vector<Point2f>> ArucoCornersResized;
+		ArucoCornersResized.reserve(nummarkers);
+		vector<vector<Point2f>> ArucoCornersReprojected;
+		ArucoCornersReprojected.reserve(nummarkers);
+		vector<int> ArucoIDsReprojected;
+		ArucoIDsReprojected.reserve(nummarkers);
 		
-		for (int i = 0; i < FrameBuffer[BufferIndex].markerCorners.size(); i++)
+		for (int i = 0; i < buff.markerCorners.size(); i++)
 		{
-			vector<Point2f> marker;
-			for (int j = 0; j < FrameBuffer[BufferIndex].markerCorners[i].size(); j++)
+			vector<Point2f> marker, markerReprojected;
+			bool IsMarkerReprojected = buff.reprojectedCorners[i].size() == 4;
+			for (int j = 0; j < buff.markerCorners[i].size(); j++)
 			{
-				marker.push_back(FrameBuffer[BufferIndex].markerCorners[i][j]*fz + offset);
+				marker.push_back(buff.markerCorners[i][j]*fz + offset);
+				if (IsMarkerReprojected)
+				{
+					markerReprojected.push_back(Point2f(buff.reprojectedCorners[i][j])*fz + offset);
+				}
 			}
-			raruco.push_back(marker);
+			ArucoCornersResized.push_back(marker);
+			if (IsMarkerReprojected)
+			{
+				ArucoIDsReprojected.push_back(buff.markerIDs[i]);
+				ArucoCornersReprojected.push_back(markerReprojected);
+			}
+			
 		}
-		aruco::drawDetectedMarkers(OutFrame, raruco, FrameBuffer[BufferIndex].markerIDs);
+		aruco::drawDetectedMarkers(OutFrame, ArucoCornersResized, FrameBuffer[BufferIndex].markerIDs);
+		if (ArucoCornersReprojected.size() > 0)
+		{
+			aruco::drawDetectedMarkers(OutFrame, ArucoCornersReprojected, ArucoIDsReprojected, cv::Scalar(255,0,0));
+		}
+		
 	}
 }
 
@@ -305,7 +327,7 @@ void ArucoCamera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Pt
 {
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
 
-	Size framesize = GetFrameSize();
+	Size framesize = Settings.Resolution;
 	Size rescaled = GetArucoReduction();
 
 	if(!buff.GrayFrame.MakeCPUAvailable())
@@ -322,26 +344,29 @@ void ArucoCamera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Pt
 	corners.clear();
 	vector<int> &IDs = buff.markerIDs;
 	IDs.clear();
+	buff.reprojectedCorners.clear();
+
 	aruco::detectMarkers(buff.RescaledFrame.CPUFrame, dict, corners, IDs, params);
+
+	buff.reprojectedCorners.resize(IDs.size());
 
 	FVector2D scalefactor = FVector2D(framesize)/FVector2D(rescaled);
 
-	for (int j = 0; j < corners.size(); j++)
-	{
-		for (size_t k = 0; k < 4; k++)
-		{
-			FVector2D pos = FVector2D(corners[j][k]) * scalefactor;
-			corners[j][k] = pos;
-		}
-	}
-
 	float reductionFactors = GetReductionFactor();
 
-	if (rescaled == Settings.Resolution) //fast path for running at native res
+	if (framesize != rescaled)
 	{
-	}
-	else
-	{
+		//rescale corners to full image position
+		for (int j = 0; j < corners.size(); j++)
+		{
+			for (size_t k = 0; k < 4; k++)
+			{
+				FVector2D pos = FVector2D(corners[j][k]) * scalefactor;
+				corners[j][k] = pos;
+			}
+		}
+
+		//subpixel refinement
 		UMat &framegray = buff.GrayFrame.CPUFrame;
 
 		for (int ArucoIdx = 0; ArucoIdx < IDs.size(); ArucoIdx++)
@@ -363,7 +388,13 @@ bool ArucoCamera::GetMarkerData(int BufferIndex, CameraArucoData& CameraData)
 	CameraData.TagCorners = FrameBuffer[BufferIndex].markerCorners;
 	GetCameraSettingsAfterUndistortion(CameraData.CameraMatrix, CameraData.DistanceCoefficients);
 	CameraData.CameraTransform = Location;
+	CameraData.SourceCamera = this;
 	return true;
+}
+
+void ArucoCamera::SetMarkerReprojection(int MarkerIndex, const vector<cv::Point2d> &Corners)
+{
+	FrameBuffer[0].reprojectedCorners[MarkerIndex] = Corners;
 }
 
 void ArucoCamera::SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry)

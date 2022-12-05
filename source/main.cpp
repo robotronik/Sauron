@@ -156,7 +156,7 @@ int main(int argc, char** argv )
 		GetWebsocketConfig().Server = parser.get<bool>("server");
 	}
 	
-	CDFRExternalMain(false, false);
+	CDFRExternalMain(direct, false);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

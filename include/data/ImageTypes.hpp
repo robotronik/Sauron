@@ -156,6 +156,7 @@ public:
 	std::vector<int> markerIDs;
 	std::vector<std::vector<cv::Point2f>> markerCorners;
 	std::vector<CameraView> markerViews;
+	std::vector<std::vector<cv::Point2d>> reprojectedCorners;
 
 public:
 

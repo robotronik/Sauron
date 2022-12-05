@@ -194,9 +194,13 @@ void TrackedObject::GetObjectPoints(vector<vector<Point3d>>& MarkerCorners, vect
 
 Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& Surface, float& ReprojectionError)
 {
-	vector<vector<Point3d>> MarkerCorners3D, objectPoints; 
-	vector<int> MarkerIDs3D, IDs;
-	vector<vector<Point2f>> imagePoints;
+	vector<vector<Point3d>> MarkerCorners3D; //Corners of aruco tags in object
+	vector<int> MarkerIDs3D; //IDs of aruco tags in object
+
+	vector<vector<Point3d>> objectPoints; //Corners of aruco tags found in both object and camera
+	vector<vector<Point2f>> imagePoints; //Image space coordinates of the corners of the aruco tags found in both object and camera
+	vector<int> IDs; //IDs of aruco tags found in both object and camera
+	vector<int> CameraIDs; //Index where the tags were found in both object and camera, in camera
 	GetObjectPoints(MarkerCorners3D, MarkerIDs3D, Affine3d::Identity(), CameraData.TagIDs);
 	Surface = 0;
 	ReprojectionError = INFINITY;
@@ -213,6 +217,7 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 		objectPoints.push_back(MarkerCorners3D[index3d]);
 		imagePoints.push_back(CameraData.TagCorners[index2d]);
 		IDs.push_back(id);
+		CameraIDs.push_back(index2d);
 		Surface += contourArea(CameraData.TagCorners[index2d], false);
 	}
 
@@ -253,7 +258,7 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 			}
 		}
 		objectToMarker = Affine3d::Identity();
-		flags |= SOLVEPNP_SQPNP;
+		flags |= SOLVEPNP_ITERATIVE;
 	}
 	solvePnP(flatobj, flatimg, CameraData.CameraMatrix, CameraData.DistanceCoefficients, rvec, tvec, false, flags);
 	projectPoints(flatobj, rvec, tvec, CameraData.CameraMatrix, CameraData.DistanceCoefficients, flatreproj);
@@ -263,6 +268,17 @@ Affine3d TrackedObject::GetObjectTransform(CameraArucoData& CameraData, float& S
 		Point2f diff = flatimg[i] - Point2f(flatreproj[i]);
 		ReprojectionError += sqrt(diff.ddot(diff));
 	}
+	for (int i = 0; i < IDs.size(); i++)
+	{
+		vector<Point2d> cornersreproj;
+		cornersreproj.reserve(4);
+		for (int j = 0; j < 4; j++)
+		{
+			cornersreproj.push_back(flatreproj[i*4+j]);
+		}
+		CameraData.SourceCamera->SetMarkerReprojection(CameraIDs[i], cornersreproj);
+	}
+	
 	ReprojectionError /= IDs.size();
 	//cout << "Reprojection error : " << ReprojectionError << endl;
 	Matx33d rotationMatrix; //Matrice de rotation Camera -> Tag

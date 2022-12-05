@@ -15,7 +15,8 @@ struct CameraView
 	CameraView()
 		:Camera(0),
 		TagID(0),
-		TagTransform(cv::Affine3d::Identity())
+		TagTransform(cv::Affine3d::Identity()),
+		score(0)
 	{}
 
 	CameraView(int InCamera, int InTagID, cv::Affine3d InTagTransform)
@@ -32,5 +33,6 @@ struct CameraArucoData
 	cv::Mat DistanceCoefficients;
 	std::vector<int> TagIDs;
 	std::vector<std::vector<cv::Point2f>> TagCorners;
+	class ArucoCamera *SourceCamera;
 
 };

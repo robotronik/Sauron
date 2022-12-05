@@ -143,6 +143,8 @@ public:
 	//Gather detected markers in screen space
 	virtual bool GetMarkerData(int BufferIndex, CameraArucoData& CameraData);
 
+	void SetMarkerReprojection(int MarkerIndex, const vector<cv::Point2d> &Corners);
+
 	//convert corner pixel location into 3D space relative to camera
 	//Arco tags must be registered into the registry beforehand to have correct depth
 	virtual void SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry);
