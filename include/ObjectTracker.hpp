@@ -7,7 +7,7 @@
 class ObjectTracker
 {
 private:
-	vector<TrackedObject*> objects;
+	std::vector<TrackedObject*> objects;
 	int ArucoMap[100];
 	float ArucoSizes[100];
 
@@ -19,9 +19,9 @@ public:
 
 	void UnregisterTrackedObject(TrackedObject* object);
 
-	void SolveLocationsPerObject(vector<CameraArucoData>& CameraData);
+	void SolveLocationsPerObject(std::vector<CameraArucoData>& CameraData);
 
-	void SolveLocationsTagByTag(vector<cv::Affine3d>& Cameras, vector<CameraView>& Tags);
+	void SolveLocationsTagByTag(std::vector<cv::Affine3d>& Cameras, std::vector<CameraView>& Tags);
 
 	std::vector<ObjectData> GetObjectDataVector();
 

@@ -114,15 +114,15 @@ public:
 	virtual void Calibrate(std::vector<std::vector<cv::Point3f>> objectPoints,
 	std::vector<std::vector<cv::Point2f>> imagePoints, cv::Size imageSize,
 	cv::Mat& cameraMatrix, cv::Mat& distCoeffs,
-	cv::OutputArrayOfArrays rvecs, cv::OutputArrayOfArrays tvecs);
+	std::vector<cv::Mat> &rvecs, std::vector<cv::Mat> &tvecs);
 
 	virtual void GetFrame(int BufferIndex, cv::UMat& frame) override;
 
 	virtual void GetOutputFrame(int BufferIndex, cv::UMat& frame, cv::Rect window) override;
 
-	virtual vector<ObjectData> ToObjectData(int BaseNumeral) override;
+	virtual std::vector<ObjectData> ToObjectData(int BaseNumeral) override;
 
-	virtual cv::Affine3d GetObjectTransform(CameraArucoData& CameraData, float& Surface, float& ReprojectionError) override;
+	virtual cv::Affine3d GetObjectTransform(const CameraArucoData& CameraData, float& Surface, float& ReprojectionError) override;
 };
 
 class ArucoCamera : public Camera
@@ -143,7 +143,7 @@ public:
 	//Gather detected markers in screen space
 	virtual bool GetMarkerData(int BufferIndex, CameraArucoData& CameraData);
 
-	void SetMarkerReprojection(int MarkerIndex, const vector<cv::Point2d> &Corners);
+	void SetMarkerReprojection(int MarkerIndex, const std::vector<cv::Point2d> &Corners);
 
 	//convert corner pixel location into 3D space relative to camera
 	//Arco tags must be registered into the registry beforehand to have correct depth

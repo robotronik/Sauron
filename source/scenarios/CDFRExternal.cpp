@@ -128,7 +128,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			cameraLocations[i] = cam->GetLocation();
 			CamerasWithPosition[i] = hasposition;
 			
-			cout << "Camera " << i << " location : " << cameraLocations[i].translation() << " / Score: " << surface/(reprojectionError+0.1) << endl;
+			//cout << "Camera " << i << " location : " << cameraLocations[i].translation() << " / Score: " << surface/(reprojectionError+0.1) << endl;
 			
 		}
 		prof.EnterSection(ps++);

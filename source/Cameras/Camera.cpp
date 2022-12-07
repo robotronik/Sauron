@@ -62,6 +62,7 @@ bool Camera::SetCalibrationSetting(Mat CameraMatrix, Mat DistanceCoefficients)
 void Camera::GetCameraSettingsAfterUndistortion(Mat& CameraMatrix, Mat& DistanceCoefficients)
 {
 	CameraMatrix = Settings.CameraMatrix;
+	//DistanceCoefficients = Settings.distanceCoeffs; //FIXME
 	DistanceCoefficients = Mat::zeros(4,1, CV_64F);
 }
 
@@ -161,10 +162,46 @@ void Camera::GetFrameUndistorted(int BufferIndex, UMat& frame)
 void Camera::Calibrate(vector<vector<Point3f>> objectPoints,
 	vector<vector<Point2f>> imagePoints, Size imageSize,
 	Mat& cameraMatrix, Mat& distCoeffs,
-	OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs)
+	vector<Mat> &rvecs, vector<Mat> &tvecs)
 {
-	calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, 
-	CALIB_RATIONAL_MODEL, TermCriteria(TermCriteria::COUNT, 50, DBL_EPSILON));
+	int numimagesstart = objectPoints.size();
+	float threshold = 0.25;
+	for (int i = 0; i < numimagesstart; i++)
+	{
+		int numimages = objectPoints.size();
+		calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, 
+		CALIB_RATIONAL_MODEL, TermCriteria(TermCriteria::COUNT, 50, DBL_EPSILON));
+		vector<float> reprojectionErrors;
+		reprojectionErrors.resize(numimages);
+		int indexmosterrors = 0;
+		for (int imageidx = 0; imageidx < numimages; imageidx++)
+		{
+			vector<Point2f> reprojected;
+
+			projectPoints(objectPoints[imageidx], rvecs[imageidx], tvecs[imageidx], cameraMatrix, distCoeffs, reprojected);
+			reprojectionErrors[imageidx] = ComputeReprojectionError(imagePoints[imageidx], reprojected) / reprojected.size();
+			if (reprojectionErrors[indexmosterrors] < reprojectionErrors[imageidx])
+			{
+				indexmosterrors = imageidx;
+			}
+		}
+		if (reprojectionErrors[indexmosterrors] < threshold)
+		{
+			cout << "Calibration done, error is " << reprojectionErrors[indexmosterrors] << "px/pt at most" << endl;
+			cout << numimages << " images remain " << endl;
+			break;
+		}
+		else
+		{
+			cout << "Ejecting index " << indexmosterrors << " for " << reprojectionErrors[indexmosterrors] << endl;
+			objectPoints[indexmosterrors] = objectPoints[numimages-1];
+			imagePoints[indexmosterrors] = imagePoints[numimages-1];
+			objectPoints.resize(numimages-1);
+			imagePoints.resize(numimages-1);
+		}
+	}
+	
+	
 }
 
 void Camera::GetFrame(int BufferIndex, UMat& OutFrame)
@@ -193,7 +230,7 @@ void Camera::GetOutputFrame(int BufferIndex, UMat& OutFrame, Rect window)
 		}
 		else
 		{
-			frametoUse.CPUFrame.copyTo(OutFrame(window));
+			frametoUse.CPUFrame.copyTo(OutFrame);
 		}
 		
 	}
@@ -266,7 +303,7 @@ vector<ObjectData> Camera::ToObjectData(int BaseNumeral)
 	return {robot};
 }
 
-Affine3d Camera::GetObjectTransform(CameraArucoData& CameraData, float& Surface, float& ReprojectionError)
+Affine3d Camera::GetObjectTransform(const CameraArucoData& CameraData, float& Surface, float& ReprojectionError)
 {
 	Surface = -1;
 	return Affine3d::Identity();

@@ -236,7 +236,7 @@ bool docalibration(CameraSettings CamSett)
 	CamToCalib->StartFeed();
 
 	namedWindow(CalibWindowName, WINDOW_NORMAL);
-	//setWindowProperty(CalibWindowName, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+	setWindowProperty(CalibWindowName, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 	
 	vector<String> pathes = CalibrationImages();
 	int nextIdx = LastIdx(pathes) +1;
