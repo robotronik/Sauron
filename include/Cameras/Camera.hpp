@@ -112,7 +112,7 @@ public:
 	virtual void GetFrameUndistorted(int BufferIndex, cv::UMat& frame);
 
 	virtual void Calibrate(std::vector<std::vector<cv::Point3f>> objectPoints,
-	std::vector<std::vector<cv::Point2f>> imagePoints, cv::Size imageSize,
+	std::vector<std::vector<cv::Point2f>> imagePoints, std::vector<std::string> imagePaths, cv::Size imageSize,
 	cv::Mat& cameraMatrix, cv::Mat& distCoeffs,
 	std::vector<cv::Mat> &rvecs, std::vector<cv::Mat> &tvecs);
 

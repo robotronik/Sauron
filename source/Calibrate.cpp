@@ -5,6 +5,8 @@
 #include <sstream>  // string to number conversion
 
 #include <filesystem>
+#include <thread>
+#include <mutex>
 
 #include <opencv2/core.hpp>		// Basic OpenCV structures (cv::Mat, Scalar)
 #include <opencv2/videoio.hpp>
@@ -33,6 +35,7 @@ const float CalibrationSquareEdge = 0.04; //m
 const Size CheckerSize = Size(6, 4);
 const String TempImgPath = "TempCalib";
 const String CalibWindowName = "Calibration";
+
 
 
 void CreateKnownBoardPos(Size BoardSize, float squareEdgeLength, vector<Point3f>& corners)
@@ -67,7 +70,7 @@ void GetChessboardCorners(vector<UMat> images, vector<vector<Point2f>>& corners,
 	
 }
 
-void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Size BoardSize, Size resolution, float SquareEdgeLength, Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamToCalibrate)
+void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, vector<string> ImagePaths, Size BoardSize, Size resolution, float SquareEdgeLength, Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamToCalibrate)
 {
 	vector<vector<Point3f>> WorldSpaceCornerPoints(1);
 	CreateKnownBoardPos(BoardSize, SquareEdgeLength, WorldSpaceCornerPoints[0]);
@@ -80,7 +83,7 @@ void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, Siz
 	CameraMatrix = initCameraMatrix2D(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, FrameSize);
 	cout << "Camera matrix at start : " << CameraMatrix << endl;
 	UMat undistorted;
-	CamToCalibrate->Calibrate(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, FrameSize, CameraMatrix, DistanceCoefficients, 
+	CamToCalibrate->Calibrate(WorldSpaceCornerPoints, CheckerboardImageSpacePoints, ImagePaths, FrameSize, CameraMatrix, DistanceCoefficients, 
 		rVectors, tVectors);
 }
 
@@ -176,7 +179,7 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamT
 	if (sizes.size() == 1)
 	{
 		UMat image = imread(pathes[0], IMREAD_COLOR).getUMat(AccessFlag::ACCESS_READ);
-		CameraCalibration(savedPoints, CheckerSize, sizes[0], CalibrationSquareEdge, CameraMatrix, DistanceCoefficients, CamToCalibrate);
+		CameraCalibration(savedPoints, pathes, CheckerSize, sizes[0], CalibrationSquareEdge, CameraMatrix, DistanceCoefficients, CamToCalibrate);
 		cout << "Calibration done ! Matrix : " << CameraMatrix << " / Distance Coefficients : " << DistanceCoefficients << endl;
 		return sizes[0];
 	}
@@ -196,22 +199,41 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamT
 	}
 }
 
+Camera* CamToCalib;
+Mat CameraMatrix;
+Mat distanceCoefficients;
+
+thread *CalibrationThread;
+bool Calibrating = false;
+bool ShowUndistorted = false;
+
+void CalibrationWorker()
+{
+	Calibrating = true;
+	ReadAndCalibrate(CameraMatrix, distanceCoefficients, CamToCalib);
+	CamToCalib->SetCalibrationSetting(CameraMatrix, distanceCoefficients);
+	double apertureWidth = 4.96, apertureHeight = 3.72, fovx, fovy, focalLength, aspectRatio;
+	Point2d principalPoint;
+	calibrationMatrixValues(CameraMatrix, CamToCalib->GetCameraSettings().Resolution, apertureWidth, apertureHeight, fovx, fovy, focalLength, principalPoint, aspectRatio);
+	cout << "Computed camera parameters for sensor of size " << apertureWidth << "x" << apertureHeight <<"mm :" << endl
+	<< " fov:" << fovx << "x" << fovy << "°, focal length=" << focalLength << ", aspect ratio=" << aspectRatio << endl
+	<< "Principal point @ " << principalPoint << endl;
+	writeCameraParameters(CamToCalib->GetCameraSettings().DeviceInfo.device_description, CameraMatrix, distanceCoefficients, CamToCalib->GetCameraSettings().Resolution);
+	//distanceCoefficients = Mat::zeros(8, 1, CV_64F);
+	ShowUndistorted = true;
+	Calibrating = false;
+}
+
 bool docalibration(CameraSettings CamSett)
 {
 	bool HasCamera = CamSett.IsValid();
 
-	Camera* CamToCalib = new VideoCaptureCamera(CamSett);
+	CamToCalib = new VideoCaptureCamera(CamSett);
 	if (HasCamera)
 	{
 		CamToCalib->StartFeed();
 	}
-	
-	
 
-	Mat CameraMatrix;
-	Mat distanceCoefficients;
-
-	bool ShowUndistorted = false;
 	bool AutoCapture = false;
 	float AutoCaptureFramerate = 2;
 	double AutoCaptureStart;
@@ -243,6 +265,7 @@ bool docalibration(CameraSettings CamSett)
 
 	FrameCounter fps;
 	int failed = 0;
+	bool CapturedImageLastFrame = false;
 	while (true)
 	{
 		UMat frame, frameresized;
@@ -263,14 +286,14 @@ bool docalibration(CameraSettings CamSett)
 			
 			continue;
 		}
-		
-		
-		
-		
-
 		//cout << "read success" << endl;
 		//drawChessboardCorners(drawToFrame, CheckerSize, foundPoints, found);
 		char character = waitKey(1);
+		if (CapturedImageLastFrame)
+		{
+			this_thread::sleep_for(chrono::milliseconds(100));
+		}
+		
 
 		if (ShowUndistorted)
 		{
@@ -319,23 +342,17 @@ bool docalibration(CameraSettings CamSett)
 		
 		case 13: //enter
 			//start calib
-			if (ShowUndistorted)
+			if (Calibrating)
+			{
+				AutoCapture = false;
+			}
+			else if (ShowUndistorted)
 			{
 				ShowUndistorted = false;
 			}
 			else
 			{
-				ReadAndCalibrate(CameraMatrix, distanceCoefficients, CamToCalib);
-				CamToCalib->SetCalibrationSetting(CameraMatrix, distanceCoefficients);
-				double apertureWidth = 4.96, apertureHeight = 3.72, fovx, fovy, focalLength, aspectRatio;
-				Point2d principalPoint;
-				calibrationMatrixValues(CameraMatrix, CamToCalib->GetCameraSettings().Resolution, apertureWidth, apertureHeight, fovx, fovy, focalLength, principalPoint, aspectRatio);
-				cout << "Computed camera parameters for sensor of size " << apertureWidth << "x" << apertureHeight <<"mm :" << endl
-				<< " fov:" << fovx << "x" << fovy << "°, focal length=" << focalLength << ", aspect ratio=" << aspectRatio << endl
-				<< "Principal point @ " << principalPoint << endl;
-				writeCameraParameters(CamToCalib->GetCameraSettings().DeviceInfo.device_description, CameraMatrix, distanceCoefficients, CamToCalib->GetCameraSettings().Resolution);
-				//distanceCoefficients = Mat::zeros(8, 1, CV_64F);
-				ShowUndistorted = true;
+				CalibrationThread = new thread(CalibrationWorker);
 			}
 			break;
 
@@ -358,9 +375,7 @@ bool docalibration(CameraSettings CamSett)
 			}
 			
 		}
-		
-
-		if (CaptureImageThisFrame)
+		if (CaptureImageThisFrame && !Calibrating && !ShowUndistorted)
 		{
 			vector<Point2f> foundPoints;
 			UMat grayscale;
@@ -368,7 +383,18 @@ bool docalibration(CameraSettings CamSett)
 			bool found = checkChessboard(grayscale, CheckerSize);
 			imwrite(TempImgPath + "/" + to_string(nextIdx++) + ".png", frame);
 			putText(frame, "Image captured !", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(255,0,0), 4);
+			CapturedImageLastFrame = true;
 		}
+		else
+		{
+			CapturedImageLastFrame = false;
+		}
+		
+		if (Calibrating)
+		{
+			putText(frame, "Calibrating, please wait...", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(0,255,0), 4);
+		}
+		
 		#ifdef WITH_CUDA
 		resizestream.waitForCompletion();
 		#endif

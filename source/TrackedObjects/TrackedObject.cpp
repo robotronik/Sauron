@@ -273,7 +273,7 @@ Affine3d TrackedObject::GetObjectTransform(const CameraArucoData& CameraData, fl
 		SeenMarkers[0].LocalMarkerCorners = SeenMarkers[0].Marker->ObjectPointsNoOffset; //hack to have ReprojectSeenMarkers work wih a single marker too
 		flatimg = SeenMarkers[0].CameraCornerPositions;
 		objectToMarker = SeenMarkers[0].AccumulatedTransform * SeenMarkers[0].Marker->Pose;
-		flags |= SOLVEPNP_SQPNP;
+		flags |= SOLVEPNP_IPPE_SQUARE;
 	}
 	else
 	{

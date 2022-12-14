@@ -160,7 +160,7 @@ void Camera::GetFrameUndistorted(int BufferIndex, UMat& frame)
 }
 
 void Camera::Calibrate(vector<vector<Point3f>> objectPoints,
-	vector<vector<Point2f>> imagePoints, Size imageSize,
+	vector<vector<Point2f>> imagePoints, vector<string> imagePaths, Size imageSize,
 	Mat& cameraMatrix, Mat& distCoeffs,
 	vector<Mat> &rvecs, vector<Mat> &tvecs)
 {
@@ -193,11 +193,13 @@ void Camera::Calibrate(vector<vector<Point3f>> objectPoints,
 		}
 		else
 		{
-			cout << "Ejecting index " << indexmosterrors << " for " << reprojectionErrors[indexmosterrors] << endl;
+			cout << "Ejecting index " << indexmosterrors << ", stored at " << imagePaths[indexmosterrors] << " for " << reprojectionErrors[indexmosterrors] << endl;
 			objectPoints[indexmosterrors] = objectPoints[numimages-1];
 			imagePoints[indexmosterrors] = imagePoints[numimages-1];
+			imagePaths[indexmosterrors] = imagePaths[numimages-1];
 			objectPoints.resize(numimages-1);
 			imagePoints.resize(numimages-1);
+			imagePaths.resize(numimages-1);
 		}
 	}
 	
