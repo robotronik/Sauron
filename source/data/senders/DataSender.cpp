@@ -64,7 +64,7 @@ void PositionDataSender::ThreadRoutine()
 		this_thread::sleep_for(chrono::milliseconds(100));
 		if (!ReceiveKillMutex.try_lock())
 		{
-			cout << "Killing PDS receive thread";
+			cout << "Killing PDS receive thread" << endl;
 			break;
 		}
 		
@@ -92,7 +92,7 @@ void PositionDataSender::StartReceiveThread()
 		return;
 	}
 	ReceiveKillMutex.unlock();
-	ReceiveThread = new thread([this](){ThreadRoutine();});
+	ReceiveThread = new thread(&PositionDataSender::ThreadRoutine, this);
 }
 
 void PositionDataSender::StopReceiveThread()

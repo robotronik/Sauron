@@ -48,7 +48,7 @@ UDPTransport::UDPTransport(bool inServer, std::string inIP, int inPort, std::str
 			cerr << "UDP Can't bind to IP/port, errno " << errno << endl;
 		}
 		Connected = true;
-		//ReceiveThreadHandle = new thread([this](){receiveThread();});
+		//ReceiveThreadHandle = new thread(&UDPTransport::receiveThread, this);
 	}
 	else
 	{
@@ -60,7 +60,7 @@ UDPTransport::UDPTransport(bool inServer, std::string inIP, int inPort, std::str
 		else
 		{
 			Connected = true;
-			//ReceiveThreadHandle = new thread([this](){receiveThread();});
+			//ReceiveThreadHandle = new thread(&UDPTransport::receiveThread, this);
 		}
 		
 	}

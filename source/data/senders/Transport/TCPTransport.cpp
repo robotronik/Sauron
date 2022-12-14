@@ -25,7 +25,7 @@ TCPTransport::TCPTransport(bool inServer, string inIP, int inPort, string inInte
 	CreateSocket();
 	Connect();
 
-	ReceiveThreadHandle = new thread([this](){receiveThread();});
+	ReceiveThreadHandle = new thread(&TCPTransport::receiveThread, this);
 }
 
 TCPTransport::~TCPTransport()
