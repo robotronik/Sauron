@@ -7,6 +7,7 @@
 #include <sstream>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/un.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -55,8 +56,10 @@ void TCPTransport::CreateSocket()
 	
 	if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, Interface.c_str(), Interface.size()))
 	{
-		cerr << "TCP Failed to set socket opt : " << errno << endl;
+		cerr << "TCP Failed to bind tcp interface : " << errno << endl;
 	}
+	LowerLatency(sockfd);
+	
 }
 
 bool TCPTransport::Connect()
@@ -116,6 +119,20 @@ void TCPTransport::CheckConnection()
 	}
 }
 
+void TCPTransport::LowerLatency(int fd)
+{
+	int corking = 0;
+	if (setsockopt(fd, IPPROTO_TCP, TCP_CORK, &corking, sizeof(corking)))
+	{
+		cerr << "TCP Failed to disable corking : " << errno << endl;
+	}
+	int nodelay = 1;
+	if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &nodelay, sizeof(nodelay)))
+	{
+		cerr << "TCP Failed to disable corking : " << errno << endl;
+	}
+}
+
 
 void TCPTransport::Broadcast(const void *buffer, int length)
 {
@@ -129,18 +146,19 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 	{
 		cerr << "WARNING : Packet length over 1000, packet may be dropped" << endl;
 	}
-	
+
 	if (Server)
 	{
 		shared_lock lock(listenmutex);
 		for (int i = 0; i < connectionfd.size(); i++)
 		{
 			int err = send(connectionfd[i], buffer, length, MSG_NOSIGNAL);
-			if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
+			int errnocp = errno;
+			if (err ==-1 && (errnocp != EAGAIN && errnocp != EWOULDBLOCK))
 			{
 				char buffer[100];
 				inet_ntop(AF_INET, &connectionaddresses[i].sin_addr, buffer, sizeof(sockaddr_in));
-				if (errno == EPIPE)
+				if (errnocp == EPIPE)
 				{
 					cout << "TCP Client " << buffer << " disconnected." <<endl;
 					close(connectionfd[i]);
@@ -150,7 +168,7 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 				}
 				else
 				{
-					cerr << "TCP Server failed to send data to client " << buffer << " : " << errno << endl;
+					cerr << "TCP Server failed to send data to client " << buffer << " : " << errnocp << endl;
 				}
 			}
 		}
@@ -158,9 +176,10 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 	else
 	{
 		int err = send(sockfd, buffer, length, MSG_NOSIGNAL);
-		if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
+		int errnocp = errno;
+		if (err ==-1 && (errnocp != EAGAIN && errnocp != EWOULDBLOCK))
 		{
-			if (errno == EPIPE)
+			if (errnocp == EPIPE)
 			{
 				cout << "TCP Server has disconnected" << endl;
 				close(sockfd);
@@ -169,22 +188,24 @@ void TCPTransport::Broadcast(const void *buffer, int length)
 			}
 			else
 			{
-				cerr << "TCP Failed to send data : " << errno << endl;
+				cerr << "TCP Failed to send data : " << errnocp << endl;
 			}
 		}
 	}
 }
 
-int TCPTransport::Receive(void *buffer, int maxlength)
+int TCPTransport::Receive(void *buffer, int maxlength, bool blocking)
 {
 	int n = -1;
 	memset(buffer, '0' , maxlength);
+	int flags = blocking ? 0 : MSG_DONTWAIT;
+
 	if (Server)
 	{
 		shared_lock lock(listenmutex);
 		for (int i = 0; i < connectionfd.size(); i++)
 		{
-			if ((n = read(connectionfd[i], buffer, maxlength)) > 0)
+			if ((n = recv(connectionfd[i], buffer, maxlength, MSG_DONTWAIT)) > 0) //cannot wait because server
 			{
 				//cout << "Received " << n << " bytes..." << endl;
 				//printBuffer(dataReceived, n);
@@ -194,7 +215,7 @@ int TCPTransport::Receive(void *buffer, int maxlength)
 	}
 	else
 	{
-		if ((n = read(sockfd, buffer, maxlength)) > 0)
+		if ((n = recv(sockfd, buffer, maxlength, flags)) > 0)
 		{
 			//cout << "Received " << n << " bytes..." << endl;
 			//printBuffer(dataReceived, n);
@@ -206,7 +227,7 @@ int TCPTransport::Receive(void *buffer, int maxlength)
 
 void TCPTransport::receiveThread()
 {
-	//cout << "TCP Webserver thread started..." << endl;
+	cout << "TCP Webserver thread started..." << endl;
 	int n;
 	while (1)
 	{
@@ -220,6 +241,7 @@ void TCPTransport::receiveThread()
 			int ret = accept4(sockfd, (struct sockaddr *)&client, &clientSize, 0);
 			if (ret > 0)
 			{
+				LowerLatency(ret);
 				char buffer[100];
 				inet_ntop(AF_INET, &client.sin_addr, buffer, clientSize);
 				cout << "TCP Client connecting from " << buffer << " fd=" << ret << endl;

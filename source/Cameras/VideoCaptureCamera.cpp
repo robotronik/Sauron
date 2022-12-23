@@ -85,17 +85,17 @@ bool VideoCaptureCamera::StartFeed()
 				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider << ", num-buffers=1 ! ";
 				if (Settings.StartType == CameraStartType::GSTREAMER_CPU)
 				{
-					capnamestream << "jpegdec ! videoconvert ! ";
+					capnamestream << "jpegdec ! videoconvert";
 				}
 				else if (Settings.StartType == CameraStartType::GSTREAMER_JETSON)
 				{
-					capnamestream << "nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! ";
+					capnamestream << "nvv4l2decoder mjpeg=1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert";
 				}
 				else if(Settings.StartType == CameraStartType::CUDA)
 				{
-					capnamestream << "nvdec ! glcolorconvert ! gldownload ! ";
+					capnamestream << "nvdec ! glcolorconvert ! gldownload";
 				}
-				capnamestream << "video/x-raw, format=BGR ! appsink drop=1";
+				capnamestream << " ! video/x-raw, format=BGR ! appsink drop=1";
 				Settings.StartPath = capnamestream.str();
 				Settings.ApiID = CAP_GSTREAMER;
 			}

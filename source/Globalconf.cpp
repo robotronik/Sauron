@@ -155,6 +155,15 @@ void InitConfig()
 		CopyDefaultCfg(Capture, "Method", Setting::TypeInt, CaptureCfg.StartType);
 		CopyDefaultCfg(Resolution, "Reduction", Setting::TypeFloat, CaptureCfg.ReductionFactor);
 		CopyDefaultCfg(Capture, "CameraFilter", Setting::TypeString, CaptureCfg.filter);
+		if (CaptureCfg.StartType != (int)CameraStartType::GSTREAMER_NVARGUS)
+		{
+			if (CaptureCfg.CropRegion != cv::Rect(0,0,0,0))
+			{
+				cerr << "WARNING : Cropping is only supported on the NVidia Jetson with GStreamer, add the needed things if you want it to work with other pipelines" << endl;
+			}
+			
+		}
+		
 	}
 
 	Setting& Websocket = EnsureExistCfg(root, "Websocket", Setting::Type::TypeGroup, 0);

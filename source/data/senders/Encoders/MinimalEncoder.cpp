@@ -35,22 +35,20 @@ EncodedData MinimalEncoder::Encode(int64 GrabTime, std::vector<ObjectData> &obje
 			Affine3dToVictor(packet, ObjectDatas[i].location);
 			ObjectPackets.push_back(packet);
 		}
-		
-		
 	}
 	
-	if (false)
+	if (true)
 	{
-		int buffersize = sizeof(MinimalPacketHeader) + sizeof(PositionPacket) * ObjectPackets.size();
+		size_t buffersize = sizeof(MinimalPacketHeader) + sizeof(PositionPacket) * ObjectPackets.size();
 		char* buffer = reinterpret_cast<char*>(malloc(buffersize));
 		char* currptr = buffer + sizeof(MinimalPacketHeader);
 		std::uninitialized_copy(ObjectPackets.begin(), ObjectPackets.end(), reinterpret_cast<PositionPacket*>(currptr));
-		MinimalPacketHeader header;
-		header.NumDatas = ObjectPackets.size();
-		header.TickRate = cv::getTickFrequency();
-		header.SentTick = cv::getTickCount();
-		header.Latency = header.SentTick - GrabTime;
-		memcpy(buffer, &header, sizeof(MinimalPacketHeader));
+		MinimalPacketHeader* header = reinterpret_cast<MinimalPacketHeader*>(buffer);
+		header->NumDatas = ObjectPackets.size();
+		header->TickRate = cv::getTickFrequency();
+		header->SentTick = cv::getTickCount();
+		header->Latency = header->SentTick - GrabTime;
+		//memcpy(buffer, &header, sizeof(MinimalPacketHeader));
         return EncodedData(buffersize, buffer);
 	}
 	else

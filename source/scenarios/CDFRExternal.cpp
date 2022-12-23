@@ -33,6 +33,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		board = new BoardViz2D(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
 		namedWindow("Cameras", WINDOW_NORMAL);
 		setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+		startWindowThread();
 		BoardViz2D::InitImages();
 	}
 	
@@ -135,7 +136,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		tracker.SolveLocationsPerObject(arucoDatas);
 		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
 
-
+		//cout << "Robot 1 location : " << robot1->GetLocation().translation() << endl;
 
 		double deltaTime = fps.GetDeltaTime();
 		prof.EnterSection(ps++);
@@ -179,21 +180,25 @@ void CDFRExternalMain(bool direct, bool v3d)
 		}
 		
 		prof.EnterSection(ps++);
-		sender.SendPacket(GrabTick, ObjData);
+		if (GetWebsocketConfig().Server)
+		{
+			sender.SendPacket(GrabTick, ObjData);
+			//this_thread::sleep_for(chrono::milliseconds(100));
+		}
 		
 		
+		prof.EnterSection(-1);
 		
-		if (waitKey(1) == '\e')
+		
+		if (pollKey() == '\e')
 		{
 			break;
 		}
-		prof.EnterSection(-1);
 		if (prof.ShouldPrint())
 		{
 			cout << fps.GetFPSString(deltaTime) << endl;
 			prof.PrintIfShould();
-		}
-		
+		}	
 		
 	}
 }

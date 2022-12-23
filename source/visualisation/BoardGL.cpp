@@ -39,7 +39,7 @@ void window_size_callback(GLFWwindow* window, int width, int height)
 
 GLFWwindow* BoardGL::GLCreateWindow(cv::Size windowsize)
 {
-	glfwWindowHint(GLFW_SAMPLES, 1); // 4x antialiasing
+	glfwWindowHint(GLFW_SAMPLES, 4); // 4x antialiasing
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // We want OpenGL 3.3
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // To make MacOS happy; should not be needed
@@ -111,7 +111,7 @@ GLuint GLLoadShaders(string vertex_file_path, string fragment_file_path){
 	int InfoLogLength;
 
 	// Compile Vertex Shader
-	cout << "Compiling shader : " << vertex_file_path << endl;
+	//cout << "Compiling shader : " << vertex_file_path << endl;
 	char const * VertexSourcePointer = VertexShaderCode.c_str();
 	glShaderSource(VertexShaderID, 1, &VertexSourcePointer , NULL);
 	glCompileShader(VertexShaderID);
@@ -126,7 +126,7 @@ GLuint GLLoadShaders(string vertex_file_path, string fragment_file_path){
 	}
 
 	// Compile Fragment Shader
-	cout << "Compiling shader : " << fragment_file_path << endl;
+	//cout << "Compiling shader : " << fragment_file_path << endl;
 	char const * FragmentSourcePointer = FragmentShaderCode.c_str();
 	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer , NULL);
 	glCompileShader(FragmentShaderID);
@@ -141,7 +141,7 @@ GLuint GLLoadShaders(string vertex_file_path, string fragment_file_path){
 	}
 
 	// Link the program
-	cout << "Linking program" << endl;
+	//cout << "Linking program" << endl;
 	GLuint ProgramID = glCreateProgram();
 	glAttachShader(ProgramID, VertexShaderID);
 	glAttachShader(ProgramID, FragmentShaderID);
@@ -279,7 +279,7 @@ void BoardGL::Start()
 {
 	if (!MeshesLoaded)
 	{
-		cout << "Loading meshes" << endl;
+		//cout << "Loading meshes" << endl;
 		robot.LoadFromFile("../assets/robot.obj");
 		arena.LoadFromFile("../assets/board.obj", "../assets/boardtex.png");
 		brio.LoadFromFile("../assets/BRIO.obj");
@@ -287,7 +287,7 @@ void BoardGL::Start()
 		MeshesLoaded = true;
 	}
 	
-	cout << "Creating OpenGL context" << endl;
+	//cout << "Creating OpenGL context" << endl;
 	GLInit();
 
 	cv::Size winsize(1280,720);
@@ -304,7 +304,7 @@ void BoardGL::Start()
 	arena.BindMesh();
 	brio.BindMesh();
 	axis.BindMesh();
-	cout << "OpenGL init done!" << endl;
+	//cout << "OpenGL init done!" << endl;
 }
 
 bool BoardGL::Tick(std::vector<ObjectData> data)

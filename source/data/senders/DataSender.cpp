@@ -59,14 +59,16 @@ void PositionDataSender::SendPacket(int64 GrabTick, vector<ObjectData> &Data)
 
 void PositionDataSender::ThreadRoutine()
 {
+	int i = 0;
 	while (1)
 	{
-		this_thread::sleep_for(chrono::milliseconds(100));
+		this_thread::sleep_for(chrono::milliseconds(1));
 		if (!ReceiveKillMutex.try_lock())
 		{
 			cout << "Killing PDS receive thread" << endl;
 			break;
 		}
+		//cout << "mutex locked" << endl;
 		
 		if (transport == nullptr)
 		{
@@ -74,13 +76,16 @@ void PositionDataSender::ThreadRoutine()
 		}
 		char buff[1024];
 		int n;
-		while((n = transport->Receive(buff, sizeof(buff)))>-1)
+		while((n = transport->Receive(buff, sizeof(buff), true))>-1)
 		{
-			GenericTransport::printBuffer(buff, n);
+			cout << "Received packet "<< i << endl;
+			i++;
+			//GenericTransport::printBuffer(buff, n);
 			//string bufs(buff, n);
 			//cout << "Received string \"" << bufs << "\"" << endl;
 		}
 		ReceiveKillMutex.unlock();
+		//cout << "mutex unlocked" << endl;
 	}
 	
 }

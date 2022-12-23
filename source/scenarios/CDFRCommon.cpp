@@ -48,10 +48,10 @@ void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, Ptr<ar
 		}
 		//cout << "Aruco stripe from " << range.start << " to " << range.end << endl;
 	}, BufToCamMap.size());
-	for (int i = 0; i < BufToCamMap.size(); i++)
+	/*for (int i = 0; i < BufToCamMap.size(); i++)
 	{
 		mp += mps[i];
-	}
-	mp.PrintIfShould();
+	}*/
+	//mp.PrintIfShould();
 	
 } 

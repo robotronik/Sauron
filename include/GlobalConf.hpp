@@ -8,13 +8,13 @@ enum class CameraStartType;
 
 struct CaptureConfig
 {
-	int StartType;
-	cv::Size FrameSize;
-	cv::Rect CropRegion;
-	float ReductionFactor;
+	int StartType; //See CameraStartType in data/ImageTypes.hpp . Chooses method to use to start the camera
+	cv::Size FrameSize; //resolution after crop
+	cv::Rect CropRegion; //how many pixels to remove from each side ? only with nvvidconv/jetson/gstreamer
+	float ReductionFactor; //factor to downscale image before aruco detection
 	int CaptureFramerate;
 	int FramerateDivider;
-	std::string filter;
+	std::string filter; //filter to block or allow certain cameras. If camera name contains the filter string, it's allowed. If the filter string starts with a !, the filter is inverted
 };
 
 cv::Ptr<cv::aruco::Dictionary> GetArucoDict();

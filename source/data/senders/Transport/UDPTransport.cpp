@@ -94,7 +94,7 @@ void UDPTransport::Broadcast(const void *buffer, int length)
 		for (int i = 0; i < connectionaddresses.size(); i++)
 		{
 			int err = sendto(sockfd, buffer, length, 0, (struct sockaddr*)&connectionaddresses[i], sizeof(sockaddr_in));
-			if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
+			if (err==-1 && (errno != EAGAIN && errno != EWOULDBLOCK))
 			{
 				cerr << "UDP Server failed to send data to client " << i << " : " << errno << endl;
 			}
@@ -104,14 +104,14 @@ void UDPTransport::Broadcast(const void *buffer, int length)
 	{
 
 		int err = send(sockfd, buffer, length, 0);
-		if (err && (errno != EAGAIN && errno != EWOULDBLOCK))
+		if (err==-1 && (errno != EAGAIN && errno != EWOULDBLOCK))
 		{
 			cerr << "UDP Failed to send data : " << errno << endl;
 		}
 	}
 }
 
-int UDPTransport::Receive(void *buffer, int maxlength)
+int UDPTransport::Receive(void *buffer, int maxlength, bool blocking)
 {
 	int n;
 	sockaddr_in client;

@@ -10,5 +10,5 @@ public:
 	
 	virtual void Broadcast(const void *buffer, int length);
 
-	virtual int Receive(void *buffer, int maxlength);
+	virtual int Receive(void *buffer, int maxlength, bool blocking=false);
 };

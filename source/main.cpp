@@ -154,6 +154,7 @@ int main(int argc, char** argv )
 	if(parser.has("server"))
 	{
 		GetWebsocketConfig().Server = parser.get<bool>("server");
+		cout << "Setting server to " << GetWebsocketConfig().Server << endl;
 	}
 	
 	CDFRExternalMain(direct, false);

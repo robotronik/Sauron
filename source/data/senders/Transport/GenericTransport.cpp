@@ -35,7 +35,7 @@ void GenericTransport::Broadcast(const void *buffer, int length)
 	cerr << "Called Broadcast on base transport class" << endl;
 }
 
-int GenericTransport::Receive(void *buffer, int maxlength)
+int GenericTransport::Receive(void *buffer, int maxlength, bool blocking)
 {
 	cerr << "Called receive on base transport class" << endl;
 	return -1;

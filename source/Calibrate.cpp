@@ -183,6 +183,10 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamT
 		cout << "Calibration done ! Matrix : " << CameraMatrix << " / Distance Coefficients : " << DistanceCoefficients << endl;
 		return sizes[0];
 	}
+	else if (sizes.size() == 0)
+	{
+		cout << "Il faut prendre des images pour pouvoir calibrer la caméra quand même..." << endl;
+	}
 	else
 	{
 		cerr << "ERROR : " << sizes.size() << " different resolutions were used in the calibration. That's fixable but fuck you." << endl;
@@ -195,8 +199,8 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamT
 				cerr << " -" << pathes[j] <<endl;
 			}
 		}
-		return Size(0,0);
 	}
+	return Size(0,0);
 }
 
 Camera* CamToCalib;
@@ -257,11 +261,18 @@ bool docalibration(CameraSettings CamSett)
 	}
 	CamToCalib->StartFeed();
 
+	cout << "Camera calibration mode !" << endl
+	<< "Press [space] to capture an image, [enter] to calibrate, [a] to capture an image every " << 1/AutoCaptureFramerate << "s" <<endl
+	<< "Take pictures of a checkerboard with " << CheckerSize.width+1 << "x" << CheckerSize.height+1 << " squares of side length " << CalibrationSquareEdge*1000 << "mm" << endl
+	<< "Images will be saved in folder " << TempImgPath << endl;
+
 	namedWindow(CalibWindowName, WINDOW_NORMAL);
 	setWindowProperty(CalibWindowName, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+	//startWindowThread();
 	
 	vector<String> pathes = CalibrationImages();
 	int nextIdx = LastIdx(pathes) +1;
+	int64 lastCapture = getTickCount();
 
 	FrameCounter fps;
 	int failed = 0;
@@ -288,13 +299,7 @@ bool docalibration(CameraSettings CamSett)
 		}
 		//cout << "read success" << endl;
 		//drawChessboardCorners(drawToFrame, CheckerSize, foundPoints, found);
-		char character = waitKey(1);
-		if (CapturedImageLastFrame)
-		{
-			this_thread::sleep_for(chrono::milliseconds(100));
-		}
-		
-
+		//char character = waitKey(1);
 		if (ShowUndistorted)
 		{
 			UMat frameundist;
@@ -322,7 +327,7 @@ bool docalibration(CameraSettings CamSett)
 			frameresized = frame;
 		}
 
-		switch (character)
+		switch (pollKey())
 		{
 		case 'a':
 			if (!ShowUndistorted)
@@ -380,9 +385,9 @@ bool docalibration(CameraSettings CamSett)
 			vector<Point2f> foundPoints;
 			UMat grayscale;
 			cvtColor(frame, grayscale, COLOR_BGR2GRAY);
-			bool found = checkChessboard(grayscale, CheckerSize);
+			//bool found = checkChessboard(grayscale, CheckerSize);
 			imwrite(TempImgPath + "/" + to_string(nextIdx++) + ".png", frame);
-			putText(frame, "Image captured !", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(255,0,0), 4);
+			lastCapture = getTickCount() + getTickFrequency();
 			CapturedImageLastFrame = true;
 		}
 		else
@@ -392,8 +397,13 @@ bool docalibration(CameraSettings CamSett)
 		
 		if (Calibrating)
 		{
-			putText(frame, "Calibrating, please wait...", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(0,255,0), 4);
+			putText(frameresized, "Calibrating, please wait...", Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(0,255,0), 4);
 		}
+		else if (getTickCount() < lastCapture)
+		{
+			putText(frameresized, "Image " + to_string(nextIdx -1) + ( AutoCapture ? " AutoCaptured !" : " captured !"), Point(100,100), FONT_HERSHEY_SIMPLEX, 2, Scalar(255,0,0), 4);
+		}
+		
 		
 		#ifdef WITH_CUDA
 		resizestream.waitForCompletion();

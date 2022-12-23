@@ -119,7 +119,7 @@ void SerialTransport::Broadcast(const void *buffer, int length)
 	delete[] encodedBuffer;
 }
 
-int SerialTransport::Receive(void *buffer, int maxlength)
+int SerialTransport::Receive(void *buffer, int maxlength, bool blocking)
 {
 	return -1;
 }
