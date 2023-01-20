@@ -8,7 +8,7 @@
 
 using namespace std;
 
-bool Mesh::LoadFromFile(std::string path, std::string texturepath)
+bool Mesh::LoadMesh(std::string path)
 {
 	Assimp::Importer importer;
 	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate );
@@ -73,13 +73,38 @@ bool Mesh::LoadFromFile(std::string path, std::string texturepath)
 			}
 		}
 	}
+	return true;
+}
 
-	if (texturepath != "")
+
+bool Mesh::LoadTexture(cv::Mat Texture)
+{
+	texture.Texture = Texture;
+	texture.valid = true;
+	return true;
+}
+
+bool Mesh::LoadTexture(std::string path)
+{
+	if (path != "")
 	{
-		texture.LoadFromFile(texturepath);
+		texture.LoadFromFile(path);
+		return true;
 	}
-	
-	
+	return false;
+}
+
+
+bool Mesh::LoadFromFile(std::string path, std::string texturepath)
+{
+	if(!LoadMesh(path))
+	{
+		return false;
+	}
+	if(!LoadTexture(texturepath))
+	{
+		return false;
+	}
 	return true;
 }
 
@@ -116,7 +141,7 @@ void Mesh::BindMesh()
 	
 }
 
-void Mesh::Draw(GLuint ParamHandle)
+void Mesh::Draw(GLuint ParamHandle, bool forceTexture)
 {
 	int i = 0;
 
@@ -167,17 +192,12 @@ void Mesh::Draw(GLuint ParamHandle)
 		(void*)0                          // array buffer offset
 	);
 	i++;
-
+	
 	if (texture.valid)
 	{
-		glUniform1i(ParamHandle, 1);
 		texture.Draw();
 	}
-	else
-	{
-		glUniform1i(ParamHandle, 0);
-	}
-	
+	glUniform1i(ParamHandle, texture.valid || forceTexture);
 	
 	
 

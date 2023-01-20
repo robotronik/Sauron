@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>	
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -13,11 +14,17 @@
 #include <assimp/Importer.hpp>
 
 #include "visualisation/openGL/Mesh.hpp"
+#include "TrackedObjects/TrackedObject.hpp"
+#include "GlobalConf.hpp"
 
 using namespace std;
 
-bool BoardGL::MeshesLoaded = false;
-Mesh BoardGL::robot, BoardGL::arena, BoardGL::axis, BoardGL::brio, BoardGL::puck;
+bool BoardGL::HasInit = false;
+GLuint BoardGL::VertexArrayID;
+Shader BoardGL::ShaderProgram;
+bool BoardGL::MeshesLoaded = false, BoardGL::TagsLoaded = false;
+Mesh BoardGL::robot, BoardGL::arena, BoardGL::axis, BoardGL::brio, BoardGL::puck, BoardGL::tag;
+std::vector<Texture> BoardGL::TagTextures;
 
 string shaderfolder = "../source/visualisation/openGL/";
 
@@ -46,7 +53,6 @@ GLFWwindow* BoardGL::GLCreateWindow(cv::Size windowsize)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL 
 
 	// Open a window and create its OpenGL context
-	GLFWwindow* window; // (In the accompanying source code, this variable is global for simplicity)
 	window = glfwCreateWindow( windowsize.width, windowsize.height, "BoardGL", NULL, NULL);
 	if( window == NULL ){
 		cerr << "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials." << endl;
@@ -54,7 +60,6 @@ GLFWwindow* BoardGL::GLCreateWindow(cv::Size windowsize)
 		return nullptr;
 	}
 	glfwMakeContextCurrent(window); // Initialize GLEW
-	glewExperimental=true; // Needed in core profile
 	if (glewInit() != GLEW_OK) {
 		cerr << "Failed to initialize GLEW" << endl;
 		return nullptr;
@@ -77,93 +82,25 @@ GLFWwindow* BoardGL::GLCreateWindow(cv::Size windowsize)
 	return window;
 }
 
-GLuint GLLoadShaders(string vertex_file_path, string fragment_file_path){
+glm::mat4 BoardGL::GetVPMatrix(glm::vec3 forward, glm::vec3 up)
+{
+	int winwidth, winheight;
+	glfwGetWindowSize(window, &winwidth, &winheight);
 
-	// Create the shaders
-	GLuint VertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-	GLuint FragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+	glm::mat4 CameraMatrix = glm::lookAt(
+		cameraPosition,
+		cameraPosition+forward,
+		up
+	);
 
-	// Read the Vertex Shader code from the file
-	std::string VertexShaderCode;
-	std::ifstream VertexShaderStream(vertex_file_path, std::ios::in);
-	if(VertexShaderStream.is_open()){
-		std::stringstream sstr;
-		sstr << VertexShaderStream.rdbuf();
-		VertexShaderCode = sstr.str();
-		VertexShaderStream.close();
-	}else{
-		cout << "Impossible to open " << vertex_file_path << ". Are you in the right directory ? Don't forget to read the FAQ !" << endl;
-		getchar();
-		return 0;
-	}
+	glm::mat4 projectionMatrix = glm::perspective(
+		glm::radians(FoV),						// The vertical Field of View, in radians
+		(float) winwidth / (float)winheight,	//Aspect ratio
+		0.01f,									// Near clipping plane.
+		100.0f									// Far clipping plane.
+	);
 
-	// Read the Fragment Shader code from the file
-	std::string FragmentShaderCode;
-	std::ifstream FragmentShaderStream(fragment_file_path, std::ios::in);
-	if(FragmentShaderStream.is_open()){
-		std::stringstream sstr;
-		sstr << FragmentShaderStream.rdbuf();
-		FragmentShaderCode = sstr.str();
-		FragmentShaderStream.close();
-	}
-
-	GLint Result = GL_FALSE;
-	int InfoLogLength;
-
-	// Compile Vertex Shader
-	//cout << "Compiling shader : " << vertex_file_path << endl;
-	char const * VertexSourcePointer = VertexShaderCode.c_str();
-	glShaderSource(VertexShaderID, 1, &VertexSourcePointer , NULL);
-	glCompileShader(VertexShaderID);
-
-	// Check Vertex Shader
-	glGetShaderiv(VertexShaderID, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(VertexShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if ( InfoLogLength > 0 ){
-		std::vector<char> VertexShaderErrorMessage(InfoLogLength+1);
-		glGetShaderInfoLog(VertexShaderID, InfoLogLength, NULL, &VertexShaderErrorMessage[0]);
-		printf("%s\n", &VertexShaderErrorMessage[0]);
-	}
-
-	// Compile Fragment Shader
-	//cout << "Compiling shader : " << fragment_file_path << endl;
-	char const * FragmentSourcePointer = FragmentShaderCode.c_str();
-	glShaderSource(FragmentShaderID, 1, &FragmentSourcePointer , NULL);
-	glCompileShader(FragmentShaderID);
-
-	// Check Fragment Shader
-	glGetShaderiv(FragmentShaderID, GL_COMPILE_STATUS, &Result);
-	glGetShaderiv(FragmentShaderID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if ( InfoLogLength > 0 ){
-		std::vector<char> FragmentShaderErrorMessage(InfoLogLength+1);
-		glGetShaderInfoLog(FragmentShaderID, InfoLogLength, NULL, &FragmentShaderErrorMessage[0]);
-		printf("%s\n", &FragmentShaderErrorMessage[0]);
-	}
-
-	// Link the program
-	//cout << "Linking program" << endl;
-	GLuint ProgramID = glCreateProgram();
-	glAttachShader(ProgramID, VertexShaderID);
-	glAttachShader(ProgramID, FragmentShaderID);
-	glLinkProgram(ProgramID);
-
-	// Check the program
-	glGetProgramiv(ProgramID, GL_LINK_STATUS, &Result);
-	glGetProgramiv(ProgramID, GL_INFO_LOG_LENGTH, &InfoLogLength);
-	if ( InfoLogLength > 0 ){
-		std::vector<char> ProgramErrorMessage(InfoLogLength+1);
-		glGetProgramInfoLog(ProgramID, InfoLogLength, NULL, &ProgramErrorMessage[0]);
-		cout << "Error : " << &ProgramErrorMessage[0] << endl;
-	}
-	
-	glDetachShader(ProgramID, VertexShaderID);
-	glDetachShader(ProgramID, FragmentShaderID);
-	
-	glDeleteShader(VertexShaderID);
-	glDeleteShader(FragmentShaderID);
-	
-
-	return ProgramID;
+	return projectionMatrix * CameraMatrix;
 }
 
 glm::vec3 BoardGL::GetDirection()
@@ -275,7 +212,7 @@ void BoardGL::HandleInputs()
 	lastTime = currentTime;
 }
 
-void BoardGL::Start()
+void BoardGL::LoadModels()
 {
 	if (!MeshesLoaded)
 	{
@@ -284,26 +221,66 @@ void BoardGL::Start()
 		arena.LoadFromFile("../assets/board.obj", "../assets/boardtex.png");
 		brio.LoadFromFile("../assets/BRIO.obj");
 		axis.LoadFromFile("../assets/axis.obj");
+		robot.BindMesh();
+		arena.BindMesh();
+		brio.BindMesh();
+		axis.BindMesh();
 		MeshesLoaded = true;
 	}
 	
+}
+void BoardGL::LoadTags()
+{
+	if (TagsLoaded)
+	{
+		return;
+	}
+	
+	tag.LoadFromFile("../assets/tag.obj");
+	tag.BindMesh();
+
+	TagTextures.resize(100);
+	auto dict = GetArucoDict();
+	for (int i = 0; i < 100; i++)
+	{
+		cv::Mat texture;
+		cv::aruco::drawMarker(dict, i, 60, texture, 1);
+		cv::cvtColor(texture, TagTextures[i].Texture, cv::COLOR_GRAY2BGR);
+		//TagTextures[i].Texture = texture;
+		TagTextures[i].valid = true;
+		TagTextures[i].Bind();
+	}
+	TagsLoaded = true;
+}
+
+void BoardGL::Start()
+{
 	//cout << "Creating OpenGL context" << endl;
-	GLInit();
+	if (!HasInit)
+	{
+		GLInit();
+	}
+	
+	
 
 	cv::Size winsize(1280,720);
 
-	window = GLCreateWindow(winsize);
-
+	if (!HasWindow)
+	{
+		window = GLCreateWindow(winsize);
+		HasWindow = true;
+	}
 	// Create and compile our GLSL program from the shaders
-	programID = GLLoadShaders( shaderfolder + "vertexshader.vs", shaderfolder + "fragmentshader.fs" );
+	ShaderProgram.LoadShader(shaderfolder + "vertexshader.vs", shaderfolder + "fragmentshader.fs");
 
-	glGenVertexArrays(1, &VertexArrayID);
-	glBindVertexArray(VertexArrayID);
+	if (!HasInit)
+	{
+		glGenVertexArrays(1, &VertexArrayID);
+		glBindVertexArray(VertexArrayID);
+		HasInit = true;
+	}
+	LoadModels();
 
-	robot.BindMesh();
-	arena.BindMesh();
-	brio.BindMesh();
-	axis.BindMesh();
 	//cout << "OpenGL init done!" << endl;
 }
 
@@ -318,36 +295,22 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 	// Up vector : perpendicular to both direction and right
 	glm::vec3 up = glm::cross(right, direction);
 
-	int winwidth, winheight;
-	glfwGetWindowSize(window, &winwidth, &winheight);
-
-	glm::mat4 CameraMatrix = glm::lookAt(
-		cameraPosition,
-		cameraPosition+direction,
-		up
-	);
-
-	glm::mat4 projectionMatrix = glm::perspective(
-		glm::radians(FoV),						// The vertical Field of View, in radians
-		(float) winwidth / (float)winheight,	//Aspect ratio
-		0.01f,									// Near clipping plane.
-		100.0f									// Far clipping plane.
-	);
-
-	glm::mat4 VPMatrix = projectionMatrix * CameraMatrix;
+	glm::mat4 VPMatrix = GetVPMatrix(direction, up);
 
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(programID);
+	glUseProgram(ShaderProgram.ProgramID);
 
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP"); //projection matrix handle
-	GLuint TextureSamplerID  = glGetUniformLocation(programID, "TextureSampler"); //texture sampler handle
+	GLuint MatrixID = glGetUniformLocation(ShaderProgram.ProgramID, "MVP"); //projection matrix handle
+	GLuint TextureSamplerID  = glGetUniformLocation(ShaderProgram.ProgramID, "TextureSampler"); //texture sampler handle
 	glUniform1i(TextureSamplerID, 0); //set texture sampler to use texture 0
-	GLuint ParameterID = glGetUniformLocation(programID, "Parameters");
+	GLuint ParameterID = glGetUniformLocation(ShaderProgram.ProgramID, "Parameters");
+	GLuint ScaleID = glGetUniformLocation(ShaderProgram.ProgramID, "scale");
 
 
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &VPMatrix[0][0]);
-	axis.Draw();
+	glUniform1f(ScaleID, 1);
+	axis.Draw(ParameterID);
 
 	for (int i = 0; i < data.size(); i++)
 	{
@@ -356,6 +319,7 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 		glm::mat4 MVPMatrix = VPMatrix * ObjectMatrix;
 
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVPMatrix[0][0]);
+		glUniform1f(ScaleID, 1);
 		switch (odata.identity.type)
 		{
 		case PacketType::Robot :
@@ -368,6 +332,19 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 		case PacketType::Camera :
 			axis.Draw(ParameterID);
 			brio.Draw(ParameterID);
+			break;
+		case PacketType::Tag :
+			{
+				if (!TagsLoaded)
+				{
+					break;
+				}
+				
+				float scalefactor = (float)odata.identity.metadata/1000.f;
+				glUniform1f(ScaleID, scalefactor);
+				TagTextures[odata.identity.numeral].Draw();
+				tag.Draw(ParameterID, true);
+			}
 			break;
 		
 		default:
@@ -384,16 +361,7 @@ void BoardGL::runTest()
 
 	int winwidth, winheight;
 	glfwGetWindowSize(window, &winwidth, &winheight);
-
-	// Generates a really hard-to-read matrix, but a normal, standard 4x4 matrix nonetheless
-	glm::mat4 projectionMatrix = glm::perspective(
-		glm::radians(FoV),	// The vertical Field of View, in radians: the amount of "zoom". Think "camera lens". Usually between 90° (extra wide) and 30° (quite zoomed in)
-		(float) winwidth / (float)winheight,		// Aspect Ratio. Depends on the size of your window. Notice that 4/3 == 800/600 == 1280/960, sounds familiar ?
-		0.01f,				// Near clipping plane. Keep as big as possible, or you'll get precision issues.
-		100.0f				// Far clipping plane. Keep as little as possible.
-	);
-
-	glm::mat4 CameraMatrix;
+	
 
 	lastTime = glfwGetTime();
 
@@ -406,24 +374,18 @@ void BoardGL::runTest()
 		// Up vector : perpendicular to both direction and right
 		glm::vec3 up = glm::cross(right, direction);
 
-		CameraMatrix = glm::lookAt(
-			cameraPosition,           // Camera is here
-			cameraPosition+direction, // and looks here : at the same position, plus "direction"
-			up                  // Head is up (set to 0,-1,0 to look upside-down)
-		);
-
 		// Clear the screen. It's not mentioned before Tutorial 02, but it can cause flickering, so it's there nonetheless.
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glUseProgram(programID);
+		glUseProgram(ShaderProgram.ProgramID);
 
 
 
-		glm::mat4 MVPmatrix = projectionMatrix * CameraMatrix /** model*/;
+		glm::mat4 MVPmatrix = GetVPMatrix(direction, up) /** model*/;
 
 		// Get a handle for our "MVP" uniform
 		// Only during the initialisation
-		GLuint MatrixID = glGetUniformLocation(programID, "MVP");
+		GLuint MatrixID = glGetUniformLocation(ShaderProgram.ProgramID, "MVP");
 		
 		// Send our transformation to the currently bound shader, in the "MVP" uniform
 		// This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
@@ -438,4 +400,25 @@ void BoardGL::runTest()
 	} // Check if the ESC key was pressed or the window was closed
 	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 		glfwWindowShouldClose(window) == 0 );
+}
+
+void BoardGL::InspectObject(TrackedObject* object)
+{
+	Start();
+
+	LoadTags();
+
+	vector<ObjectData> datas = object->ToObjectData(0);
+	for (size_t i = 0; i < object->markers.size(); i++)
+	{
+		ArucoMarker &m = object->markers[i];
+		ObjectData d;
+		d.identity.numeral = m.number;
+		d.identity.type = PacketType::Tag;
+		d.identity.metadata = m.sideLength*1000;
+		d.location = m.Pose;
+		datas.push_back(d);
+	}
+	while (Tick(datas));
+	
 }

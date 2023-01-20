@@ -154,10 +154,17 @@ int main(int argc, char** argv )
 	if(parser.has("server"))
 	{
 		GetWebsocketConfig().Server = parser.get<bool>("server");
-		cout << "Setting server to " << GetWebsocketConfig().Server << endl;
+		if (GetWebsocketConfig().Server)
+		{
+			cout << "Disregarding config, will be acting as server" <<endl;
+		}
+		else
+		{
+			cout << "Disregarding config, will be acting as client" <<endl;
+		}
 	}
 	
-	CDFRExternalMain(direct, false);
+	CDFRExternalMain(direct, true);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

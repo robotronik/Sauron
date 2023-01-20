@@ -28,9 +28,14 @@ public:
 
 	Texture texture;
 
+	bool LoadMesh(std::string path);
+
+	bool LoadTexture(cv::Mat Texture);
+	bool LoadTexture(std::string path);
+
 	bool LoadFromFile(std::string path, std::string texturepath = "");
 
 	void BindMesh();
 
-	void Draw(GLuint ParamHandle = UINT32_MAX);
+	void Draw(GLuint ParamHandle = UINT32_MAX, bool forceTexture = false);
 };

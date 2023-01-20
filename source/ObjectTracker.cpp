@@ -1,5 +1,6 @@
 #include "ObjectTracker.hpp"
 #include "data/CameraView.hpp"
+#include "math3d.hpp"
 
 using namespace cv;
 using namespace std;
@@ -36,8 +37,26 @@ void ObjectTracker::UnregisterTrackedObject(TrackedObject* object)
 	
 }
 
+struct ResolvedLocation
+{
+	float score;
+	Affine3d AbsLoc;
+	Affine3d CameraLoc;
+
+	ResolvedLocation(float InScore, Affine3d InObjLoc, Affine3d InCamLoc)
+	:score(InScore), AbsLoc(InObjLoc), CameraLoc(InCamLoc)
+	{}
+
+	bool operator<(ResolvedLocation& other)
+	{
+		return score < other.score;
+	}
+};
+
 void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 {
+	
+	
 	/*parallel_for_(Range(0, objects.size()), [&](const Range& range)
 	{*/
 		Range range(0, objects.size());
@@ -48,17 +67,36 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 				continue;
 			}
 			float ScoreMax = 0;
+			TrackedObject* object = objects[ObjIdx];
+			vector<ResolvedLocation> locations;
 			for (int CameraIdx = 0; CameraIdx < CameraData.size(); CameraIdx++)
 			{
 				float AreaThis, ReprojectionErrorThis;
 				Affine3d transformProposed = CameraData[CameraIdx].CameraTransform * objects[ObjIdx]->GetObjectTransform(CameraData[CameraIdx], AreaThis, ReprojectionErrorThis);
 				float ScoreThis = AreaThis/(ReprojectionErrorThis + 0.1);
-				if (ScoreThis > ScoreMax)
-				{
-					objects[ObjIdx]->SetLocation(transformProposed);
-					ScoreMax = ScoreThis;
-				}
+				locations.emplace_back(ScoreThis, transformProposed, CameraData[CameraIdx].CameraTransform);
 			}
+			if (locations.size() == 0)
+			{
+				continue;
+			}
+			if (locations.size() == 1)
+			{
+				object->SetLocation(locations[0].AbsLoc);
+			}
+			std::sort(locations.begin(), locations.end());
+			ResolvedLocation &best = locations[locations.size()-1];
+			ResolvedLocation &secondbest = locations[locations.size()-2];
+			Vec3d l1p = best.AbsLoc.translation();
+			Vec3d l2p = secondbest.AbsLoc.translation();
+			Vec3d l1d = NormaliseVector(best.CameraLoc.translation() - l1p);
+			Vec3d l2d = NormaliseVector(secondbest.CameraLoc.translation() - l2p);
+			Vec3d l1i, l2i;
+			ClosestPointsOnTwoLine(l1p, l1d, l2p, l2d, l1i, l2i);
+			Vec3d locfinal = (l1i*best.score+l2i*secondbest.score)/(best.score + secondbest.score);
+			Affine3d combinedloc = best.AbsLoc;
+			combinedloc.translation(locfinal);
+			object->SetLocation(combinedloc);
 			//cout << "Object " << ObjIdx << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << ScoreMax << endl;
 		}
 	/*});*/

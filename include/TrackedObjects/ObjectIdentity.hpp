@@ -10,7 +10,8 @@ enum class PacketType : uint8_t
 	ReferenceAbsolute   = 0b10,
 	ReferenceRelative   = 0b100,
 	Robot               = 0b1000,
-	Puck                = 0b10000
+	Puck                = 0b10000,
+	Tag					= 0b100000
 };
 
 struct __attribute__ ((packed)) ObjectIdentity

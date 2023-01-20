@@ -37,19 +37,6 @@ void CDFRExternalMain(bool direct, bool v3d)
 		BoardViz2D::InitImages();
 	}
 	
-	#ifdef WITH_VTK
-	viz::Viz3d viz3dhandle("3D board");
-	BoardViz3D board3d(&viz3dhandle);
-	if (v3d)
-	{
-		BoardViz3D::SetupTerrain(viz3dhandle);
-	}
-	#endif
-
-	BoardGL OpenGLBoard;
-	OpenGLBoard.Start();
-	OpenGLBoard.Tick({});
-
 	ObjectTracker tracker;
 
 	StaticObject* boardobj = new StaticObject(false, "board");
@@ -58,6 +45,25 @@ void CDFRExternalMain(bool direct, bool v3d)
 	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot2");
 	tracker.RegisterTrackedObject(robot1);
 	tracker.RegisterTrackedObject(robot2);
+	
+	#ifdef WITH_VTK
+	viz::Viz3d viz3dhandle("3D board");
+	BoardViz3D board3d(&viz3dhandle);
+	if (v3d)
+	{
+		BoardViz3D::SetupTerrain(viz3dhandle);
+	}
+	#else
+	BoardGL OpenGLBoard;
+	//OpenGLBoard.InspectObject(robot1);
+	if (v3d)
+	{
+		OpenGLBoard.Start();
+		OpenGLBoard.Tick({});
+	}
+	#endif
+
+	
 	
 	//track and untrack cameras dynamically
 	CameraMan.PostCameraConnect = [&tracker](ArucoCamera* cam) -> bool
@@ -141,9 +147,9 @@ void CDFRExternalMain(bool direct, bool v3d)
 		double deltaTime = fps.GetDeltaTime();
 		prof.EnterSection(ps++);
 		
-		#ifdef WITH_VTK
 		if (v3d)
 		{
+			#ifdef WITH_VTK
 			if (viz3dhandle.wasStopped())
 			{
 				break;
@@ -153,8 +159,13 @@ void CDFRExternalMain(bool direct, bool v3d)
 			viz::WText fpstext(FrameCounter::GetFPSString(deltaTime), Point2i(100,150));
 			viz3dhandle.showWidget("fps", fpstext);
 			viz3dhandle.spinOnce(1, true);
+			#else
+			if(!OpenGLBoard.Tick(ObjData))
+			{
+				break;
+			}
+			#endif
 		}
-		#endif
 
 		if (direct)
 		{
@@ -172,11 +183,10 @@ void CDFRExternalMain(bool direct, bool v3d)
 			fps.AddFpsToImage(image, deltaTime);
 			//printf("fps : %f\n", fps);
 			imshow("Cameras", image);
-		}
-
-		if(!OpenGLBoard.Tick(ObjData))
-		{
-			break;
+			if (pollKey() == '\e')
+			{
+				break;
+			}
 		}
 		
 		prof.EnterSection(ps++);
@@ -190,10 +200,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		prof.EnterSection(-1);
 		
 		
-		if (pollKey() == '\e')
-		{
-			break;
-		}
+		
 		if (prof.ShouldPrint())
 		{
 			cout << fps.GetFPSString(deltaTime) << endl;
