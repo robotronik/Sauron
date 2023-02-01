@@ -280,12 +280,14 @@ void BoardGL::Start()
 		HasInit = true;
 	}
 	LoadModels();
+	glfwMakeContextCurrent(NULL);
 
 	//cout << "OpenGL init done!" << endl;
 }
 
 bool BoardGL::Tick(std::vector<ObjectData> data)
 {
+	glfwMakeContextCurrent(window);
 	glfwSwapBuffers(window);
 	glfwPollEvents();
 	HandleInputs();
@@ -352,7 +354,11 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 		}
 	}
 
-	return glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS && glfwWindowShouldClose(window) == 0;
+	bool IsDone = glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS && glfwWindowShouldClose(window) == 0;
+
+	glfwMakeContextCurrent(NULL);
+
+	return IsDone;
 }
 
 void BoardGL::runTest()

@@ -1,6 +1,7 @@
 #include "ObjectTracker.hpp"
 #include "data/CameraView.hpp"
 #include "math3d.hpp"
+#include "TrackedObjects/StaticObject.hpp"
 
 using namespace cv;
 using namespace std;
@@ -55,19 +56,25 @@ struct ResolvedLocation
 
 void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 {
-	
-	
 	/*parallel_for_(Range(0, objects.size()), [&](const Range& range)
 	{*/
 		Range range(0, objects.size());
 		for(int ObjIdx = range.start; ObjIdx < range.end; ObjIdx++)
 		{
-			if (objects[ObjIdx]->markers.size() == 0)
+			TrackedObject* object = objects[ObjIdx];
+			if (object->markers.size() == 0)
 			{
 				continue;
 			}
-			float ScoreMax = 0;
-			TrackedObject* object = objects[ObjIdx];
+			StaticObject* objstat = dynamic_cast<StaticObject*>(object);
+			if (objstat != nullptr)
+			{
+				if (!objstat->IsRelative())
+				{
+					continue;
+				}
+			}
+			
 			vector<ResolvedLocation> locations;
 			for (int CameraIdx = 0; CameraIdx < CameraData.size(); CameraIdx++)
 			{
@@ -83,6 +90,8 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 			if (locations.size() == 1)
 			{
 				object->SetLocation(locations[0].AbsLoc);
+				cout << "Object " << object->Name << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << locations[0].score << ", seen by 1 camera" << endl;
+				continue;
 			}
 			std::sort(locations.begin(), locations.end());
 			ResolvedLocation &best = locations[locations.size()-1];
@@ -97,9 +106,9 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 			Affine3d combinedloc = best.AbsLoc;
 			combinedloc.translation(locfinal);
 			object->SetLocation(combinedloc);
-			//cout << "Object " << ObjIdx << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << ScoreMax << endl;
+			cout << "Object " << object->Name << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << best.score+secondbest.score << ", seen by " << locations.size() << " cameras" << endl;
 		}
-	/*});*/
+	//});
 }
 
 void ObjectTracker::SolveLocationsTagByTag(vector<Affine3d>& Cameras, vector<CameraView>& Tags)

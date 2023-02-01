@@ -65,6 +65,7 @@ public:
 	std::vector<ArucoMarker> markers;
 	std::vector<TrackedObject*> childs;
 	bool Unique;
+	bool CoplanarTags;
 	cv::String Name;
 
 protected:
@@ -73,7 +74,9 @@ protected:
 public:
 
 	TrackedObject()
-		:Location(cv::Affine3d::Identity())
+		:Location(cv::Affine3d::Identity()),
+		Unique(true),
+		CoplanarTags(false)
 	{};
 
 	virtual bool SetLocation(cv::Affine3d InLocation);

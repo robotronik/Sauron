@@ -13,6 +13,7 @@ using namespace std;
 StaticObject::StaticObject(bool InRelative, String InName)
 {
 	Unique = true;
+	CoplanarTags = true;
 	Relative = InRelative;
 	Name = InName;
 	const double yamp = 1-0.570, xamp = 1.5-0.575;
@@ -56,7 +57,7 @@ vector<ObjectData> StaticObject::ToObjectData(int BaseNumeral)
 	return {packet};
 }
 
-cv::Affine3d StaticObject::GetObjectTransform(const CameraArucoData& CameraData, float& Surface, float& ReprojectionError)
+/*cv::Affine3d StaticObject::GetObjectTransform(const CameraArucoData& CameraData, float& Surface, float& ReprojectionError)
 {
 	return TrackedObject::GetObjectTransform(CameraData, Surface, ReprojectionError);
 	vector<ArucoViewCameraLocal> SeenMarkers;
@@ -190,4 +191,4 @@ cv::Affine3d StaticObject::GetObjectTransform(const CameraArucoData& CameraData,
 	localTransform = Affine3d(rotationMatrix, tvec) * objectToMarker.inv();
 
 	return localTransform;
-}
+}*/

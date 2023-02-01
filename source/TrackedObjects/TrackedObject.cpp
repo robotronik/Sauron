@@ -261,7 +261,7 @@ Affine3d TrackedObject::GetObjectTransform(const CameraArucoData& CameraData, fl
 	Affine3d localTransform;
 	vector<Point3d> flatobj;
 	vector<Point2f> flatimg;
-	vector<Point2d> flatreproj;
+	//vector<Point2d> flatreproj;
 	flatobj.reserve(nummarkersseen * 4);
 	flatimg.reserve(nummarkersseen * 4);
 	Mat rvec = Mat::zeros(3, 1, CV_64F), tvec = Mat::zeros(3, 1, CV_64F);
@@ -286,12 +286,12 @@ Affine3d TrackedObject::GetObjectTransform(const CameraArucoData& CameraData, fl
 			}
 		}
 		objectToMarker = Affine3d::Identity();
-		flags |= SOLVEPNP_SQPNP;
+		flags |= CoplanarTags ? SOLVEPNP_IPPE : SOLVEPNP_SQPNP;
 	}
 	//Mat distCoeffs = Mat::zeros(4,1, CV_64F); //FIXME
 	const Mat &distCoeffs = CameraData.DistanceCoefficients;
 	solvePnP(flatobj, flatimg, CameraData.CameraMatrix, distCoeffs, rvec, tvec, false, flags);
-	projectPoints(flatobj, rvec, tvec, CameraData.CameraMatrix, distCoeffs, flatreproj);
+	solvePnPRefineLM(flatobj, flatimg, CameraData.CameraMatrix, distCoeffs, rvec, tvec);
 	ReprojectionError = ReprojectSeenMarkers(SeenMarkers, rvec, tvec, CameraData);
 	
 	ReprojectionError /= nummarkersseen;

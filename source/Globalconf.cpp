@@ -250,10 +250,23 @@ Size GetScreenSize()
 	if (screensize == Size(-1,-1))
 	{
 		Display* d = XOpenDisplay(NULL);
+		if (!d)
+		{
+			screensize = Size(0,0);
+			goto faileddisp;
+		}
 		Screen*  s = DefaultScreenOfDisplay(d);
+		if (!s)
+		{
+			screensize = Size(0,0);
+			goto failedscreen;
+		}
+		
 		screensize = Size(s->width, s->height);
+		failedscreen:
 		XCloseDisplay(d);
 	}
+	faileddisp:
 	return screensize;
 	#else
 	return Size(1920,1080);

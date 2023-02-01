@@ -142,7 +142,9 @@ void CDFRExternalMain(bool direct, bool v3d)
 		tracker.SolveLocationsPerObject(arucoDatas);
 		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
 
+		Vec3d diff = robot1->GetLocation().translation() - robot2->GetLocation().translation(); 
 		//cout << "Robot 1 location : " << robot1->GetLocation().translation() << endl;
+		//cout << "Distance robot 1-2: " << sqrt(diff.ddot(diff)) << " m" <<endl;
 
 		double deltaTime = fps.GetDeltaTime();
 		prof.EnterSection(ps++);
@@ -193,7 +195,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		if (GetWebsocketConfig().Server)
 		{
 			sender.SendPacket(GrabTick, ObjData);
-			//this_thread::sleep_for(chrono::milliseconds(100));
+			this_thread::sleep_for(chrono::milliseconds(1000));
 		}
 		
 		
@@ -201,11 +203,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 		
 		
 		
-		if (prof.ShouldPrint())
+		/*if (prof.ShouldPrint())
 		{
 			cout << fps.GetFPSString(deltaTime) << endl;
 			prof.PrintIfShould();
-		}	
+		}	*/
 		
 	}
 }
