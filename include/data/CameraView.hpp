@@ -4,7 +4,9 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 
-
+//Represents a single tag seen by a camera in 3D space
+//Deprecated
+//Score is based on area
 struct CameraView
 {
 	int Camera;
@@ -26,6 +28,7 @@ struct CameraView
 	{}
 };
 
+//Represents all the aruco tags seen by a single camera, as well as it's data need to recontruct objects in 3D space
 struct CameraArucoData
 {
 	cv::Affine3d CameraTransform;

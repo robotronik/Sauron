@@ -25,13 +25,13 @@ private:
 	static Mesh robot, arena, puck, brio, axis, tag;
 	static std::vector<Texture> TagTextures;
 
-	void GLInit();
-	GLFWwindow* GLCreateWindow(cv::Size windowsize);
+	void GLInit(); //Start OpenGL
+	GLFWwindow* GLCreateWindow(cv::Size windowsize); //Create a window
 
 	glm::mat4 GetVPMatrix(glm::vec3 forward, glm::vec3 up);
 public:
 
-	bool LookingAround = false;
+	bool LookingAround = false; //Is left button pressed ?
 	float FoV = 60.f, mouseSpeed = 0.002f;
 	float horizontalAngle = 0.f, verticalAngle = -M_PI_2;
 	glm::vec3 cameraPosition = glm::vec3(0,0,2);
@@ -42,17 +42,17 @@ public:
 
 	glm::vec3 GetRightVector();
 
-	void HandleInputs();
+	void HandleInputs(); //Move camera and stuff
 
 	void LoadModels();
 	void LoadTags();
 	
 	void Start();
 
-	bool Tick(std::vector<ObjectData> data);
+	bool Tick(std::vector<ObjectData> data); //Run display loop for these objects, returns false if exit was asked.
 
 	void runTest();
 
-	void InspectObject(TrackedObject* object);
+	void InspectObject(TrackedObject* object); //Dsiplay this objects and it's tags
 
 };

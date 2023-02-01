@@ -8,6 +8,7 @@
 #include "data/senders/Encoders/GenericEncoder.hpp"
 #include "data/senders/Transport/GenericTransport.hpp"
 
+//Class that chains an encoder and a transport layer.
 class PositionDataSender
 {
 protected:

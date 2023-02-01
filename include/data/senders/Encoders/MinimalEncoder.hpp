@@ -27,6 +27,8 @@ struct __attribute__ ((packed)) PositionPacket //palets sur l'arène uniquement
 	{};
 };
 
+//An encoder that only sends X, Y and rot according to the struct above.
+//Position is in "Victor" coordinates (mm, degrees)
 class MinimalEncoder : public GenericEncoder
 {
 public:

@@ -4,6 +4,7 @@
 
 /*
  * This class is solely used to replace the Point2d of OpenCV because it's trash for any sort of math
+ * Used for 2D math in Board2D
  */
 template<class T>
 struct FVector2D

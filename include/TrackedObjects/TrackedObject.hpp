@@ -16,9 +16,9 @@ struct CameraView;
 struct CameraArucoData;
 struct ArucoMarker
 {
-	float sideLength;
-	int number;
-	cv::Affine3d Pose;
+	float sideLength; //Length of a side of the tags. Tag should be square
+	int number; //Number of the tag on it
+	cv::Affine3d Pose; //Location relative to it's parent
 
 	std::vector<cv::Point3d> ObjectPointsNoOffset;
 
@@ -50,6 +50,9 @@ struct ArucoMarker
 	#endif
 };
 
+//Base class for any object that should be tracked in 3D space.
+//Can hold other object and/or Aruco tags
+//Aruco tags will be registered to this object when added to the object tracker
 class TrackedObject
 {
 public: 
@@ -62,11 +65,11 @@ public:
 		int IndexInCameraData; //index where this marker was found in the camera
 	};
 public:
-	std::vector<ArucoMarker> markers;
-	std::vector<TrackedObject*> childs;
-	bool Unique;
-	bool CoplanarTags;
-	cv::String Name;
+	std::vector<ArucoMarker> markers; //Should be populated before adding to the Object Tracker
+	std::vector<TrackedObject*> childs; //Should be populated before adding to the Object Tracker
+	bool Unique; //Can there be only one ?
+	bool CoplanarTags; //Are all tags on the same plane ? If true, then it uses IPPE solve when multiple tags are located
+	cv::String Name; //Display name
 
 protected:
 	cv::Affine3d Location;

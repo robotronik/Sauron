@@ -3,13 +3,14 @@
 #include <opencv2/core.hpp>
 #include "TrackedObjects/TrackedObject.hpp"
 
-
+//Class that handles the objects, and holds information about each tag's size
+//Registered objects will have their locations solved and turned into a vector of ObjectData for display and data sending
 class ObjectTracker
 {
 private:
 	std::vector<TrackedObject*> objects;
-	int ArucoMap[100];
-	float ArucoSizes[100];
+	int ArucoMap[100]; //Which object owns the tag at index i ? objects[ArucoMap[TagID]]
+	float ArucoSizes[100]; //Size of the aruco tag
 
 public:
 	ObjectTracker(/* args */);
@@ -19,7 +20,7 @@ public:
 
 	void UnregisterTrackedObject(TrackedObject* object);
 
-	void SolveLocationsPerObject(std::vector<CameraArucoData>& CameraData);
+	void SolveLocationsPerObject(const std::vector<CameraArucoData>& CameraData);
 
 	void SolveLocationsTagByTag(std::vector<cv::Affine3d>& Cameras, std::vector<CameraView>& Tags);
 

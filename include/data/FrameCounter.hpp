@@ -5,6 +5,7 @@
 
 using std::string;
 
+//Helper class to count frames per second
 class FrameCounter
 {
 private:

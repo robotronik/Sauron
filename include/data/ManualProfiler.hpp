@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 
+//Helper class to gather execution times of different parts of code and average over multiple cycles. It's a poor man's profiler.
 class ManualProfiler
 {
 private:

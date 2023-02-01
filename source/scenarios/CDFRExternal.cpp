@@ -195,7 +195,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		if (GetWebsocketConfig().Server)
 		{
 			sender.SendPacket(GrabTick, ObjData);
-			this_thread::sleep_for(chrono::milliseconds(1000));
+			//this_thread::sleep_for(chrono::milliseconds(1000));
 		}
 		
 		

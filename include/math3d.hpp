@@ -4,12 +4,16 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
 
+//Gives the new size to use to fit inside the target size while keeping aspect ratio
 cv::Size ScaleToFit(cv::Size original, cv::Size target);
 
+//Give the new rect to fit in the target rect while keeping aspect ratio
 cv::Rect ScaleToFit(cv::Size original, cv::Rect target);
 
+//Get the FOV of a camera from it's matrix, in radians
 cv::Size2d GetCameraFOV(cv::Size Resolution, cv::Mat CameraMatrix);
 
+//Matrix to turn an image from it's image space (X right, Y down) to world space
 cv::Matx33d ImageToWorld();
 
 template<class AType, class BType>
@@ -46,6 +50,7 @@ cv::Matx33d MakeRotationFromZY(cv::Vec3d Z, cv::Vec3d Y);
 
 cv::Matx31d GetAxis(cv::Matx33d rotation, int i);
 
+//Get the rotation around Z axis
 double GetRotZ(cv::Matx33d rotation);
 
 bool ClosestPointsOnTwoLine(cv::Vec3d Line1Orig, cv::Vec3d Line1Dir, cv::Vec3d Line2Orig, cv::Vec3d Line2Dir, cv::Vec3d& Line1Point, cv::Vec3d& Line2Point);

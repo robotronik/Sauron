@@ -9,6 +9,8 @@
 
 class Camera;
 
+//A 3D visualiser wrapper bsed on VTK
+//Deprecated
 class BoardViz3D
 {
 private:

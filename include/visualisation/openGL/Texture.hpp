@@ -20,7 +20,7 @@ public:
 
 	void LoadFromFile(std::string path);
 
-	void Bind();
+	void Bind(); //Send the texutre to the GPU
 
-	void Draw();
+	void Draw(); //Set the texture as the currently active texture
 };

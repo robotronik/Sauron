@@ -25,6 +25,6 @@
 using namespace cv;
 using namespace std;
 
-
+//Camera steps pipeline
 void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, 
 	Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry);

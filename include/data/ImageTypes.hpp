@@ -141,6 +141,7 @@ public:
 
 class ObjectTracker;
 
+//Represents all the steps that a frame can take though the pipeline, as well as the data associated with the image
 class BufferedFrame
 {
 

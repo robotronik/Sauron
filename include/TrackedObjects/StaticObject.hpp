@@ -2,6 +2,7 @@
 
 #include "TrackedObjects/TrackedObject.hpp"
 
+//An object that doesn't move and has a location fixed on the terrain, such as the table or the basket
 class StaticObject : public TrackedObject
 {
 private:

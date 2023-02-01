@@ -2,6 +2,7 @@
 
 #include "TrackedObjects/TrackedObject.hpp"
 
+//A cube with 4 tags, one on each side
 class TrackerCube : public TrackedObject
 {
 private:

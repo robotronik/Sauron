@@ -54,8 +54,40 @@ struct ResolvedLocation
 	}
 };
 
-void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
+void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& CameraData)
 {
+	const int NumCameras = CameraData.size();
+	const int NumObjects = objects.size();
+	vector<CameraArucoData> BaseCameraData;
+	BaseCameraData.resize(NumCameras);
+	for (int i = 0; i < NumCameras; i++)
+	{
+		BaseCameraData[i].CameraMatrix = CameraData[i].CameraMatrix;
+		BaseCameraData[i].CameraTransform = CameraData[i].CameraTransform;
+		BaseCameraData[i].DistanceCoefficients = CameraData[i].DistanceCoefficients;
+		BaseCameraData[i].SourceCamera = CameraData[i].SourceCamera;
+	}
+	
+	vector<vector<CameraArucoData>> DataPerObject;
+	DataPerObject.resize(NumObjects, BaseCameraData);
+	
+	for (int i = 0; i < NumCameras; i++)
+	{
+		const CameraArucoData& data = CameraData[i];
+		for (int j = 0; j < data.TagIDs.size(); j++)
+		{
+			int tagidx = data.TagIDs[j];
+			int objectidx = ArucoMap[tagidx];
+			if (objectidx < 0 || objectidx >= NumObjects)
+			{
+				continue;
+			}
+			DataPerObject[objectidx][i].TagCorners.push_back(data.TagCorners[j]);
+			DataPerObject[objectidx][i].TagIDs.push_back(tagidx);
+		}
+		
+	}
+	
 	/*parallel_for_(Range(0, objects.size()), [&](const Range& range)
 	{*/
 		Range range(0, objects.size());
@@ -69,7 +101,7 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 			StaticObject* objstat = dynamic_cast<StaticObject*>(object);
 			if (objstat != nullptr)
 			{
-				if (!objstat->IsRelative())
+				if (!objstat->IsRelative()) //Do not solve for static non-relative objects
 				{
 					continue;
 				}
@@ -78,10 +110,19 @@ void ObjectTracker::SolveLocationsPerObject(vector<CameraArucoData>& CameraData)
 			vector<ResolvedLocation> locations;
 			for (int CameraIdx = 0; CameraIdx < CameraData.size(); CameraIdx++)
 			{
+				const CameraArucoData& ThisCameraData = DataPerObject[ObjIdx][CameraIdx];
+				if (ThisCameraData.TagIDs.size() == 0)
+				{
+					continue;
+				}
 				float AreaThis, ReprojectionErrorThis;
-				Affine3d transformProposed = CameraData[CameraIdx].CameraTransform * objects[ObjIdx]->GetObjectTransform(CameraData[CameraIdx], AreaThis, ReprojectionErrorThis);
+				Affine3d transformProposed = ThisCameraData.CameraTransform * objects[ObjIdx]->GetObjectTransform(ThisCameraData, AreaThis, ReprojectionErrorThis);
 				float ScoreThis = AreaThis/(ReprojectionErrorThis + 0.1);
-				locations.emplace_back(ScoreThis, transformProposed, CameraData[CameraIdx].CameraTransform);
+				if (ScoreThis < 1 || ReprojectionErrorThis == INFINITY)
+				{
+					continue;
+				}
+				locations.emplace_back(ScoreThis, transformProposed, ThisCameraData.CameraTransform);
 			}
 			if (locations.size() == 0)
 			{
@@ -173,8 +214,14 @@ void ObjectTracker::RegisterArucoRecursive(TrackedObject* object, int index)
 {
 	for (int i = 0; i < object->markers.size(); i++)
 	{
-		ArucoMap[object->markers[i].number] = index;
-		ArucoSizes[object->markers[i].number] = object->markers[i].sideLength;
+		const ArucoMarker& marker = object->markers[i];
+		int MarkerID = marker.number;
+		if (ArucoMap[MarkerID] != -1)
+		{
+			cerr << "WARNING Overwriting Marker data/owner for marker index " << MarkerID << " with object " << object->Name << endl;
+		}
+		ArucoMap[MarkerID] = index;
+		ArucoSizes[MarkerID] = marker.sideLength;
 	}
 	for (int i = 0; i < object->childs.size(); i++)
 	{

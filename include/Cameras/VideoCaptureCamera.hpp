@@ -38,13 +38,14 @@ public:
 	//Start the camera
 	virtual bool StartFeed() override;
 
-	//Lock a frame to be capture at this time
+	//Lock a frame to be captured at this time
 	//This allow for simultaneous capture
 	virtual bool Grab(int BufferIndex) override;
 
 	//Retrieve or read a frame
 	virtual bool Read(int BufferIndex) override;
 
+	//Useful to simulate the pipeline, inject an image as if the camera had captured it.
 	virtual bool InjectImage(int BufferIndex, cv::UMat& frame) override;
 
 };

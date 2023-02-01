@@ -22,7 +22,9 @@ struct EncodedData
 };
 
 
-
+//Base encoder class : The encoders transform the object data into bytes that can be sent to other clients though transports, following strict rules
+//They should live at least as long as the connection, as they keep their own time.
+//They also filter what type of object to send on the network
 class GenericEncoder
 {
 	int64 CreationTick;

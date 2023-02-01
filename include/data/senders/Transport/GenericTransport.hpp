@@ -1,5 +1,6 @@
 #pragma once
 
+//Generic class to send data to other programs
 class GenericTransport
 {
 private:

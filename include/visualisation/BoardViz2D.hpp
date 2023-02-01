@@ -23,6 +23,8 @@ using BoardImageType = cv::cuda::GpuMat;
 using BoardImageType = cv::UMat;
 #endif
 
+//A 2D visualizer class mostly based on CUDA
+//Deprecated
 class BoardViz2D : public OutputImage
 {
 public:

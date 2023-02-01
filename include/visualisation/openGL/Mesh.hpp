@@ -8,6 +8,7 @@
 
 #include "visualisation/openGL/Texture.hpp"
 
+//A 3D model
 struct Mesh
 {
 private:
@@ -35,7 +36,7 @@ public:
 
 	bool LoadFromFile(std::string path, std::string texturepath = "");
 
-	void BindMesh();
+	void BindMesh(); //Create buffers for OpenGL
 
-	void Draw(GLuint ParamHandle = UINT32_MAX, bool forceTexture = false);
+	void Draw(GLuint ParamHandle = UINT32_MAX, bool forceTexture = false); //Draw the mesh
 };

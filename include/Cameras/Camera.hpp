@@ -36,7 +36,13 @@ std::vector<CameraClass*> StartCameras(std::vector<CameraSettings> CameraSetting
 	return Cameras;
 }
 
-
+//Base class for cameras, it's a wrapper
+//Has location and functions to get an image
+//Handles everything related to the image it has captured
+//Will never throw an error
+//Made to increase an error counter if a communication error occurs
+//Can be destroyed
+//Should not have any aruco tags attached
 class Camera : public OutputImage, public TrackedObject
 {
 protected:
@@ -125,6 +131,8 @@ public:
 	virtual cv::Affine3d GetObjectTransform(const CameraArucoData& CameraData, float& Surface, float& ReprojectionError) override;
 };
 
+
+//Extension of the base camera class to allow for aruco detection
 class ArucoCamera : public Camera
 {
 
@@ -143,15 +151,20 @@ public:
 	//Gather detected markers in screen space
 	virtual bool GetMarkerData(int BufferIndex, CameraArucoData& CameraData);
 
+	//Used to debug reprojected location of markers in 2D debug (direct)
 	void SetMarkerReprojection(int MarkerIndex, const std::vector<cv::Point2d> &Corners);
 
 	//convert corner pixel location into 3D space relative to camera
-	//Arco tags must be registered into the registry beforehand to have correct depth
+	//Arco tags must be registered into the registry beforehand to have correct depth (registry handles the tag size)
+	//Deprecated function as now the tags have their location resolved by the object
 	virtual void SolveMarkers(int BufferIndex, int CameraIdx, ObjectTracker* registry);
 
+	//Get the number of seen markers in 3D space
+	//Deprecated
 	virtual int GetCameraViewsSize(int BufferIndex);
 
-	//Gather detected markers in 3D space relative to the camera
+	//Gather detected markers in 3D space relative to the camera created by SolveMarkers
+	//Deprecated
 	virtual bool GetCameraViews(int BufferIndex, std::vector<CameraView>& views);
 
 };
