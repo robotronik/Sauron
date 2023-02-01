@@ -111,14 +111,14 @@ void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& Camer
 			for (int CameraIdx = 0; CameraIdx < CameraData.size(); CameraIdx++)
 			{
 				const CameraArucoData& ThisCameraData = DataPerObject[ObjIdx][CameraIdx];
-				if (ThisCameraData.TagIDs.size() == 0)
+				if (ThisCameraData.TagIDs.size() == 0) //Not seen
 				{
 					continue;
 				}
 				float AreaThis, ReprojectionErrorThis;
 				Affine3d transformProposed = ThisCameraData.CameraTransform * objects[ObjIdx]->GetObjectTransform(ThisCameraData, AreaThis, ReprojectionErrorThis);
 				float ScoreThis = AreaThis/(ReprojectionErrorThis + 0.1);
-				if (ScoreThis < 1 || ReprojectionErrorThis == INFINITY)
+				if (ScoreThis < 1 || ReprojectionErrorThis == INFINITY) //Bad solve or not seen
 				{
 					continue;
 				}
