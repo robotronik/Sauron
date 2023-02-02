@@ -1,13 +1,10 @@
+#refresh admin unlock
 sudo -v
 
-#!/bin/bash
+#exit script if fail
 set -e
 
-# reveal the CUDA location
 cd ..
-sudo sh -c "echo '/usr/local/cuda/lib64' >> /etc/ld.so.conf.d/nvidia-tegra.conf"
-sudo ldconfig
-
 
 # set install dir
 cd opencv/
@@ -17,12 +14,16 @@ cd build
 #-D WITH_NVCUVID=ON \ potetiellement pour cudacodec::VideoCapture
 #-D VIDEOIO_PLUGIN_LIST=ffmpeg,gstreamer \
 #-D EIGEN_INCLUDE_PATH=/usr/include/eigen3 \
+
+# Ajouter les lignes suivantes si compilation avec CUDA/CuDNN
 #-D WITH_CUDA=OFF \
-#-D WITH_CUDNN=OFF \
 #-D WITH_NVCUVID=ON \
 #-D WITH_CUBLAS=ON \
 #-D CUDA_FAST_MATH=ON \
+#-D WITH_CUDNN=OFF \
 #-D OPENCV_DNN_CUDA=ON \
+
+
 #-D PYTHON3_PACKAGES_PATH=/usr/lib/python3/dist-packages \
 
 # CUDA_ARCH_BIN : 53 pour la jetson Nano, 50,52,61,75,86 pour les GPU

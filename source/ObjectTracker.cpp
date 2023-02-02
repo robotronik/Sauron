@@ -85,9 +85,7 @@ void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& Camer
 			DataPerObject[objectidx][i].TagCorners.push_back(data.TagCorners[j]);
 			DataPerObject[objectidx][i].TagIDs.push_back(tagidx);
 		}
-		
 	}
-	
 	/*parallel_for_(Range(0, objects.size()), [&](const Range& range)
 	{*/
 		Range range(0, objects.size());

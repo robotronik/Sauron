@@ -2,101 +2,19 @@
 ou comment dire que c'est le code pour la machine vision de la CDFR
 
 # Installation
-Utiliser Ubuntu
+Utiliser Ubuntu (c'est ce que j'utilise, ca matcherai probablement aussi avec d'autre distros)
 
-Avoir Cuda d'installé et dans le PATH (optionnel)
+Si tu veux installer OpenCV avec CUDA, voici le lien pour installer Cuda
 
 https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#introduction
 
-Script une commande : `./DownloadRepos.sh` (ca installe absolument tout sauf cuda)
+Pour les neural networks, il faut aussi CuDNN, là y'a un package sur Ubuntu qui installe tout.
 
+Script une commande : `./DownloadRepos.sh` 
+En fait ce script lance le script `./InstallRequirement.sh` qui installe toutes les libs nécessaires, 
+puis télécharge les repos OpenCV et OpenCV_contrib puis lance `./IntallOpenCV.sh`.
 
-
-Pour les dépendences, y'a soit un script `./InstallRequirement.sh`.
-
-Télécharger opencv, renommer le ficher extrait en `opencv` et opencv_contrib en `opencv_contrib` et les mettre dans home, créer un fichier build dans `~/opencv`
-
-## VTK (optionnel)
-
-Télécharger [libvtk](https://vtk.org/download/), et extraire les sources dans home
-OpenCV 4.5.5 marche pas avec VTK 8.2.
-VTK 9.1 requiert un CMake supérieur à 3.12, sur Ubuntu 2.18 il est possible que le cmake soit pas à jour, si c'est la cas, suivre [ce tuto](https://askubuntu.com/questions/355565/how-do-i-install-the-latest-version-of-cmake-from-the-command-line)
-
-Attention : Certaines versions de VTK ne marcheront pas avec OpenCV, rester sur les release et non les rc (release candidate)
-
-Créer un fichier pour le build de vtk : `mkdir buildvtk`
-
-`cd buildvtk`
-
-Puis build vtk : 
-```console
-cmake -G Ninja -D CMAKE_BUILD_TYPE=RELEASE ../
-ninja
-sudo ninja install
-```
-
-VTK permet d'avoir le module Viz et Viz3D.
-
-## FFmpeg (OpenCV marche pas avec chez moi, ca sert à rien, mais au cas où je le laisse)
-
-Il faut suivre ça 
-
-https://docs.nvidia.com/video-technologies/video-codec-sdk/ffmpeg-with-nvidia-gpu/
-
-Selon la distro, sauf que il faut utiliser ffmpeg version 4.4 (demande pas pk), et si tu as 
-
-`ERROR: failed checking for nvcc.`, 
-
-rajoute `--nvccflags="-gencode arch=compute_52,code=sm_52 -O2"`
-
-## Compiler le module nvdec pour GStreamer (ca sert pas non plus)
-
-Ca sert pas non plus parceque nvdec permet de décoder qu'un seul stream à la fois.
-
-On va commencer par installer le video codec de NVidia :
-
-[ça se dl ici](https://developer.nvidia.com/nvidia-video-codec-sdk/download)
-
-Il va falloir copier les fichiers pour l'installer.
-D'abord on extrait tout à un endroit, puis on lance un terminal dans le fichier extrait.
-Ensuite :
-```console
-cp Interface/* /usr/local/cuda/include
-cp Lib/linux/stubs/x86_64/* /usr/local/cuda/lib64/stubs
-```
-
-Puis après, il faut trouver la version de gstreamer installée : `gst-launch-1.0 --version`, pour moi c'est 1.16.2
-
-Ensuite, dans un dossier, faire 
-```console
-git clone git://anongit.freedesktop.org/git/gstreamer/gst-plugins-bad
-cd gst-plugins-bad
-git checkout <version>
-```
-git checkout permet de changer de branche pour prendre la version de gst-plugins-bad qui correspond à notre version de gstreamer, remplacer \<version\> par ce qu'on avait trouvé 3 commandes avant.
-
-Ensuite, on va faire :
-```
-./autogen.sh --disable-gtk-doc --with-cuda-prefix="/usr/local/cuda" --enable-hls=no
-cd sys/nvdec
-make
-sudo make install
-sudo cp .libs/libgstnvdec.so /usr/lib/x86_64-linux-gnu/gstreamer-1.0/
-```
-C'est pas grave si pendant le make il se plaint de libdrm, balec.
-Ensuite on clear le cache de gstreamer : `rm -r ~/.cache/gstreamer-1.0`
-
-Maintenant, `gst-inspect1.0 nvdec` va dire tout plein de trucs si tout est bon
-
-Y'a moyen de faire la même chose sur nvenc si besoin.
-
-## Ok c'est tout
-
-Juste avant d'executer le script, il va falloir le modifier un peu : 
-Aux alentours de la ligne 53, y'a `CUDA_ARCH_BIN = un truc` : il faut modifier le `un truc` en fonction de ce que ta carte graphique dispose, (ce lien te dit le niveau de compute
-puis une fois tout ca, exécuter InstallOpenCV.sh
-
-`./InstallOpenCV.sh`
+Si tu veux utiliser Cuda ou CuDNN, il faudra modifier un peu `InstallOpenCV.sh` 
 
 # Coder dessus
 Je recommande VisualStudioCode
@@ -135,3 +53,19 @@ L'exécutable se trouvera dans le fichier Build
 
 Surtout si c'est dans le cas où les caméras sont connectées en MIPI-CSI, des fois le daemon plante : éxecuter
 `systemctl restart nvargus-daemon.service`
+
+`jtop` : comme htop (un gestionnaire de taches) mais pour jetson, c'est un peu mieux
+
+# Commandes utiles
+
+`v4l2-ctl --list-devices` : liste les caméras et leurs interfaces. V4L2 est le module linux aui s'occupe des caméras et autres sources vidéo.
+
+`v4l2-ctl -d<n> --list-formats-ext` : liste les formats supportés par la caméra à l'interface `/dev/video<n>`
+
+`htop` : utilisation du cpu
+
+`nvtop` : utilisation de la carte graphique nvidia
+
+`gst-inspect-1.0` : liste les modules gstreamer disponibles. GStreamer est un système d'ouverture de flux vidéo avec des modules
+
+`gst-launch-1.0` : permet de lancer une pipeline gstreamer pour tester.
