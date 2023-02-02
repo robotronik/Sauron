@@ -133,18 +133,6 @@ int main(int argc, char** argv )
 	
 	vector<CameraSettings> CamSett = CameraManager::autoDetectCameras(GetCaptureMethod(), GetCaptureConfig().filter, "", false);
 
-	/*vector<CameraSettings> CamSettings;
-	CameraSettings fakedcam;
-	fakedcam.Resolution = GetFrameSize();
-	fakedcam.Framerate = GetCaptureFramerate();
-	fakedcam.FramerateDivider = 1;
-	fakedcam.BufferSize = 2;
-	fakedcam.StartType = CameraStartType::GSTREAMER_NVARGUS;
-	CamSettings.push_back(fakedcam);*/
-	//BoardGL OpenGLBoard;
-	//OpenGLBoard.runTest();
-	//return EXIT_SUCCESS;
-
 	if (CamSett.size() == 0)
 	{
 		cerr << "No cameras detected" << endl;

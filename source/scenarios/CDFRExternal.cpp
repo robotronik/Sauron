@@ -41,8 +41,8 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 	StaticObject* boardobj = new StaticObject(false, "board");
 	tracker.RegisterTrackedObject(boardobj); 
-	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot1");
-	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, Point3d(0.0952, 0.0952, 0), "Robot2");
+	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, 0.0952, "Robot1");
+	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, 0.0952, "Robot2");
 	tracker.RegisterTrackedObject(robot1);
 	tracker.RegisterTrackedObject(robot2);
 	
@@ -55,7 +55,8 @@ void CDFRExternalMain(bool direct, bool v3d)
 	}
 	#else
 	BoardGL OpenGLBoard;
-	//OpenGLBoard.InspectObject(robot1);
+	//TrackerCube* testcube = new TrackerCube({51, 52, 53, 54, 55}, 0.05, 85.065/1000.0, "test");
+	//OpenGLBoard.InspectObject(testcube);
 	if (v3d)
 	{
 		OpenGLBoard.Start();

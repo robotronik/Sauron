@@ -235,7 +235,7 @@ void BoardGL::LoadTags()
 	{
 		return;
 	}
-	
+	glfwMakeContextCurrent(window);
 	tag.LoadFromFile("../assets/tag.obj");
 	tag.BindMesh();
 
@@ -251,6 +251,7 @@ void BoardGL::LoadTags()
 		TagTextures[i].Bind();
 	}
 	TagsLoaded = true;
+	glfwMakeContextCurrent(NULL);
 }
 
 void BoardGL::Start()
