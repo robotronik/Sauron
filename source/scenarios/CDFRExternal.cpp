@@ -20,8 +20,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 	prof.NameSection(ps++, "Position packet");
 	CameraManager CameraMan(GetCaptureMethod(), GetCaptureConfig().filter, false);
 
-	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
-	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
+	auto& Detector = GetArucoDetector();
 
 	vector<ArucoCamera*>& physicalCameras = CameraMan.Cameras;
 
@@ -103,7 +102,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		CameraMan.Tick<VideoCaptureCamera>();
 		prof.EnterSection(ps++);
 		int64 GrabTick = getTickCount();
-		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
+		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), Detector, &tracker);
 		prof.EnterSection(ps++);
 		int NumCams = physicalCameras.size();
 		vector<CameraArucoData> arucoDatas;

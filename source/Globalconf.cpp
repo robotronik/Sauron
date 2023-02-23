@@ -4,14 +4,14 @@
 
 #include <iostream>
 #include <libconfig.h++>
-#include <X11/Xlib.h> //window resolution
+#include <XScreenSize.hpp>
 
 using namespace std;
 using namespace cv;
 using namespace libconfig;
 
-Ptr<aruco::Dictionary> dict;
-Ptr<aruco::DetectorParameters> parameters;
+aruco::ArucoDetector ArucoDet;
+bool HasDetector = false;
 vector<UMat> MarkerImages;
 
 bool ConfigInitialised = false;
@@ -21,7 +21,11 @@ Config cfg;
 CaptureConfig CaptureCfg = {(int)CameraStartType::GSTREAMER_CPU, Size(1920,1080), Rect(0,0,0,0), 1.f, 60, 1, ""};
 WebsocketConfig WebsocketCfg = {"eth1", true, true, "127.0.0.1", 42069};
 vector<InternalCameraConfig> CamerasInternal;
-Size screensize(-1,-1);
+CalibrationConfig CamCalConf = {40, Size(6,4), 0.25, Size2d(4.96, 3.72)};
+
+bool HasScreenData = false;
+Size screenresolution(-1,-1);
+Size2d screensize(-1,-1);
 
 template<class T>
 Setting& EnsureExistCfg(Setting& Location, const char *FieldName, Setting::Type SettingType, T DefaultValue)
@@ -176,6 +180,7 @@ void InitConfig()
 		CopyDefaultCfg(Websocket, "Port", Setting::TypeInt, WebsocketCfg.Port);
 	}
 
+
 	Setting& CamerasSett = EnsureExistCfg(root, "InternalCameras", Setting::Type::TypeList, 0);
 	{
 		CamerasInternal.clear();
@@ -216,61 +221,73 @@ void InitConfig()
 		}
 	}
 
+	Setting& CalibSett = EnsureExistCfg(root, "Calibration", Setting::Type::TypeGroup, 0);
+	{
+		CopyDefaultCfg(CalibSett, "EdgeSize", Setting::TypeFloat, CamCalConf.SquareSideLength);
+		CopyDefaultCfg(CalibSett, "NumIntersectionsX", Setting::TypeInt, CamCalConf.NumIntersections.width);
+		CopyDefaultCfg(CalibSett, "NumIntersectionsY", Setting::TypeInt, CamCalConf.NumIntersections.height);
+		CopyDefaultCfg(CalibSett, "ReprojectionErrorThreshold", Setting::TypeFloat, CamCalConf.CalibrationThreshold);
+
+		CopyDefaultCfg(CalibSett, "SensorSizeX", Setting::TypeFloat, CamCalConf.SensorSize.width);
+		CopyDefaultCfg(CalibSett, "SensorSizeY", Setting::TypeFloat, CamCalConf.SensorSize.height);
+	}
+
 	cfg.writeFile("../config.cfg");
 	
 	ConfigInitialised = true;
 	
 }
 
-Ptr<aruco::Dictionary> GetArucoDict(){
-	if (dict.empty())
+aruco::ArucoDetector& GetArucoDetector(){
+	if (!HasDetector)
 	{
-		dict = aruco::getPredefinedDictionary(aruco::DICT_4X4_100);
+		auto dict = aruco::getPredefinedDictionary(aruco::DICT_4X4_100);
+		auto params = aruco::DetectorParameters();
+		params.cornerRefinementMethod = GetArucoReduction() == GetFrameSize() ? aruco::CORNER_REFINE_CONTOUR : aruco::CORNER_REFINE_NONE;
+		params.useAruco3Detection = false;
+		auto refparams = aruco::RefineParameters();
+		ArucoDet = aruco::ArucoDetector(dict, params, refparams);
 	}
-	return dict;
+	return ArucoDet;
 }
 
-Ptr<aruco::DetectorParameters> GetArucoParams()
+void GetScreenData()
 {
-	if (parameters.empty())
+	if (HasScreenData)
 	{
-		parameters = aruco::DetectorParameters::create();
-		parameters->cornerRefinementMethod = GetArucoReduction() == GetFrameSize() ? aruco::CORNER_REFINE_CONTOUR : aruco::CORNER_REFINE_NONE;
-		parameters->useAruco3Detection = false;
-		//parameters->adaptiveThreshWinSizeMin = 5;
-		//parameters->adaptiveThreshWinSizeMax = 5;
-		//parameters->adaptiveThreshWinSizeStep = 10;
+		return;
 	}
-	return parameters;
-}
-
-Size GetScreenSize()
-{
+	HasScreenData = true;
 	#ifdef WITH_X11
-	if (screensize == Size(-1,-1))
+	screenresolution = Size(0,0);
+	screensize = Size2d(0,0);
+	XScreenSize::Getter sizeGetter;
+	auto outputs  = sizeGetter.getOutputs();
+	if (outputs.size()>0)
 	{
-		Display* d = XOpenDisplay(NULL);
-		if (!d)
-		{
-			screensize = Size(0,0);
-			goto faileddisp;
-		}
-		Screen*  s = DefaultScreenOfDisplay(d);
-		if (!s)
-		{
-			screensize = Size(0,0);
-			goto failedscreen;
-		}
-		
-		screensize = Size(s->width, s->height);
-		failedscreen:
-		XCloseDisplay(d);
+		auto selected = outputs[0];
+		screenresolution.width = selected.width;
+		screenresolution.height = selected.height;
+		screensize.width = selected.mmWidth;
+		screensize.height = selected.mmHeight;
 	}
-	faileddisp:
-	return screensize;
+	
 	#else
-	return Size(1920,1080);
+	screenresolution = Size(1920,1080);
+	screensize = Size2d(-1,-1);
 	#endif
+}
+
+Size GetScreenResolution()
+{
+	GetScreenData();
+	return screenresolution;
+}
+
+Size2d GetScreenSize()
+{
+	GetScreenData();
+	return screensize;
 }
 
 Size GetFrameSize()
@@ -320,7 +337,9 @@ UMat& GetArucoImage(int id)
 	}
 	if (MarkerImages[id].empty())
 	{
-		aruco::drawMarker(GetArucoDict(), id, 256, MarkerImages[id], 1);
+		auto& det = GetArucoDetector();
+		auto& dict = det.getDictionary();
+		aruco::generateImageMarker(dict, id, 256, MarkerImages[id], 1);
 	}
 	return MarkerImages[id];
 }
@@ -335,4 +354,10 @@ vector<InternalCameraConfig>& GetInternalCameraPositionsConfig()
 {
 	InitConfig();
 	return CamerasInternal;
+}
+
+CalibrationConfig& GetCalibrationConfig()
+{
+	InitConfig();
+	return CamCalConf;
 }

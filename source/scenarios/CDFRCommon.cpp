@@ -3,7 +3,7 @@
 
 ManualProfiler mp("Pipeline ", {"Read", "Undistort", "Rescale", "ArucoDetect", "ArucoSolve"});
 
-void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params, ObjectTracker* registry)
+void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, aruco::ArucoDetector& Detector, ObjectTracker* registry)
 {
 	int numCams = Cameras.size();
 	vector<uint8_t> BufToCamMap;
@@ -39,7 +39,7 @@ void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, Ptr<ar
 			localprof.EnterSection(pf++);
 			cam->RescaleFrames(BufferIdx);
 			localprof.EnterSection(pf++);
-			cam->detectMarkers(BufferIdx, dict, params);
+			cam->detectMarkers(BufferIdx, Detector);
 			//localprof.EnterSection(pf++);
 			//cam->SolveMarkers(BufferIdx, CamIdx, registry);
 			localprof.EnterSection(-1);

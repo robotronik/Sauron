@@ -66,7 +66,8 @@ int main(int argc, char** argv )
 	ocl::setUseOpenCL(true);
 	#ifdef WITH_X11
 	XInitThreads();
-	cout << "Detected screen resolution : " << GetScreenSize() << endl;
+	cout << "Detected screen resolution : " << GetScreenResolution() << endl;
+	cout << "Detected screen size : " << GetScreenSize() << endl;
 	#endif
 	if (parser.has("cuda"))
 	{
@@ -92,13 +93,14 @@ int main(int argc, char** argv )
 	}
 	if (parser.has("marker"))
 	{
-		Ptr<aruco::Dictionary> dictionary = GetArucoDict();
+		auto& detector = GetArucoDetector();
+		auto& dictionary = detector.getDictionary();
 		std::filesystem::create_directory("../markers");
 		//mkdir("../markers", 0777);
 		for (int i = 0; i < 100; i++)
 		{
 			UMat markerImage;
-			aruco::drawMarker(dictionary, i, 1024, markerImage, 1);
+			aruco::generateImageMarker(dictionary, i, 1024, markerImage, 1);
 			char buffer[30];
 			snprintf(buffer, sizeof(buffer)/sizeof(char), "../markers/marker%d.png", i);
 			imwrite(buffer, markerImage);
@@ -111,18 +113,24 @@ int main(int argc, char** argv )
 		const int MarkerSizePx = MarkerSizeMM * PixelsPerMM;
 		const int MarkerSizeWhiteBorderPx = MarkerSizeWhiteBorderMM * PixelsPerMM;
 		const int SeparationPixels = 10;
-		Size GridMarkers(5,8);
+		const Size GridMarkers(8,5);
 		gigaimage = Mat(GridMarkers*MarkerSizeWhiteBorderPx + (GridMarkers+Size(1,1))*SeparationPixels, CV_8UC1, Scalar(0));
 		cout << "Combined image should be scaled to " << (float)gigaimage.cols/PixelsPerMM << "x" << (float)gigaimage.rows/PixelsPerMM << "mm" << endl;
 		int markeridx = 51;
+		const int endmarker = markeridx + GridMarkers.height*GridMarkers.width;
 		for (int j = 0; j < GridMarkers.height; j++)
 		{
 			for (int i = 0; i < GridMarkers.width; i++)
 			{
+				if (markeridx >= 100)
+				{
+					break;
+				}
+				
 				Point markerwhitestart(SeparationPixels + (SeparationPixels+MarkerSizeWhiteBorderPx)*i, SeparationPixels + (SeparationPixels+MarkerSizeWhiteBorderPx)*j);
 				rectangle(gigaimage, markerwhitestart, markerwhitestart + Point(MarkerSizeWhiteBorderPx-1, MarkerSizeWhiteBorderPx-1), Scalar(255), FILLED);
 				Point markerStart = markerwhitestart + Point(1,1) * ((MarkerSizeWhiteBorderPx-MarkerSizePx)/2);
-				aruco::drawMarker(dictionary, markeridx, MarkerSizePx, gigaimage(Rect(markerStart, Size(MarkerSizePx, MarkerSizePx))), 1);
+				aruco::generateImageMarker(dictionary, markeridx, MarkerSizePx, gigaimage(Rect(markerStart, Size(MarkerSizePx, MarkerSizePx))), 1);
 				markeridx++;
 			}
 			

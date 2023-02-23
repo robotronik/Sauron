@@ -31,8 +31,6 @@ using namespace std;
 using namespace cv;
 namespace fs = std::filesystem;
 
-const float CalibrationSquareEdge = 0.04; //m
-const Size CheckerSize = Size(6, 4);
 const String TempImgPath = "TempCalib";
 const String CalibWindowName = "Calibration";
 
@@ -47,27 +45,6 @@ void CreateKnownBoardPos(Size BoardSize, float squareEdgeLength, vector<Point3f>
 			corners.push_back(Point3f(j * squareEdgeLength, i * squareEdgeLength, 0));
 		}   
 	}
-}
-
-void GetChessboardCorners(vector<UMat> images, vector<vector<Point2f>>& corners, bool showResults = false)
-{
-	for (int i = 0; i < images.size(); i++)
-	{
-		vector<Point2f> cornersBuffer;
-		bool found = findChessboardCorners(images[i], CheckerSize, cornersBuffer, CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
-		if (found)
-		{
-			corners.push_back(cornersBuffer);
-		}
-
-		if (showResults)
-		{
-			drawChessboardCorners(images[i], CheckerSize, cornersBuffer, found);
-			imshow("Looking for corners", images[i]);
-			waitKey(0);
-		}
-	}
-	
 }
 
 void CameraCalibration(vector<vector<Point2f>> CheckerboardImageSpacePoints, vector<string> ImagePaths, Size BoardSize, Size resolution, float SquareEdgeLength, Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamToCalibrate)
@@ -112,6 +89,8 @@ int LastIdx(vector<String> Pathes)
 
 Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamToCalibrate)
 {
+	auto calconf = GetCalibrationConfig();
+	Size CheckerSize = calconf.NumIntersections;
 	vector<String> pathes = CalibrationImages();
 	size_t numpathes = pathes.size();
 	vector<vector<Point2f>> savedPoints;
@@ -179,7 +158,7 @@ Size ReadAndCalibrate(Mat& CameraMatrix, Mat& DistanceCoefficients, Camera* CamT
 	if (sizes.size() == 1)
 	{
 		UMat image = imread(pathes[0], IMREAD_COLOR).getUMat(AccessFlag::ACCESS_READ);
-		CameraCalibration(savedPoints, pathes, CheckerSize, sizes[0], CalibrationSquareEdge, CameraMatrix, DistanceCoefficients, CamToCalibrate);
+		CameraCalibration(savedPoints, pathes, CheckerSize, sizes[0], calconf.SquareSideLength/1000.f, CameraMatrix, DistanceCoefficients, CamToCalibrate);
 		cout << "Calibration done ! Matrix : " << CameraMatrix << " / Distance Coefficients : " << DistanceCoefficients << endl;
 		return sizes[0];
 	}
@@ -214,9 +193,29 @@ bool ShowUndistorted = false;
 void CalibrationWorker()
 {
 	Calibrating = true;
-	ReadAndCalibrate(CameraMatrix, distanceCoefficients, CamToCalib);
-	CamToCalib->SetCalibrationSetting(CameraMatrix, distanceCoefficients);
-	double apertureWidth = 4.96, apertureHeight = 3.72, fovx, fovy, focalLength, aspectRatio;
+	Size resolution = ReadAndCalibrate(CameraMatrix, distanceCoefficients, CamToCalib);
+	if (CamToCalib->connected)
+	{
+		CamToCalib->SetCalibrationSetting(CameraMatrix, distanceCoefficients);
+		if (resolution != CamToCalib->GetCameraSettings().Resolution)
+		{
+			cerr << "WARNING : Resolution of the stored images isn't the same as the resolution of the live camera!" <<endl;
+		}
+		
+	}
+	else
+	{
+		auto CamSett = CamToCalib->GetCameraSettings();
+		CamSett.Resolution = resolution;
+		CamSett.CameraMatrix = CameraMatrix;
+		CamSett.distanceCoeffs = distanceCoefficients;
+		CamSett.DeviceInfo.device_description = "NoCam";
+		CamToCalib->SetCameraSetting(CamSett);
+	}
+	
+	
+	auto calconf = GetCalibrationConfig();
+	double apertureWidth = calconf.SensorSize.width, apertureHeight = calconf.SensorSize.height, fovx, fovy, focalLength, aspectRatio;
 	Point2d principalPoint;
 	calibrationMatrixValues(CameraMatrix, CamToCalib->GetCameraSettings().Resolution, apertureWidth, apertureHeight, fovx, fovy, focalLength, principalPoint, aspectRatio);
 	cout << "Computed camera parameters for sensor of size " << apertureWidth << "x" << apertureHeight <<"mm :" << endl
@@ -231,6 +230,7 @@ void CalibrationWorker()
 bool docalibration(CameraSettings CamSett)
 {
 	bool HasCamera = CamSett.IsValid();
+	CamSett.BufferSize = 1;
 
 	CamToCalib = new VideoCaptureCamera(CamSett);
 	if (HasCamera)
@@ -246,28 +246,37 @@ bool docalibration(CameraSettings CamSett)
 	
 	fs::create_directory(TempImgPath);
 
+	namedWindow(CalibWindowName, WINDOW_NORMAL);
+	setWindowProperty(CalibWindowName, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+
 	if (!HasCamera)
 	{
 		cout << "No camera was found, calibrating from saved images" << endl;
-		Size framesize = ReadAndCalibrate(CameraMatrix, distanceCoefficients, CamToCalib);
-		writeCameraParameters("NoCam", CameraMatrix, distanceCoefficients, framesize);
+		CalibrationWorker();
 		vector<String> pathes = CalibrationImages();
 		for (int i = 0; i < pathes.size(); i++)
 		{
-
+			Mat image = imread(pathes[i]);
+			UMat image2, undist;
+			image.copyTo(image2);
+			CamToCalib->InjectImage(0, image2);
+			CamToCalib->Undistort(0);
+			CamToCalib->GetFrameUndistorted(0, undist);
+			imshow(CalibWindowName, undist);
+			waitKey(1000);
 		}
 		
 		return true;
 	}
 	CamToCalib->StartFeed();
 
+
 	cout << "Camera calibration mode !" << endl
 	<< "Press [space] to capture an image, [enter] to calibrate, [a] to capture an image every " << 1/AutoCaptureFramerate << "s" <<endl
-	<< "Take pictures of a checkerboard with " << CheckerSize.width+1 << "x" << CheckerSize.height+1 << " squares of side length " << CalibrationSquareEdge*1000 << "mm" << endl
+	<< "Take pictures of a checkerboard with " << GetCalibrationConfig().NumIntersections.width+1 << "x" << GetCalibrationConfig().NumIntersections.height+1 << " squares of side length " << GetCalibrationConfig().SquareSideLength << "mm" << endl
 	<< "Images will be saved in folder " << TempImgPath << endl;
 
-	namedWindow(CalibWindowName, WINDOW_NORMAL);
-	setWindowProperty(CalibWindowName, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
+	
 	//startWindowThread();
 	
 	vector<String> pathes = CalibrationImages();
@@ -312,14 +321,14 @@ bool docalibration(CameraSettings CamSett)
 			CamToCalib->GetFrame(0, frame);
 		}
 		
-		if (GetScreenSize() != CamSett.Resolution)
+		if (GetScreenResolution() != CamSett.Resolution)
 		{
 			#ifdef WITH_CUDA
 			gpuframe.upload(frame, resizestream);
-			cuda::resize(gpuframe, gpuresized, GetScreenSize(), 0, 0, 1, resizestream);
+			cuda::resize(gpuframe, gpuresized, GetScreenResolution(), 0, 0, 1, resizestream);
 			gpuresized.download(frameresized);
 			#else
-			resize(frame, frameresized, GetScreenSize());
+			resize(frame, frameresized, GetScreenResolution());
 			#endif
 		}
 		else

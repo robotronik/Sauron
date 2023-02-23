@@ -78,6 +78,7 @@ target_link_libraries(${PROJECT_NAME}
 	${OpenCV_LIBS} 
 	stdc++fs
 	${X11_LIBRARIES}
+    Xrandr
 	config++
     pthread
     ${OPENGL_LIBRARIES} 

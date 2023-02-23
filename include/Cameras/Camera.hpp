@@ -74,7 +74,7 @@ public:
 		HasUndistortionMaps(false),
 		errors(0),
 		connected(false),
-		FrameBuffer()
+		FrameBuffer(InSettings.BufferSize)
 	{
 	}
 
@@ -146,7 +146,7 @@ public:
 	virtual void RescaleFrames(int BufferIdx);
 
 	//detect markers using the lower resolutions and improve accuracy using the higher-resolution image
-	virtual void detectMarkers(int BufferIndex, cv::Ptr<cv::aruco::Dictionary> dict, cv::Ptr<cv::aruco::DetectorParameters> params);
+	virtual void detectMarkers(int BufferIndex, cv::aruco::ArucoDetector& Detector);
 
 	//Gather detected markers in screen space
 	virtual bool GetMarkerData(int BufferIndex, CameraArucoData& CameraData);

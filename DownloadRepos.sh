@@ -19,12 +19,16 @@ sudo usermod -a -G dialout $USER
 
 git clone https://github.com/opencv/opencv_contrib.git || echo "Failed to clone opencv_contrib : already exists"
 cd opencv_contrib/
-git checkout 4.6.0
+git reset --hard
+git fetch
+git checkout 4.7.0
 sudo -v
 cd ..
 git clone https://github.com/opencv/opencv.git || echo "Failed to clone opencv : already exists"
 cd opencv/
-git checkout 4.6.0
+git reset --hard
+git fetch
+git checkout 4.7.0
 sudo -v
 cd ..
 cd $STARTDIR

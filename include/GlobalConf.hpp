@@ -19,11 +19,12 @@ struct CaptureConfig
 	std::string filter; //filter to block or allow certain cameras. If camera name contains the filter string, it's allowed. If the filter string starts with a !, the filter is inverted
 };
 
-cv::Ptr<cv::aruco::Dictionary> GetArucoDict();
+cv::aruco::ArucoDetector& GetArucoDetector();
 
-cv::Ptr<cv::aruco::DetectorParameters> GetArucoParams();
+cv::Size GetScreenResolution();
 
-cv::Size GetScreenSize();
+//Returns the physical size of the screen in mm
+cv::Size2d GetScreenSize();
 
 cv::Size GetFrameSize();
 
@@ -59,3 +60,13 @@ struct InternalCameraConfig
 };
 
 std::vector<InternalCameraConfig>& GetInternalCameraPositionsConfig();
+
+struct CalibrationConfig
+{
+	float SquareSideLength; //mm
+	cv::Size NumIntersections; //number of square intersections, ex for a chess board is 7x7
+	float CalibrationThreshold; //Stop when reprojection error is at this level or below (px)
+	cv::Size2d SensorSize; //only used for stats
+};
+
+CalibrationConfig& GetCalibrationConfig();

@@ -240,11 +240,12 @@ void BoardGL::LoadTags()
 	tag.BindMesh();
 
 	TagTextures.resize(100);
-	auto dict = GetArucoDict();
+	auto& det = GetArucoDetector();
+	auto& dict = det.getDictionary();
 	for (int i = 0; i < 100; i++)
 	{
 		cv::Mat texture;
-		cv::aruco::drawMarker(dict, i, 60, texture, 1);
+		cv::aruco::generateImageMarker(dict, i, 60, texture, 1);
 		cv::cvtColor(texture, TagTextures[i].Texture, cv::COLOR_GRAY2BGR);
 		//TagTextures[i].Texture = texture;
 		TagTextures[i].valid = true;
@@ -340,6 +341,7 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 			{
 				if (!TagsLoaded)
 				{
+					cerr << "WARNING Tried to display tags but tags aren't loaded" << endl;
 					break;
 				}
 				

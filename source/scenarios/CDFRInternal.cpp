@@ -12,7 +12,7 @@ void CDFRInternalMain(bool direct, bool v3d)
 
 	CameraManager CameraMan(GetCaptureMethod(), GetCaptureConfig().filter, false);
 
-	Ptr<aruco::Dictionary> dictionary = GetArucoDict();
+	auto& Detector = GetArucoDetector();
 
 	vector<ArucoCamera*> &physicalCameras = CameraMan.Cameras;
 	if (direct)
@@ -33,7 +33,6 @@ void CDFRInternalMain(bool direct, bool v3d)
 	BoardGL OpenGLBoard;
 	OpenGLBoard.Start();
 	
-	Ptr<aruco::DetectorParameters> parameters = GetArucoParams();
 	FrameCounter fps;
 
 	ObjectTracker tracker;
@@ -58,7 +57,7 @@ void CDFRInternalMain(bool direct, bool v3d)
 	for (;;)
 	{
 		CameraMan.Tick<VideoCaptureCamera>();
-		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), dictionary, parameters, &tracker);
+		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), Detector, &tracker);
 
 		//cout << "Pipeline took " << TimePipeline << "s to run" << endl;
 		

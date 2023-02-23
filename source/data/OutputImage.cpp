@@ -51,7 +51,7 @@ Size findSplit(Size screensize, Size targetAspect, int numscreen)
 
 UMat ConcatCameras(int BufferIndex, vector<OutputImage*> Cameras, int NumCams)
 {
-	Size screensize = GetScreenSize();
+	Size screensize = GetScreenResolution();
 	UMat concatenated(screensize, CV_8UC3, Scalar(0,0,255));
 	Size splits = findSplit(screensize, GetFrameSize(), Cameras.size());
 	int &rows = splits.height, &columns = splits.width;

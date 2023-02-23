@@ -165,7 +165,7 @@ void Camera::Calibrate(vector<vector<Point3f>> objectPoints,
 	vector<Mat> &rvecs, vector<Mat> &tvecs)
 {
 	int numimagesstart = objectPoints.size();
-	float threshold = 0.25;
+	float threshold = GetCalibrationConfig().CalibrationThreshold;
 	for (int i = 0; i < numimagesstart; i++)
 	{
 		int numimages = objectPoints.size();
@@ -362,7 +362,7 @@ void ArucoCamera::RescaleFrames(int BufferIdx)
 	#endif
 }
 
-void ArucoCamera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Ptr<aruco::DetectorParameters> params)
+void ArucoCamera::detectMarkers(int BufferIndex, aruco::ArucoDetector& Detector)
 {
 	BufferedFrame& buff = FrameBuffer[BufferIndex];
 
@@ -385,7 +385,7 @@ void ArucoCamera::detectMarkers(int BufferIndex, Ptr<aruco::Dictionary> dict, Pt
 	IDs.clear();
 	buff.reprojectedCorners.clear();
 
-	aruco::detectMarkers(buff.RescaledFrame.CPUFrame, dict, corners, IDs, params);
+	Detector.detectMarkers(buff.RescaledFrame.CPUFrame, corners, IDs);
 
 	buff.reprojectedCorners.resize(IDs.size());
 
