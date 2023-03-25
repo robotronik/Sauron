@@ -124,6 +124,14 @@ double GetRotZ(Matx33d rotation)
 	return atan2(Xaxis(1,0), Xaxis(0,0));
 }
 
+Vec3d ProjectPointOnLine(Vec3d Point, Vec3d LineOrig, Vec3d LineDir)
+{
+	Vec3d LineToPoint = Point-LineOrig;
+	double dist = LineDir.ddot(LineToPoint);
+	Vec3d projected = LineOrig + dist * LineDir;
+	return projected;
+}
+
 bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Vec3d Line2Dir, Vec3d &Line1Point, Vec3d &Line2Point)
 {
 	/*https://math.stackexchange.com/questions/846054/closest-points-on-two-line-segments*/

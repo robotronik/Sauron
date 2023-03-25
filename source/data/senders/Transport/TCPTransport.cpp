@@ -54,10 +54,10 @@ void TCPTransport::CreateSocket()
 		cerr << "TCP Failed to create socket, port " << Port << endl;
 	}
 	
-	if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, Interface.c_str(), Interface.size()))
+	/*if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, Interface.c_str(), Interface.size()))
 	{
 		cerr << "TCP Failed to bind tcp interface : " << errno << endl;
-	}
+	}*/
 	LowerLatency(sockfd);
 	
 }

@@ -56,6 +56,7 @@ void CDFRInternalMain(bool direct, bool v3d)
 	int hassent = 0;
 	for (;;)
 	{
+		double deltaTime = fps.GetDeltaTime();
 		CameraMan.Tick<VideoCaptureCamera>();
 		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), Detector, &tracker);
 
@@ -74,9 +75,8 @@ void CDFRInternalMain(bool direct, bool v3d)
 			}
 		}
 		
-		tracker.SolveLocationsPerObject(arucoDatas);
+		tracker.SolveLocationsPerObject(arucoDatas, deltaTime);
 		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
-		double deltaTime = fps.GetDeltaTime();
 
 		#ifdef WITH_VTK
 		if (v3d)

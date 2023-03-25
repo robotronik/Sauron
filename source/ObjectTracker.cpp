@@ -54,7 +54,7 @@ struct ResolvedLocation
 	}
 };
 
-void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& CameraData)
+void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& CameraData, double dt)
 {
 	const int NumCameras = CameraData.size();
 	const int NumObjects = objects.size();
@@ -128,8 +128,8 @@ void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& Camer
 			}
 			if (locations.size() == 1)
 			{
-				object->SetLocation(locations[0].AbsLoc);
-				cout << "Object " << object->Name << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << locations[0].score << ", seen by 1 camera" << endl;
+				object->SetLocation(locations[0].AbsLoc, dt);
+				//cout << "Object " << object->Name << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << locations[0].score << ", seen by 1 camera" << endl;
 				continue;
 			}
 			std::sort(locations.begin(), locations.end());
@@ -144,8 +144,8 @@ void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& Camer
 			Vec3d locfinal = (l1i*best.score+l2i*secondbest.score)/(best.score + secondbest.score);
 			Affine3d combinedloc = best.AbsLoc;
 			combinedloc.translation(locfinal);
-			object->SetLocation(combinedloc);
-			cout << "Object " << object->Name << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << best.score+secondbest.score << ", seen by " << locations.size() << " cameras" << endl;
+			object->SetLocation(combinedloc, dt);
+			//cout << "Object " << object->Name << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << best.score+secondbest.score << ", seen by " << locations.size() << " cameras" << endl;
 		}
 	//});
 }

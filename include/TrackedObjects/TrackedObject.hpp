@@ -7,6 +7,7 @@
 #ifdef WITH_VTK
 #include <opencv2/viz.hpp>
 #endif
+#include <opencv2/video/tracking.hpp>
 #include "visualisation/BoardViz2D.hpp"
 #include "TrackedObjects/ObjectIdentity.hpp"
 
@@ -73,16 +74,13 @@ public:
 
 protected:
 	cv::Affine3d Location;
+	cv::KalmanFilter LocationFilter;
 
 public:
 
-	TrackedObject()
-		:Location(cv::Affine3d::Identity()),
-		Unique(true),
-		CoplanarTags(false)
-	{};
+	TrackedObject();
 
-	virtual bool SetLocation(cv::Affine3d InLocation);
+	virtual bool SetLocation(cv::Affine3d InLocation, double dt);
 	virtual cv::Affine3d GetLocation();
 
 	virtual cv::Affine3d ResolveLocation(std::vector<cv::Affine3d>& Cameras, std::vector<CameraView>& views);

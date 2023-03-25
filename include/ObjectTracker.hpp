@@ -20,7 +20,7 @@ public:
 
 	void UnregisterTrackedObject(TrackedObject* object);
 
-	void SolveLocationsPerObject(const std::vector<CameraArucoData>& CameraData);
+	void SolveLocationsPerObject(const std::vector<CameraArucoData>& CameraData, double dt);
 
 	void SolveLocationsTagByTag(std::vector<cv::Affine3d>& Cameras, std::vector<CameraView>& Tags);
 

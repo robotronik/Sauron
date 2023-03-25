@@ -41,9 +41,9 @@ void CDFRExternalMain(bool direct, bool v3d)
 	StaticObject* boardobj = new StaticObject(false, "board");
 	tracker.RegisterTrackedObject(boardobj); 
 	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, 0.0952, "Robot1");
-	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, 0.0952, "Robot2");
+	//TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, 0.0952, "Robot2");
 	tracker.RegisterTrackedObject(robot1);
-	tracker.RegisterTrackedObject(robot2);
+	//tracker.RegisterTrackedObject(robot2);
 	
 	#ifdef WITH_VTK
 	viz::Viz3d viz3dhandle("3D board");
@@ -97,6 +97,8 @@ void CDFRExternalMain(bool direct, bool v3d)
 	int lastmarker = 0;
 	for (;;)
 	{
+
+		double deltaTime = fps.GetDeltaTime();
 		ps = 0;
 		prof.EnterSection(ps++);
 		CameraMan.Tick<VideoCaptureCamera>();
@@ -128,7 +130,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			if (surface > 0)
 			{
 
-				cam->SetLocation(boardloc.inv());
+				cam->SetLocation(boardloc.inv(), deltaTime);
 				hasposition = true;
 			}
 			arucoDatas[i].CameraTransform = cam->GetLocation();
@@ -139,14 +141,13 @@ void CDFRExternalMain(bool direct, bool v3d)
 			
 		}
 		prof.EnterSection(ps++);
-		tracker.SolveLocationsPerObject(arucoDatas);
+		tracker.SolveLocationsPerObject(arucoDatas, deltaTime);
 		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
 
-		Vec3d diff = robot1->GetLocation().translation() - robot2->GetLocation().translation(); 
+		//Vec3d diff = robot1->GetLocation().translation() - robot2->GetLocation().translation(); 
 		//cout << "Robot 1 location : " << robot1->GetLocation().translation() << endl;
 		//cout << "Distance robot 1-2: " << sqrt(diff.ddot(diff)) << " m" <<endl;
 
-		double deltaTime = fps.GetDeltaTime();
 		prof.EnterSection(ps++);
 		
 		if (v3d)

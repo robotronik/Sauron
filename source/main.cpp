@@ -22,6 +22,7 @@
 #include "visualisation/BoardGL.hpp"
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRInternal.hpp"
+#include "slam.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -46,6 +47,7 @@ int main(int argc, char** argv )
 		"{board          |      | runs boardview test}"
 		"{opengl ogl     |      | runs opengl test}"
 		"{server s       |      | force server/client state}"
+		"{slam           |      | runs slam for object mapping, using saved images and calibration}"
 		;
 	CommandLineParser parser(argc, argv, keys);
 
@@ -181,6 +183,13 @@ int main(int argc, char** argv )
 		}
 	}
 	
+	if (parser.has("slam") || true)
+	{
+		SLAMSolve();
+		exit(EXIT_SUCCESS);
+	}
+	
+
 	CDFRExternalMain(direct, true);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor

@@ -132,7 +132,7 @@ public:
 							{
 								if (DeviceInFilter(devices[i], campos[j].CameraName))
 								{
-									cam->SetLocation(campos[j].LocationRelative);
+									cam->SetLocation(campos[j].LocationRelative, 0);
 									std::cout << "Using stored position " << j << " for camera " << devices[i].device_description << std::endl;
 									break;
 								}

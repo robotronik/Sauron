@@ -202,6 +202,10 @@ void Camera::Calibrate(vector<vector<Point3f>> objectPoints,
 			imagePaths.resize(numimages-1);
 		}
 	}
+	for (int i = 0; i < imagePaths.size(); i++)
+	{
+		cout<< imagePaths[i] << " remains"<< endl; 
+	}
 	
 	
 }

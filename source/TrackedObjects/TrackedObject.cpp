@@ -42,9 +42,46 @@ void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, S
 }
 #endif
 
-bool TrackedObject::SetLocation(Affine3d InLocation)
+TrackedObject::TrackedObject()
+	:Unique(true),
+	CoplanarTags(false),
+	Location(cv::Affine3d::Identity())
 {
+	LocationFilter = cv::KalmanFilter(9, 3, 0, CV_64F);
+
+	cv::setIdentity(LocationFilter.processNoiseCov, cv::Scalar::all(1e-5));
+	cv::setIdentity(LocationFilter.measurementNoiseCov, cv::Scalar::all(1e-1));
+	cv::setIdentity(LocationFilter.errorCovPost, cv::Scalar::all(1));
+};
+
+bool TrackedObject::SetLocation(Affine3d InLocation, double dt)
+{
+	LocationFilter.transitionMatrix = Mat::eye(9,9, CV_64F);
+	double v = dt*10;
+	double a = v*v/2;
+	for (int i = 0; i < 6; i++)
+	{
+		LocationFilter.transitionMatrix.at<double>(i, 3+i) = v;
+	}
+	for (int i = 0; i < 3; i++)
+	{
+		LocationFilter.transitionMatrix.at<double>(i, 6+i) = a;
+		LocationFilter.measurementMatrix.at<double>(i, i) = 1;
+		LocationFilter.measurementMatrix.at<double>(i, 3+i) = v;
+		LocationFilter.measurementMatrix.at<double>(i, 6+i) = a;
+	}
+	//cout << "Transition matrix: " << endl << LocationFilter.transitionMatrix << endl;
+	//cout << "Measurement matrix: " << endl << LocationFilter.measurementMatrix << endl;
+	Mat locmat(InLocation.translation());
+	//cout << "locmat: " <<endl << locmat << endl;
+	LocationFilter.correct(locmat);
+	LocationFilter.predict();
+	Mat correctmat = LocationFilter.statePost;
+	//cout << "corrmat: " << correctmat.t() << endl;
+	Vec3d correctloc(correctmat.rowRange(0, 3));
+
 	Location = InLocation;
+	Location.translation(correctloc);
 	return true;
 }
 
@@ -237,7 +274,10 @@ float TrackedObject::ReprojectSeenMarkers(const std::vector<ArucoViewCameraLocal
 	{
 		vector<Point2d> cornersreproj;
 		projectPoints(MarkersSeen[i].LocalMarkerCorners, rvec, tvec, CameraData.CameraMatrix, CameraData.DistanceCoefficients, cornersreproj);
-		CameraData.SourceCamera->SetMarkerReprojection(MarkersSeen[i].IndexInCameraData, cornersreproj);
+		if (CameraData.SourceCamera)
+		{
+			CameraData.SourceCamera->SetMarkerReprojection(MarkersSeen[i].IndexInCameraData, cornersreproj);
+		}
 		for (int j = 0; j < 4; j++)
 		{
 			Point2f diff = MarkersSeen[i].CameraCornerPositions[j] - Point2f(cornersreproj[j]);
