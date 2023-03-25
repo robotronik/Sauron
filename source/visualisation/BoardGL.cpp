@@ -23,7 +23,7 @@ bool BoardGL::HasInit = false;
 GLuint BoardGL::VertexArrayID;
 Shader BoardGL::ShaderProgram;
 bool BoardGL::MeshesLoaded = false, BoardGL::TagsLoaded = false;
-Mesh BoardGL::robot, BoardGL::arena, BoardGL::axis, BoardGL::brio, BoardGL::puck, BoardGL::tag;
+Mesh BoardGL::robot, BoardGL::arena, BoardGL::axis, BoardGL::brio, BoardGL::puck, BoardGL::tag, BoardGL::skybox;
 std::vector<Texture> BoardGL::TagTextures;
 
 string shaderfolder = "../source/visualisation/openGL/";
@@ -221,10 +221,12 @@ void BoardGL::LoadModels()
 		arena.LoadFromFile("../assets/board.obj", "../assets/boardtex.png");
 		brio.LoadFromFile("../assets/BRIO.obj");
 		axis.LoadFromFile("../assets/axis.obj");
+		skybox.LoadFromFile("../assets/skybox.obj");
 		robot.BindMesh();
 		arena.BindMesh();
 		brio.BindMesh();
 		axis.BindMesh();
+		skybox.BindMesh();
 		MeshesLoaded = true;
 	}
 	
@@ -315,6 +317,7 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &VPMatrix[0][0]);
 	glUniform1f(ScaleID, 1);
 	axis.Draw(ParameterID);
+	skybox.Draw(ParameterID);
 
 	for (int i = 0; i < data.size(); i++)
 	{

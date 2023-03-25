@@ -22,7 +22,7 @@ private:
 	static Shader ShaderProgram;
 
 	static bool MeshesLoaded, TagsLoaded;
-	static Mesh robot, arena, puck, brio, axis, tag;
+	static Mesh robot, arena, puck, brio, axis, tag, skybox;
 	static std::vector<Texture> TagTextures;
 
 	void GLInit(); //Start OpenGL
