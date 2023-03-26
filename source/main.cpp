@@ -183,7 +183,7 @@ int main(int argc, char** argv )
 		}
 	}
 	
-	if (parser.has("slam") || true)
+	if (parser.has("slam"))
 	{
 		SLAMSolve();
 		exit(EXIT_SUCCESS);

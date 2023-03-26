@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 
 #include <glm/glm.hpp>
 
@@ -12,6 +13,17 @@
 class GLFWwindow;
 class TrackedObject;
 
+enum class MeshNames
+{
+	robot,
+	tag,
+	arena,
+	brio,
+	skybox,
+	axis,
+	trackercube,
+	toptracker
+};
 class BoardGL
 {
 private:
@@ -22,7 +34,7 @@ private:
 	static Shader ShaderProgram;
 
 	static bool MeshesLoaded, TagsLoaded;
-	static Mesh robot, arena, puck, brio, axis, tag, skybox;
+	static std::map<MeshNames, Mesh> Meshes;
 	static std::vector<Texture> TagTextures;
 
 	void GLInit(); //Start OpenGL

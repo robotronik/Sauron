@@ -2,6 +2,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <tuple>
+#include <optional>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>	
@@ -23,8 +25,8 @@ bool BoardGL::HasInit = false;
 GLuint BoardGL::VertexArrayID;
 Shader BoardGL::ShaderProgram;
 bool BoardGL::MeshesLoaded = false, BoardGL::TagsLoaded = false;
-Mesh BoardGL::robot, BoardGL::arena, BoardGL::axis, BoardGL::brio, BoardGL::puck, BoardGL::tag, BoardGL::skybox;
-std::vector<Texture> BoardGL::TagTextures;
+map<MeshNames, Mesh> BoardGL::Meshes;
+vector<Texture> BoardGL::TagTextures;
 
 string shaderfolder = "../source/visualisation/openGL/";
 
@@ -97,7 +99,7 @@ glm::mat4 BoardGL::GetVPMatrix(glm::vec3 forward, glm::vec3 up)
 		glm::radians(FoV),						// The vertical Field of View, in radians
 		(float) winwidth / (float)winheight,	//Aspect ratio
 		0.01f,									// Near clipping plane.
-		100.0f									// Far clipping plane.
+		200.0f									// Far clipping plane.
 	);
 
 	return projectionMatrix * CameraMatrix;
@@ -214,23 +216,45 @@ void BoardGL::HandleInputs()
 
 void BoardGL::LoadModels()
 {
-	if (!MeshesLoaded)
+	if (MeshesLoaded)
 	{
-		//cout << "Loading meshes" << endl;
-		robot.LoadFromFile("../assets/robot.obj");
-		arena.LoadFromFile("../assets/board.obj", "../assets/boardtex.png");
-		brio.LoadFromFile("../assets/BRIO.obj");
-		axis.LoadFromFile("../assets/axis.obj");
-		skybox.LoadFromFile("../assets/skybox.obj");
-		robot.BindMesh();
-		arena.BindMesh();
-		brio.BindMesh();
-		axis.BindMesh();
-		skybox.BindMesh();
-		MeshesLoaded = true;
+		return;
 	}
-	
+	string assetpath = "../assets/";
+	map<MeshNames, tuple<string, optional<string>>> meshpathes = 
+	{
+		{MeshNames::arena, {"board.obj", "boardtex.png"}},
+		{MeshNames::robot, {"robot.obj", nullopt}},
+		{MeshNames::axis, {"axis.obj", nullopt}},
+		{MeshNames::brio, {"BRIO.obj", nullopt}},
+		{MeshNames::skybox, {"skybox.obj", nullopt}},
+		{MeshNames::tag, {"tag.obj", nullopt}},
+		{MeshNames::trackercube, {"trackercube.obj", nullopt}},
+		{MeshNames::toptracker, {"toptracker.obj", nullopt}}
+	};
+	//cout << "Loading meshes" << endl;
+
+	for (auto iterator : meshpathes)
+	{
+		Meshes[iterator.first] = Mesh();
+		Mesh &thismesh = Meshes[iterator.first];
+		auto &second = iterator.second;
+		auto &meshpath = get<0>(second);
+		auto &textpath = get<1>(second);
+		if (textpath.has_value())
+		{
+			thismesh.LoadFromFile(assetpath + meshpath, assetpath + textpath.value());
+		}
+		else
+		{
+			thismesh.LoadFromFile(assetpath + meshpath);
+		}
+		thismesh.BindMesh();
+	}
+	MeshesLoaded = true;
 }
+	
+
 void BoardGL::LoadTags()
 {
 	if (TagsLoaded)
@@ -238,8 +262,6 @@ void BoardGL::LoadTags()
 		return;
 	}
 	glfwMakeContextCurrent(window);
-	tag.LoadFromFile("../assets/tag.obj");
-	tag.BindMesh();
 
 	TagTextures.resize(100);
 	auto& det = GetArucoDetector();
@@ -316,8 +338,8 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &VPMatrix[0][0]);
 	glUniform1f(ScaleID, 1);
-	axis.Draw(ParameterID);
-	skybox.Draw(ParameterID);
+	Meshes[MeshNames::axis].Draw(ParameterID);
+	Meshes[MeshNames::skybox].Draw(ParameterID);
 
 	for (int i = 0; i < data.size(); i++)
 	{
@@ -330,15 +352,15 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 		switch (odata.identity.type)
 		{
 		case PacketType::Robot :
-			robot.Draw(ParameterID);
+			Meshes[MeshNames::robot].Draw(ParameterID);
 			break;
 		case PacketType::ReferenceAbsolute :
 		case PacketType::ReferenceRelative :
-			arena.Draw(ParameterID);
+			Meshes[MeshNames::arena].Draw(ParameterID);
 			break;
 		case PacketType::Camera :
-			axis.Draw(ParameterID);
-			brio.Draw(ParameterID);
+			Meshes[MeshNames::axis].Draw(ParameterID);
+			Meshes[MeshNames::brio].Draw(ParameterID);
 			break;
 		case PacketType::Tag :
 			{
@@ -351,7 +373,7 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 				float scalefactor = (float)odata.identity.metadata/1000.f;
 				glUniform1f(ScaleID, scalefactor);
 				TagTextures[odata.identity.numeral].Draw();
-				tag.Draw(ParameterID, true);
+				Meshes[MeshNames::tag].Draw(ParameterID, true);
 			}
 			break;
 		
@@ -403,7 +425,7 @@ void BoardGL::runTest()
 		// This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVPmatrix[0][0]);
 
-		robot.Draw();
+		Meshes[MeshNames::robot].Draw();
 
 		// Swap buffers
 		glfwSwapBuffers(window);
