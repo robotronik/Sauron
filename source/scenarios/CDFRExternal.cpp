@@ -82,7 +82,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 	PositionDataSender sender;
 	{
 		WebsocketConfig wscfg = GetWebsocketConfig();
-		sender.encoder = new MinimalEncoder(UINT8_MAX-(uint8_t)PacketType::Camera-(uint8_t)PacketType::ReferenceAbsolute);
+		sender.encoder = new MinimalEncoder(GetDefaultAllowMap());
 		if (wscfg.TCP)
 		{
 			sender.transport = new TCPTransport(wscfg.Server, wscfg.IP, wscfg.Port, wscfg.Interface);

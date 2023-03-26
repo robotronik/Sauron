@@ -55,3 +55,19 @@ void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, aruco:
 	//mp.PrintIfShould();
 	
 } 
+
+unordered_map<PacketType, bool> GetDefaultAllowMap()
+{
+	unordered_map<PacketType, bool> allowmap = {
+		{PacketType::Null, false},
+		{PacketType::Camera, false},
+		{PacketType::ReferenceAbsolute, true},
+		{PacketType::ReferenceRelative, true},
+		{PacketType::Robot, true},
+		{PacketType::TrackerCube, true},
+		{PacketType::TopTracker, true},
+		{PacketType::Puck, true},
+		{PacketType::Tag, false}
+	};
+	return allowmap;
+}

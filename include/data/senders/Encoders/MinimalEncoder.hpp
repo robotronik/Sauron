@@ -2,6 +2,8 @@
 
 #include "data/senders/Encoders/GenericEncoder.hpp"
 
+#include <map>
+
 struct __attribute__ ((packed)) MinimalPacketHeader
 {
 	uint32_t TotalLength; //length of the full transaction
@@ -39,9 +41,11 @@ struct PositionPacket
 //Position is in "Victor" coordinates (mm, degrees)
 class MinimalEncoder : public GenericEncoder
 {
+protected:
+	std::unordered_map<PacketType, bool> AllowMask;
 public:
-	MinimalEncoder(uint8_t InAllowMask = UINT8_MAX)
-		:GenericEncoder(InAllowMask)
+	MinimalEncoder(std::unordered_map<PacketType, bool> InAllowMask)
+		:GenericEncoder(), AllowMask(InAllowMask)
 	{}
 
 	static void Affine3dToVictor(PositionPacket &InPacket, cv::Affine3d position);

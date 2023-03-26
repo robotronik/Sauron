@@ -39,7 +39,7 @@ EncodedData MinimalEncoder::Encode(int64 GrabTime, std::vector<ObjectData> &obje
 
 	for (size_t i = 0; i < ObjectDatas.size(); i++)
 	{
-		if (((uint8_t)(ObjectDatas[i].identity.type) & AllowMask) != 0)
+		if (AllowMask[ObjectDatas[i].identity.type])
 		{
 			PositionPacket packet;
 			packet.identity = ObjectDatas[i].identity;

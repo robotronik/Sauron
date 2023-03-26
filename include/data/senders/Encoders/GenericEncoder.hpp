@@ -28,10 +28,8 @@ struct EncodedData
 class GenericEncoder
 {
 	int64 CreationTick;
-protected:
-	uint8_t AllowMask;
 public:
-    GenericEncoder(uint8_t InAllowMask = UINT8_MAX);
+    GenericEncoder();
 	virtual ~GenericEncoder(){}
     int64 GetTick();
 	virtual EncodedData Encode(int64 GrabTime, std::vector<ObjectData> &objects) = 0;

@@ -40,7 +40,7 @@ void CDFRInternalMain(bool direct, bool v3d)
 	PositionDataSender sender;
 	{
 		WebsocketConfig wscfg = GetWebsocketConfig();
-		sender.encoder = new MinimalEncoder;
+		sender.encoder = new MinimalEncoder(GetDefaultAllowMap());
 		sender.transport = new SerialTransport(115200, true);
 		sender.StartReceiveThread();
 	}
