@@ -45,7 +45,10 @@ vector<ObjectData> TrackerCube::ToObjectData(int BaseNumeral)
 	ObjectData robot;
 	robot.identity.numeral = BaseNumeral;
 	robot.identity.type = PacketType::Robot;
-	robot.identity.metadata = markers[0].number;
+	for (int i = 0; i < markers.size(); i++)
+	{
+		robot.identity.AddTypeToMetadata<uint8_t>(markers[i].number);
+	}
 	robot.location = Location;
 	return {robot};
 }

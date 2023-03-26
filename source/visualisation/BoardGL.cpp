@@ -370,7 +370,7 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 					break;
 				}
 				
-				float scalefactor = (float)odata.identity.metadata/1000.f;
+				float scalefactor = odata.identity.GetTypeFromMetadata<float>(0);
 				glUniform1f(ScaleID, scalefactor);
 				TagTextures[odata.identity.numeral].Draw();
 				Meshes[MeshNames::tag].Draw(ParameterID, true);
@@ -449,7 +449,7 @@ void BoardGL::InspectObject(TrackedObject* object)
 		ObjectData d;
 		d.identity.numeral = m.number;
 		d.identity.type = PacketType::Tag;
-		d.identity.metadata = m.sideLength*1000;
+		d.identity.AddTypeToMetadata(m.sideLength);
 		d.location = m.Pose;
 		datas.push_back(d);
 	}

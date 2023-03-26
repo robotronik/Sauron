@@ -1,6 +1,7 @@
 #include "data/senders/Encoders/MinimalEncoder.hpp"
 
 #include <sstream>
+#include <cassert>
 
 #include <opencv2/core.hpp>
 
@@ -9,6 +10,15 @@
 
 using namespace std;
 using namespace cv;
+
+int PositionPacket::PackInto(char* buffer, int maxlength) const
+{
+	int size = GetSize();
+	assert(size >= maxlength);
+	buffer += identity.PackInto(buffer, maxlength);
+	memcpy(buffer, &X, sizeof(float)*3);
+	return size;
+}
 
 void MinimalEncoder::Affine3dToVictor(PositionPacket &InPacket, Affine3d position)
 {
@@ -25,6 +35,7 @@ EncodedData MinimalEncoder::Encode(int64 GrabTime, std::vector<ObjectData> &obje
 
 	vector<PositionPacket> ObjectPackets;
 	ObjectPackets.reserve(ObjectDatas.size());
+	size_t packetsize = 0;
 
 	for (size_t i = 0; i < ObjectDatas.size(); i++)
 	{
@@ -33,21 +44,28 @@ EncodedData MinimalEncoder::Encode(int64 GrabTime, std::vector<ObjectData> &obje
 			PositionPacket packet;
 			packet.identity = ObjectDatas[i].identity;
 			Affine3dToVictor(packet, ObjectDatas[i].location);
+			packetsize += packet.GetSize();
 			ObjectPackets.push_back(packet);
 		}
 	}
 	
 	if (true)
 	{
-		size_t buffersize = sizeof(MinimalPacketHeader) + sizeof(PositionPacket) * ObjectPackets.size();
+		size_t buffersize = sizeof(MinimalPacketHeader) + packetsize;
 		char* buffer = reinterpret_cast<char*>(malloc(buffersize));
+		char* endptr = buffer + buffersize;
 		char* currptr = buffer + sizeof(MinimalPacketHeader);
-		std::uninitialized_copy(ObjectPackets.begin(), ObjectPackets.end(), reinterpret_cast<PositionPacket*>(currptr));
+		for (int i = 0; i < ObjectPackets.size(); i++)
+		{
+			currptr += ObjectPackets[i].PackInto(currptr, endptr - currptr);
+		}
+		
 		MinimalPacketHeader* header = reinterpret_cast<MinimalPacketHeader*>(buffer);
 		header->NumDatas = ObjectPackets.size();
 		header->TickRate = cv::getTickFrequency();
 		header->SentTick = cv::getTickCount();
 		header->Latency = header->SentTick - GrabTime;
+		header->TotalLength = buffersize;
 		//memcpy(buffer, &header, sizeof(MinimalPacketHeader));
         return EncodedData(buffersize, buffer);
 	}

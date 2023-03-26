@@ -151,7 +151,7 @@ void SLAMSolve(void)
 		ObjectData d;
 		d.identity.type = PacketType::Tag;
 		d.identity.numeral = referenceMarker.number;
-		d.identity.metadata = referenceMarker.sideLength*1000;
+		d.identity.AddTypeToMetadata(referenceMarker.sideLength);
 		d.location = referenceMarker.Pose;
 		vizdata.push_back(d);
 	}
@@ -339,7 +339,7 @@ void SLAMSolve(void)
 			ObjectData d;
 			d.identity.type = PacketType::Tag;
 			d.identity.numeral = marker.number;
-			d.identity.metadata = marker.sideLength*1000;
+			d.identity.AddTypeToMetadata(marker.sideLength);
 			d.location = marker.Pose;
 			vizdata.push_back(d);
 		}

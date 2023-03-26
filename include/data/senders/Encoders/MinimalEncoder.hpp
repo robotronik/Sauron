@@ -4,6 +4,7 @@
 
 struct __attribute__ ((packed)) MinimalPacketHeader
 {
+	int32_t TotalLength;
 	int64_t SentTick;
 	int64_t Latency;
 	int32_t TickRate;
@@ -11,7 +12,7 @@ struct __attribute__ ((packed)) MinimalPacketHeader
 };
 
 
-struct __attribute__ ((packed)) PositionPacket //palets sur l'arène uniquement
+struct PositionPacket
 {
 	ObjectIdentity identity;
 	float X;
@@ -25,6 +26,13 @@ struct __attribute__ ((packed)) PositionPacket //palets sur l'arène uniquement
 	PositionPacket(ObjectIdentity InIdentity, float InX, float InY, float InRotation)
 	:identity(InIdentity), X(InX), Y(InY), rotation(InRotation)
 	{};
+
+	size_t GetSize() const
+	{
+		return identity.GetSize() + sizeof(float)*3;
+	};
+
+	int PackInto(char* buffer, int maxlength) const;
 };
 
 //An encoder that only sends X, Y and rot according to the struct above.
