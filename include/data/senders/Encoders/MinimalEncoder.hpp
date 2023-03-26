@@ -4,11 +4,11 @@
 
 struct __attribute__ ((packed)) MinimalPacketHeader
 {
-	int32_t TotalLength;
-	int64_t SentTick;
-	int64_t Latency;
-	int32_t TickRate;
-	int32_t NumDatas;
+	uint32_t TotalLength; //length of the full transaction
+	int64_t SentTick; //tick at which the transaction was sent
+	int64_t Latency; //ticks it took to process the images from the cameras
+	int32_t TickRate; //ticks/s
+	int32_t NumDatas; //number of PositionPackets
 };
 
 
