@@ -42,9 +42,9 @@ struct PositionPacket
 class MinimalEncoder : public GenericEncoder
 {
 protected:
-	std::unordered_map<PacketType, bool> AllowMask;
+	std::map<PacketType, bool> AllowMask;
 public:
-	MinimalEncoder(std::unordered_map<PacketType, bool> InAllowMask)
+	MinimalEncoder(std::map<PacketType, bool> InAllowMask)
 		:GenericEncoder(), AllowMask(InAllowMask)
 	{}
 

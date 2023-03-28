@@ -34,7 +34,7 @@ private:
 	static Shader ShaderProgram;
 
 	static bool MeshesLoaded, TagsLoaded;
-	static std::unordered_map<MeshNames, Mesh> Meshes;
+	static std::map<MeshNames, Mesh> Meshes;
 	static std::vector<Texture> TagTextures;
 
 	void GLInit(); //Start OpenGL

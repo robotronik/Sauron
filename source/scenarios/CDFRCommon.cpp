@@ -56,9 +56,9 @@ void BufferedPipeline(int BufferCaptureIdx, vector<ArucoCamera*> Cameras, aruco:
 	
 } 
 
-unordered_map<PacketType, bool> GetDefaultAllowMap()
+map<PacketType, bool> GetDefaultAllowMap()
 {
-	unordered_map<PacketType, bool> allowmap = {
+	map<PacketType, bool> allowmap = {
 		{PacketType::Null, false},
 		{PacketType::Camera, false},
 		{PacketType::ReferenceAbsolute, true},
