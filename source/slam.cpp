@@ -119,7 +119,7 @@ void SLAMSolve(void)
 	}
 	//detect tags
 	vector<CameraArucoData> ImageData;
-	unordered_map<int, float> ArucoSizes;
+	map<int, float> ArucoSizes;
 	ArucoSizes[51] = 0.05;
 	ArucoSizes[55] = 0.075;
 	ArucoSizes[60] = 0.1;

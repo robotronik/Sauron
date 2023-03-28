@@ -25,7 +25,7 @@ bool BoardGL::HasInit = false;
 GLuint BoardGL::VertexArrayID;
 Shader BoardGL::ShaderProgram;
 bool BoardGL::MeshesLoaded = false, BoardGL::TagsLoaded = false;
-unordered_map<MeshNames, Mesh> BoardGL::Meshes;
+map<MeshNames, Mesh> BoardGL::Meshes;
 vector<Texture> BoardGL::TagTextures;
 
 string shaderfolder = "../source/visualisation/openGL/";
@@ -221,7 +221,7 @@ void BoardGL::LoadModels()
 		return;
 	}
 	string assetpath = "../assets/";
-	unordered_map<MeshNames, tuple<string, optional<string>>> meshpathes = 
+	map<MeshNames, tuple<string, optional<string>>> meshpathes = 
 	{
 		{MeshNames::arena, {"board.obj", "boardtex.png"}},
 		{MeshNames::robot, {"robot.obj", nullopt}},
