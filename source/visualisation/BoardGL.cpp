@@ -221,7 +221,7 @@ void BoardGL::LoadModels()
 		return;
 	}
 	string assetpath = "../assets/";
-	map<MeshNames, tuple<string, optional<string>>> meshpathes = 
+	static const map<MeshNames, tuple<string, optional<string>>> meshpathes = 
 	{
 		{MeshNames::arena, {"board.obj", "boardtex.png"}},
 		{MeshNames::robot, {"robot.obj", nullopt}},
@@ -341,6 +341,18 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 	Meshes[MeshNames::axis].Draw(ParameterID);
 	Meshes[MeshNames::skybox].Draw(ParameterID);
 
+	static const  map<enum PacketType, enum MeshNames> PacketToMesh = 
+	{
+		{PacketType::Robot, MeshNames::robot},
+		{PacketType::Camera, MeshNames::brio},
+		{PacketType::ReferenceAbsolute, MeshNames::arena},
+		{PacketType::ReferenceRelative, MeshNames::arena},
+		//{PacketType::Tag, MeshNames::tag}, //Do not add tag, it needs special care
+		{PacketType::TopTracker, MeshNames::toptracker},
+		{PacketType::TrackerCube, MeshNames::trackercube}
+		//no puck yet because puck you !
+	};
+
 	for (int i = 0; i < data.size(); i++)
 	{
 		ObjectData &odata = data[i];
@@ -351,16 +363,8 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 		glUniform1f(ScaleID, 1);
 		switch (odata.identity.type)
 		{
-		case PacketType::Robot :
-			Meshes[MeshNames::robot].Draw(ParameterID);
-			break;
-		case PacketType::ReferenceAbsolute :
-		case PacketType::ReferenceRelative :
-			Meshes[MeshNames::arena].Draw(ParameterID);
-			break;
-		case PacketType::Camera :
+		case PacketType::Camera : //Add an axis to the camera
 			Meshes[MeshNames::axis].Draw(ParameterID);
-			Meshes[MeshNames::brio].Draw(ParameterID);
 			break;
 		case PacketType::Tag :
 			{
@@ -376,10 +380,16 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 				Meshes[MeshNames::tag].Draw(ParameterID, true);
 			}
 			break;
-		
 		default:
 			break;
 		}
+
+		auto foundmesh = PacketToMesh.find(odata.identity.type);
+		if (foundmesh != PacketToMesh.end())
+		{
+			Meshes[foundmesh->second].Draw(ParameterID);
+		}
+		
 	}
 
 	bool IsDone = glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS && glfwWindowShouldClose(window) == 0;
