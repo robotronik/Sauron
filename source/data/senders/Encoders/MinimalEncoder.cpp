@@ -14,7 +14,7 @@ using namespace cv;
 int PositionPacket::PackInto(char* buffer, int maxlength) const
 {
 	int size = GetSize();
-	assert(size >= maxlength);
+	assert(size <= maxlength);
 	buffer += identity.PackInto(buffer, maxlength);
 	memcpy(buffer, &X, sizeof(float)*3);
 	return size;
