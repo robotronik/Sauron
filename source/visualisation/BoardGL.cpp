@@ -21,12 +21,12 @@
 
 using namespace std;
 
-bool BoardGL::HasInit = false;
-GLuint BoardGL::VertexArrayID;
+bool BoardGL::HasContext = false;
+/*GLuint BoardGL::VertexArrayID;
 Shader BoardGL::ShaderProgram;
 bool BoardGL::MeshesLoaded = false, BoardGL::TagsLoaded = false;
 map<MeshNames, Mesh> BoardGL::Meshes;
-vector<Texture> BoardGL::TagTextures;
+vector<Texture> BoardGL::TagTextures;*/
 
 string shaderfolder = "../source/visualisation/openGL/";
 
@@ -282,9 +282,10 @@ void BoardGL::LoadTags()
 void BoardGL::Start()
 {
 	//cout << "Creating OpenGL context" << endl;
-	if (!HasInit)
+	if (!HasContext)
 	{
 		GLInit();
+		HasContext = true;
 	}
 	
 	

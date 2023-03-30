@@ -29,13 +29,14 @@ class BoardGL
 private:
 	bool HasWindow = false;
 	GLFWwindow* window;
-	static bool HasInit;
-	static GLuint VertexArrayID;
-	static Shader ShaderProgram;
+	static bool HasContext;
+	bool HasInit = false;
+	GLuint VertexArrayID;
+	Shader ShaderProgram;
 
-	static bool MeshesLoaded, TagsLoaded;
-	static std::map<MeshNames, Mesh> Meshes;
-	static std::vector<Texture> TagTextures;
+	bool MeshesLoaded = false, TagsLoaded= false;
+	std::map<MeshNames, Mesh> Meshes;
+	std::vector<Texture> TagTextures;
 
 	void GLInit(); //Start OpenGL
 	GLFWwindow* GLCreateWindow(cv::Size windowsize); //Create a window
