@@ -16,7 +16,7 @@ public:
 		return Relative;
 	}
 
-	virtual bool SetLocation(cv::Affine3d InLocation, double dt) override;
+	virtual bool SetLocation(cv::Affine3d InLocation, unsigned long tick) override;
 
 	virtual std::vector<ObjectData> ToObjectData(int BaseNumeral) override;
 

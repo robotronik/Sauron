@@ -1,6 +1,5 @@
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRCommon.hpp"
-#include "visualisation/BoardViz2D.hpp"
 #include "visualisation/BoardGL.hpp"
 #include "data/ManualProfiler.hpp"
 #include "data/senders/Encoders/MinimalEncoder.hpp"
@@ -26,14 +25,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 
 	//display/debug section
 	FrameCounter fps;
-	BoardViz2D* board = nullptr;
 	if (direct)
 	{
-		board = new BoardViz2D(FVector2D<float>(3.0f, 2.0f), FVector2D<float>(1.5f, 1.0f));
 		namedWindow("Cameras", WINDOW_NORMAL);
 		setWindowProperty("Cameras", WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
 		startWindowThread();
-		BoardViz2D::InitImages();
 	}
 	
 	ObjectTracker tracker;
@@ -45,14 +41,6 @@ void CDFRExternalMain(bool direct, bool v3d)
 	tracker.RegisterTrackedObject(robot1);
 	//tracker.RegisterTrackedObject(robot2);
 	
-	#ifdef WITH_VTK
-	viz::Viz3d viz3dhandle("3D board");
-	BoardViz3D board3d(&viz3dhandle);
-	if (v3d)
-	{
-		BoardViz3D::SetupTerrain(viz3dhandle);
-	}
-	#else
 	BoardGL OpenGLBoard;
 	//TrackerCube* testcube = new TrackerCube({51, 52, 53, 54, 55}, 0.05, 85.065/1000.0, "test");
 	//OpenGLBoard.InspectObject(testcube);
@@ -61,7 +49,6 @@ void CDFRExternalMain(bool direct, bool v3d)
 		OpenGLBoard.Start();
 		OpenGLBoard.Tick({});
 	}
-	#endif
 
 	
 	
@@ -130,7 +117,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			if (surface > 0)
 			{
 
-				cam->SetLocation(boardloc.inv(), deltaTime);
+				cam->SetLocation(boardloc.inv(), GrabTick);
 				hasposition = true;
 			}
 			arucoDatas[i].CameraTransform = cam->GetLocation();
@@ -141,7 +128,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			
 		}
 		prof.EnterSection(ps++);
-		tracker.SolveLocationsPerObject(arucoDatas, deltaTime);
+		tracker.SolveLocationsPerObject(arucoDatas, GrabTick);
 		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
 
 		//Vec3d diff = robot1->GetLocation().translation() - robot2->GetLocation().translation(); 
@@ -152,22 +139,10 @@ void CDFRExternalMain(bool direct, bool v3d)
 		
 		if (v3d)
 		{
-			#ifdef WITH_VTK
-			if (viz3dhandle.wasStopped())
-			{
-				break;
-			}
-			
-			board3d.DisplayData(ObjData);
-			viz::WText fpstext(FrameCounter::GetFPSString(deltaTime), Point2i(100,150));
-			viz3dhandle.showWidget("fps", fpstext);
-			viz3dhandle.spinOnce(1, true);
-			#else
 			if(!OpenGLBoard.Tick(ObjData))
 			{
 				break;
 			}
-			#endif
 		}
 
 		if (direct)

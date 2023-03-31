@@ -4,11 +4,7 @@
 #include <string>   // for strings
 #include <sstream>  // string to number conversion
 #include <opencv2/core.hpp>		// Basic OpenCV structures (Mat, Scalar)
-#ifdef WITH_VTK
-#include <opencv2/viz.hpp>
-#endif
 #include <opencv2/video/tracking.hpp>
-#include "visualisation/BoardViz2D.hpp"
 #include "TrackedObjects/ObjectIdentity.hpp"
 
 class ArucoCamera;
@@ -46,9 +42,6 @@ struct ArucoMarker
 		Pose(InPose),
 		ObjectPointsNoOffset(GetObjectPointsNoOffset(InSideLength))
 	{}
-	#ifdef WITH_VTK
-	void DisplayMarker(cv::viz::Viz3d* visualizer, cv::Affine3d RootLocation, cv::String rootName);
-	#endif
 };
 
 //Base class for any object that should be tracked in 3D space.
@@ -74,13 +67,14 @@ public:
 
 protected:
 	cv::Affine3d Location;
+	unsigned long LastSeenTick = 0;
 	cv::KalmanFilter LocationFilter;
 
 public:
 
 	TrackedObject();
 
-	virtual bool SetLocation(cv::Affine3d InLocation, double dt);
+	virtual bool SetLocation(cv::Affine3d InLocation, unsigned long tick);
 	virtual cv::Affine3d GetLocation();
 
 	virtual cv::Affine3d ResolveLocation(std::vector<cv::Affine3d>& Cameras, std::vector<CameraView>& views);

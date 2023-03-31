@@ -54,7 +54,7 @@ struct ResolvedLocation
 	}
 };
 
-void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& CameraData, double dt)
+void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& CameraData, unsigned long tick)
 {
 	const int NumCameras = CameraData.size();
 	const int NumObjects = objects.size();
@@ -128,7 +128,7 @@ void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& Camer
 			}
 			if (locations.size() == 1)
 			{
-				object->SetLocation(locations[0].AbsLoc, dt);
+				object->SetLocation(locations[0].AbsLoc, tick);
 				//cout << "Object " << object->Name << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << locations[0].score << ", seen by 1 camera" << endl;
 				continue;
 			}
@@ -144,7 +144,7 @@ void ObjectTracker::SolveLocationsPerObject(const vector<CameraArucoData>& Camer
 			Vec3d locfinal = (l1i*best.score+l2i*secondbest.score)/(best.score + secondbest.score);
 			Affine3d combinedloc = best.AbsLoc;
 			combinedloc.translation(locfinal);
-			object->SetLocation(combinedloc, dt);
+			object->SetLocation(combinedloc, tick);
 			//cout << "Object " << object->Name << " is at location " << objects[ObjIdx]->GetLocation().translation() << " / score: " << best.score+secondbest.score << ", seen by " << locations.size() << " cameras" << endl;
 		}
 	//});

@@ -4,7 +4,9 @@
 #include <iostream> // for standard I/O
 #include <iomanip>  // for controlling float print precision
 #include <sstream>  // string to number conversion
+#include <stdlib.h>
 #include <opencv2/imgproc.hpp>
+
 
 #include <opencv2/calib3d.hpp>
 
@@ -107,7 +109,10 @@ bool VideoCaptureCamera::StartFeed()
 			Settings.ApiID = CAP_ANY;
 			break;
 		}
-
+		char commandbuffer[1024];
+		snprintf(commandbuffer, sizeof(commandbuffer), "v4l2-ctl -d %s -c exposure_auto=%d,exposure_absolute=%d", Settings.DeviceInfo.device_paths[0].c_str(), 1, 32);
+		cout << "Aperture system command : " << commandbuffer << endl;
+		system(commandbuffer);
 		feed = new VideoCapture();
 		cout << "Opening device at \"" << Settings.StartPath << "\" with API id " << Settings.ApiID << endl;
 		feed->open(Settings.StartPath, Settings.ApiID);
@@ -119,8 +124,8 @@ bool VideoCaptureCamera::StartFeed()
 			feed->set(CAP_PROP_FRAME_HEIGHT, Settings.Resolution.height);
 			feed->set(CAP_PROP_FPS, Settings.Framerate/Settings.FramerateDivider);
 			feed->set(CAP_PROP_AUTO_EXPOSURE, 1) ;
-			feed->set(CAP_PROP_EXPOSURE, 32) ;
-			feed->set(CAP_PROP_BUFFERSIZE, 1);
+			//feed->set(CAP_PROP_EXPOSURE, 32) ;
+			//feed->set(CAP_PROP_BUFFERSIZE, 1);
 		}
 		//cout << "Success opening ? " << feed->isOpened() << endl;
 		/*if (!feed->isOpened())

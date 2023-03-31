@@ -10,7 +10,6 @@
 #include "Cameras/Camera.hpp"
 #include "GlobalConf.hpp"
 #include "data/CameraView.hpp"
-#include "visualisation/BoardViz2D.hpp"
 
 using namespace cv;
 using namespace std;
@@ -32,16 +31,6 @@ vector<Point3d>& ArucoMarker::GetObjectPointsNoOffset()
 	return ObjectPointsNoOffset;
 }
 
-#ifdef WITH_VTK
-void ArucoMarker::DisplayMarker(viz::Viz3d* visualizer, Affine3d RootLocation, String rootName)
-{
-	Affine3d Location = RootLocation * Pose;
-	viz::WImage3D widget(GetArucoImage(number), Size2d(sideLength, sideLength));
-	visualizer->showWidget(rootName + "/" + to_string(number), widget, Location * Affine3d(ImageToWorld()));
-	visualizer->showWidget(rootName + "/" + to_string(number) + "/axis", viz::WCoordinateSystem(0.01), Location);
-}
-#endif
-
 TrackedObject::TrackedObject()
 	:Unique(true),
 	CoplanarTags(false),
@@ -54,10 +43,12 @@ TrackedObject::TrackedObject()
 	cv::setIdentity(LocationFilter.errorCovPost, cv::Scalar::all(1));
 };
 
-bool TrackedObject::SetLocation(Affine3d InLocation, double dt)
+bool TrackedObject::SetLocation(Affine3d InLocation, unsigned long tick)
 {
+	double dt = (tick - LastSeenTick);
+	dt /= getTickFrequency();
 	LocationFilter.transitionMatrix = Mat::eye(9,9, CV_64F);
-	double v = dt*10;
+	double v = dt;
 	double a = v*v/2;
 	for (int i = 0; i < 6; i++)
 	{
@@ -82,6 +73,7 @@ bool TrackedObject::SetLocation(Affine3d InLocation, double dt)
 
 	Location = InLocation;
 	Location.translation(correctloc);
+	LastSeenTick = tick;
 	return true;
 }
 

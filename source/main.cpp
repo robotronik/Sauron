@@ -17,12 +17,10 @@
 #include "Cameras/CameraManager.hpp"
 #include "ObjectTracker.hpp"
 #include "Calibrate.hpp"
-#include "visualisation/BoardViz2D.hpp"
-#include "visualisation/BoardViz3D.hpp"
 #include "visualisation/BoardGL.hpp"
 #include "Scenarios/CDFRExternal.hpp"
 #include "Scenarios/CDFRInternal.hpp"
-#include "slam.hpp"
+#include "mapping.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -44,7 +42,6 @@ int main(int argc, char** argv )
 		"{calibrate c    |      | start camera calibration wizard}"
 		"{marker m       |      | print out markers}"
 		"{cuda           |      | print cuda info}"
-		"{board          |      | runs boardview test}"
 		"{opengl ogl     |      | runs opengl test}"
 		"{server s       |      | force server/client state}"
 		"{slam           |      | runs slam for object mapping, using saved images and calibration}"
@@ -86,11 +83,6 @@ int main(int argc, char** argv )
 		#else
 		cout << "CUDA is not enabled or detected on this device" << endl;
 		#endif
-		exit(EXIT_SUCCESS);
-	}
-	if (parser.has("board"))
-	{
-		TestBoardViz();
 		exit(EXIT_SUCCESS);
 	}
 	if (parser.has("marker"))

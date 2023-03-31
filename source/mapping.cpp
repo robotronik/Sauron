@@ -1,5 +1,5 @@
 
-#include "slam.hpp"
+#include "mapping.hpp"
 
 #include <string>
 #include <iostream>
@@ -13,7 +13,6 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/calib3d.hpp>
-#include <visualisation/BoardViz3D.hpp>
 #include <opencv2/sfm.hpp>
 
 #include "math3d.hpp"
@@ -25,14 +24,6 @@
 
 using namespace std;
 using namespace cv;
-
-struct FixedTag
-{
-	Affine3d Position;
-	int ID;
-	int hierachy;
-	double size;
-};
 
 struct ObservedTag
 {
@@ -50,7 +41,7 @@ struct SolvableView
 };
 
 
-const string SLAMFolderName = "SFM/";
+const string MappingFolderName = "SFM/";
 
 //For a vector of tag ids seen on the image and a vector of tags that have a known location, return a vector of indices of tags that can be solved
 SolvableView GetUnseenSolvable(const CameraArucoData& ImageIDs, const TrackedObject* SolvedTags)
@@ -83,7 +74,7 @@ SolvableView GetUnseenSolvable(const CameraArucoData& ImageIDs, const TrackedObj
 void SLAMSolve(void)
 {
 	Mat CameraMatrix, DistortionCoefficients;
-	if (!readCameraParameters(SLAMFolderName + "calibration", CameraMatrix, DistortionCoefficients, Size(0,0)))
+	if (!readCameraParameters(MappingFolderName + "calibration", CameraMatrix, DistortionCoefficients, Size(0,0)))
 	{
 		cerr << "Failed to read calibration, could not init mapping" <<endl;
 		return;
@@ -91,7 +82,7 @@ void SLAMSolve(void)
 	vector<Mat> images;
 	vector<string> imagenames;
 	//load images
-	for (const auto &i : filesystem::directory_iterator(SLAMFolderName))
+	for (const auto &i : filesystem::directory_iterator(MappingFolderName))
 	{
 		if (i.is_regular_file() && i.path().extension() != ".yaml")
 		{

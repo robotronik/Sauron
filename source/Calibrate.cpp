@@ -81,8 +81,16 @@ int LastIdx(vector<String> Pathes)
 	for (int i = 0; i < Pathes.size(); i++)
 	{
 		String stripped = Pathes[i].substr(TempImgPath.length()+1, Pathes[i].length() - TempImgPath.length()-1 - String(".png").length());
-		int thatidx = stoi(stripped);
-		next = next < thatidx ? thatidx : next;
+		try
+		{
+			int thatidx = stoi(stripped);
+			next = next < thatidx ? thatidx : next;
+		}
+		catch(const std::exception& e)
+		{
+			cout << "Failed to stoi " << stripped <<endl;
+			//std::cerr << e.what() << '\n';
+		}
 	}
 	return next;
 }
