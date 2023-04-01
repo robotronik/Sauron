@@ -111,9 +111,8 @@ void SLAMSolve(void)
 	//detect tags
 	vector<CameraArucoData> ImageData;
 	map<int, float> ArucoSizes;
-	ArucoSizes[51] = 0.05;
-	ArucoSizes[55] = 0.075;
-	ArucoSizes[60] = 0.1;
+	//ArucoSizes[55] = 0.075;
+	//ArucoSizes[60] = 0.1;
 
 	ImageData.resize(numim); 
 	auto& detector = GetArucoDetector();
@@ -137,7 +136,12 @@ void SLAMSolve(void)
 	
 	TrackedObject SolvedTagsObject;
 	{
-		ArucoMarker referenceMarker(0.1f, 0);
+		cout << "What ID is the reference ? (integer)" <<endl;
+		int refid; float refsize;
+		cin >> refid;
+		cout << "What is the side length of it ? (float, meters)" <<endl;
+		cin >> refsize;
+		ArucoMarker referenceMarker(refsize, refid);
 		SolvedTagsObject.markers.push_back(referenceMarker);
 		ObjectData d;
 		d.identity.type = PacketType::Tag;
@@ -212,6 +216,14 @@ void SLAMSolve(void)
 			int numviews = observed.CameraPositions.size();
 			cout << "\tTag " << observed.ID << " is seen in " << numviews << " image(s)" << endl;
 			auto foundsize = ArucoSizes.find(observed.ID);
+			if (foundsize == ArucoSizes.end())
+			{
+				float inputsize;
+				cout << "What is the side length of tag ID " << observed.ID << " ? (float, meter)" << endl;
+				cin >> inputsize;
+				ArucoSizes[observed.ID] = inputsize;
+				foundsize = ArucoSizes.find(observed.ID);
+			}
 			if (foundsize == ArucoSizes.end())
 			{
 				cout << "Cannot solve tag location for tag ID " << observed.ID << " as ID is not in the size map" <<endl;
