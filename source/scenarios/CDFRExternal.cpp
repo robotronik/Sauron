@@ -3,8 +3,10 @@
 #include "visualisation/BoardGL.hpp"
 #include "data/ManualProfiler.hpp"
 #include "data/senders/Encoders/MinimalEncoder.hpp"
+#include "data/senders/Encoders/TextEncoder.hpp"
 #include "data/senders/Transport/TCPTransport.hpp"
 #include "data/senders/Transport/UDPTransport.hpp"
+#include "data/senders/Transport/FileTransport.hpp"
 #include <thread>
 
 void CDFRExternalMain(bool direct, bool v3d)
@@ -37,9 +39,9 @@ void CDFRExternalMain(bool direct, bool v3d)
 	StaticObject* boardobj = new StaticObject(false, "board");
 	tracker.RegisterTrackedObject(boardobj); 
 	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, 0.0952, "Robot1");
-	//TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, 0.0952, "Robot2");
+	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, 0.0952, "Robot2");
 	tracker.RegisterTrackedObject(robot1);
-	//tracker.RegisterTrackedObject(robot2);
+	tracker.RegisterTrackedObject(robot2);
 	
 	BoardGL OpenGLBoard;
 	//TrackerCube* testcube = new TrackerCube({51, 52, 53, 54, 55}, 0.05, 85.065/1000.0, "test");
@@ -67,9 +69,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 	};
 
 	PositionDataSender sender;
+	PositionDataSender logger;
 	{
 		WebsocketConfig wscfg = GetWebsocketConfig();
 		sender.encoder = new MinimalEncoder(GetDefaultAllowMap());
+		logger.encoder = new TextEncoder(GetDefaultAllowMap());
 		if (wscfg.TCP)
 		{
 			sender.transport = new TCPTransport(wscfg.Server, wscfg.IP, wscfg.Port, wscfg.Interface);
@@ -78,6 +82,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		{
 			sender.transport = new UDPTransport(wscfg.Server, wscfg.IP, wscfg.Port, wscfg.Interface);
 		}
+		logger.transport = new FileTransport("PositionLog.txt");
 		sender.StartReceiveThread();
 	}
 
@@ -173,6 +178,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 			sender.SendPacket(GrabTick, ObjData);
 			//this_thread::sleep_for(chrono::milliseconds(1000));
 		}
+		logger.SendPacket(GrabTick, ObjData);
 		
 		
 		prof.EnterSection(-1);

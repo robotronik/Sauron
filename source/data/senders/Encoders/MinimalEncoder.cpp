@@ -49,53 +49,22 @@ EncodedData MinimalEncoder::Encode(int64 GrabTime, std::vector<ObjectData> &obje
 		}
 	}
 	
-	if (true)
+	size_t buffersize = sizeof(MinimalPacketHeader) + packetsize;
+	char* buffer = reinterpret_cast<char*>(malloc(buffersize));
+	char* endptr = buffer + buffersize;
+	char* currptr = buffer + sizeof(MinimalPacketHeader);
+	for (int i = 0; i < ObjectPackets.size(); i++)
 	{
-		size_t buffersize = sizeof(MinimalPacketHeader) + packetsize;
-		char* buffer = reinterpret_cast<char*>(malloc(buffersize));
-		char* endptr = buffer + buffersize;
-		char* currptr = buffer + sizeof(MinimalPacketHeader);
-		for (int i = 0; i < ObjectPackets.size(); i++)
-		{
-			currptr += ObjectPackets[i].PackInto(currptr, endptr - currptr);
-		}
-		
-		MinimalPacketHeader* header = reinterpret_cast<MinimalPacketHeader*>(buffer);
-		header->NumDatas = ObjectPackets.size();
-		header->TickRate = cv::getTickFrequency();
-		header->SentTick = cv::getTickCount();
-		header->Latency = header->SentTick - GrabTime;
-		header->TotalLength = buffersize;
-		//memcpy(buffer, &header, sizeof(MinimalPacketHeader));
-        return EncodedData(buffersize, buffer);
+		currptr += ObjectPackets[i].PackInto(currptr, endptr - currptr);
 	}
-	else
-	{
-		ostringstream sendbuff;
-		MinimalPacketHeader header;
-		header.NumDatas = ObjectPackets.size();
-		header.TickRate = cv::getTickFrequency();
-		header.SentTick = cv::getTickCount();
-		header.Latency = header.SentTick - GrabTime;
+	
+	MinimalPacketHeader* header = reinterpret_cast<MinimalPacketHeader*>(buffer);
+	header->NumDatas = ObjectPackets.size();
+	header->TickRate = cv::getTickFrequency();
+	header->SentTick = cv::getTickCount();
+	header->Latency = header->SentTick - GrabTime;
+	header->TotalLength = buffersize;
+	//memcpy(buffer, &header, sizeof(MinimalPacketHeader));
+	return EncodedData(buffersize, buffer);
 
-		sendbuff << header.SentTick << "," << header.Latency << "," << header.TickRate << "," << header.NumDatas << "{";
-
-		for (int i = 0; i < ObjectPackets.size(); i++)
-		{
-			PositionPacket& packet = ObjectPackets[i];
-			sendbuff << (int)packet.identity.type << "," << (int)packet.identity.numeral << "," << packet.X << "," << packet.Y << "," << packet.rotation << ";";
-		}
-
-		if (ObjectPackets.size() > 0)
-		{
-			int pos = sendbuff.tellp();
-			sendbuff.seekp(pos-1);//remove trailing ;
-		}
-		sendbuff << "}";
-		string outp = sendbuff.str();
-		//cout << "sending " << outp << endl;
-		char* buffer = (char*)malloc(outp.size()+1);
-		memcpy(buffer, outp.c_str(), outp.size()+1);
-        return EncodedData(outp.size()+1, buffer);
-	}
 }

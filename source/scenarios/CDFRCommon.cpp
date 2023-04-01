@@ -61,7 +61,7 @@ map<PacketType, bool> GetDefaultAllowMap()
 	map<PacketType, bool> allowmap = {
 		{PacketType::Null, false},
 		{PacketType::Camera, false},
-		{PacketType::ReferenceAbsolute, true},
+		{PacketType::ReferenceAbsolute, false},
 		{PacketType::ReferenceRelative, true},
 		{PacketType::Robot, true},
 		{PacketType::TrackerCube, true},
