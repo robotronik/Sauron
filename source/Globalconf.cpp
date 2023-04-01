@@ -263,9 +263,13 @@ void GetScreenData()
 	screensize = Size2d(0,0);
 	XScreenSize::Getter sizeGetter;
 	auto outputs  = sizeGetter.getOutputs();
-	if (outputs.size()>0)
+	for (int i = 0; i < outputs.size(); i++)
 	{
-		auto selected = outputs[0];
+		auto selected = outputs[i];
+		if (selected.connection != "connected")
+		{
+			continue;
+		}
 		screenresolution.width = selected.width;
 		screenresolution.height = selected.height;
 		screensize.width = selected.mmWidth;
