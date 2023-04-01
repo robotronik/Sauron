@@ -24,7 +24,7 @@ public:
 
 	void SolveLocationsTagByTag(std::vector<cv::Affine3d>& Cameras, std::vector<CameraView>& Tags);
 
-	std::vector<ObjectData> GetObjectDataVector();
+	std::vector<ObjectData> GetObjectDataVector(unsigned long Tick);
 
 	//only needed for the center
 	void SetArucoSize(int number, float SideLength);

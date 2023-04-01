@@ -68,7 +68,7 @@ void CDFRInternalMain(bool direct, bool v3d)
 		}
 		
 		tracker.SolveLocationsPerObject(arucoDatas, GrabTick);
-		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
+		vector<ObjectData> ObjData = tracker.GetObjectDataVector(GrabTick);
 		
 		if (direct)
 		{

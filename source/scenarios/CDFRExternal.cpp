@@ -129,7 +129,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		}
 		prof.EnterSection(ps++);
 		tracker.SolveLocationsPerObject(arucoDatas, GrabTick);
-		vector<ObjectData> ObjData = tracker.GetObjectDataVector();
+		vector<ObjectData> ObjData = tracker.GetObjectDataVector(GrabTick);
 
 		//Vec3d diff = robot1->GetLocation().translation() - robot2->GetLocation().translation(); 
 		//cout << "Robot 1 location : " << robot1->GetLocation().translation() << endl;

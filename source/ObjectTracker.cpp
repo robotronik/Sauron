@@ -182,13 +182,18 @@ void ObjectTracker::SolveLocationsTagByTag(vector<Affine3d>& Cameras, vector<Cam
 	}
 }
 
-vector<ObjectData> ObjectTracker::GetObjectDataVector()
+vector<ObjectData> ObjectTracker::GetObjectDataVector(unsigned long Tick)
 {
 	vector<ObjectData> ObjectDatas;
 	ObjectDatas.reserve(objects.size()*2);
 
 	for (int i = 0; i < objects.size(); i++)
 	{
+		if (Tick != 0 && !objects[i]->ShouldBeDisplayed(Tick)) //not seen, do not display
+		{
+			continue;
+		}
+		
 		vector<ObjectData> lp = objects[i]->ToObjectData(i);
 		for (int j = 0; j < lp.size(); j++)
 		{

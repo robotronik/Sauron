@@ -47,6 +47,18 @@ bool StaticObject::SetLocation(Affine3d InLocation, unsigned long tick)
 	return false;
 }
 
+bool StaticObject::ShouldBeDisplayed(unsigned long Tick)
+{
+	if (Relative)
+	{
+		return TrackedObject::ShouldBeDisplayed(Tick);
+	}
+	else
+	{
+		return true;
+	}
+}
+
 vector<ObjectData> StaticObject::ToObjectData(int BaseNumeral)
 {
 	ObjectData packet;

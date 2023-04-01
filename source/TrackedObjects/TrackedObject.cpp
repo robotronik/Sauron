@@ -77,6 +77,11 @@ bool TrackedObject::SetLocation(Affine3d InLocation, unsigned long tick)
 	return true;
 }
 
+bool TrackedObject::ShouldBeDisplayed(unsigned long Tick)
+{
+	return Tick < LastSeenTick + getTickFrequency()*0.1;
+}
+
 Affine3d TrackedObject::GetLocation()
 {
 	return Location;

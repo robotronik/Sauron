@@ -75,6 +75,9 @@ public:
 	TrackedObject();
 
 	virtual bool SetLocation(cv::Affine3d InLocation, unsigned long tick);
+	unsigned long GetLastSeenTick() { return LastSeenTick; }
+
+	virtual bool ShouldBeDisplayed(unsigned long Tick);
 	virtual cv::Affine3d GetLocation();
 
 	virtual cv::Affine3d ResolveLocation(std::vector<cv::Affine3d>& Cameras, std::vector<CameraView>& views);
