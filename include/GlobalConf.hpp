@@ -21,6 +21,8 @@ struct CaptureConfig
 
 cv::aruco::ArucoDetector& GetArucoDetector();
 
+void SetNoScreen(bool value = true);
+
 cv::Size GetScreenResolution();
 
 //Returns the physical size of the screen in mm

@@ -251,6 +251,16 @@ aruco::ArucoDetector& GetArucoDetector(){
 	return ArucoDet;
 }
 
+void SetNoScreen(bool value)
+{
+	HasScreenData = value;
+	if (value)
+	{
+		screenresolution = Size(0,0);
+		screensize = Size2d(0,0);
+	}
+}
+
 void GetScreenData()
 {
 	if (HasScreenData)

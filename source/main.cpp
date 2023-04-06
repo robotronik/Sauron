@@ -45,6 +45,7 @@ int main(int argc, char** argv )
 		"{opengl ogl     |      | runs opengl test}"
 		"{server s       |      | force server/client state}"
 		"{slam           |      | runs slam for object mapping, using saved images and calibration}"
+		"{nodisplay | | start without a display}"
 		;
 	CommandLineParser parser(argc, argv, keys);
 
@@ -59,14 +60,25 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
 	
+	bool nodisplay = parser.has("nodisplay");
+
 	#ifdef WITH_CUDA
 	cuda::setDevice(0);
 	#endif
 	ocl::setUseOpenCL(true);
 	#ifdef WITH_X11
-	XInitThreads();
-	cout << "Detected screen resolution : " << GetScreenResolution() << endl;
-	cout << "Detected screen size : " << GetScreenSize() << endl;
+	if (nodisplay)
+	{
+		SetNoScreen();
+	}
+	else
+	{
+		XInitThreads();
+		cout << "Detected screen resolution : " << GetScreenResolution() << endl;
+		cout << "Detected screen size : " << GetScreenSize() << endl;
+	}
+	
+	
 	#endif
 	if (parser.has("cuda"))
 	{
@@ -161,6 +173,7 @@ int main(int argc, char** argv )
 	}
 
 	bool direct = parser.has("direct");
+	bool opengl = !parser.has("nodisplay");
 
 	if(parser.has("server"))
 	{
@@ -181,8 +194,9 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
 	
+	cout << "Starting main program" <<endl;
 
-	CDFRExternalMain(direct, true);
+	CDFRExternalMain(direct, opengl);
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

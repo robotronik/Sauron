@@ -1,0 +1,16 @@
+[Unit]
+Description=Sauron (3D solve using Aruco and YOLO)
+
+Wants=network.target
+After=syslog.target network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=saurondir/build
+ExecStart=+saurondir/build/sauron --nodisplay
+Restart=always
+RestartSec=1
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
