@@ -9,6 +9,77 @@
 #include "data/senders/Transport/FileTransport.hpp"
 #include <thread>
 
+enum class CDFRTeam
+{
+	Unknown,
+	Green,
+	Blue
+};
+
+const map<CDFRTeam, string> TeamNames = {
+	{CDFRTeam::Unknown, "Unknown"},
+	{CDFRTeam::Blue, "Blue"},
+	{CDFRTeam::Green, "Green"}
+};
+
+CDFRTeam GetTeamFromCameras(vector<ArucoCamera*> Cameras)
+{
+	if (Cameras.size() == 0)
+	{
+		return CDFRTeam::Unknown;
+	}
+	int blues = 0, greens = 0;
+	const static double ydist = 1.1;
+	const static double xdist = 1.45;
+	const static map<CDFRTeam, vector<Vec2d>> CameraPos = 
+	{
+		{CDFRTeam::Blue, {{0, ydist}, {-xdist, -ydist}, {xdist, -ydist}, {-1.622, -0.1}}},
+		{CDFRTeam::Green, {{0, -ydist}, {-xdist, ydist}, {xdist, ydist}, {-1.622, 0.1}}}
+	};
+	map<CDFRTeam, int> TeamScores;
+	for (ArucoCamera* cam : Cameras)
+	{
+		auto campos = cam->GetLocation().translation();
+		Vec2d pos2d(campos[0], campos[1]);
+		CDFRTeam bestTeam = CDFRTeam::Unknown;
+		double bestdist = 0.2; //tolerance of 20cm
+		for (const auto [team, positions] : CameraPos)
+		{
+			for (const auto position : positions)
+			{
+				Vec2d delta = position-pos2d;
+				double dist = sqrt(delta.ddot(delta));
+				if (dist < bestdist)
+				{
+					bestTeam = team;
+					bestdist = dist;
+				}
+			}
+			
+		}
+		auto position = TeamScores.find(bestTeam);
+		if (position == TeamScores.end())
+		{
+			TeamScores[bestTeam] = 1;
+		}
+		else
+		{
+			TeamScores[bestTeam] += 1;
+		}
+	}
+	CDFRTeam bestTeam = CDFRTeam::Unknown;
+	int mostCount = 0;
+	for (const auto [team, count] : TeamScores)
+	{
+		if (count > mostCount)
+		{
+			bestTeam = team;
+			mostCount = count;
+		}
+	}
+	return bestTeam;
+}
+
 void CDFRExternalMain(bool direct, bool v3d)
 {
 	ManualProfiler prof("frames ");
@@ -34,18 +105,28 @@ void CDFRExternalMain(bool direct, bool v3d)
 		startWindowThread();
 	}
 	
-	ObjectTracker tracker;
+	ObjectTracker bluetracker, greentracker;
 
 	StaticObject* boardobj = new StaticObject(false, "board");
-	tracker.RegisterTrackedObject(boardobj); 
-	TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, 0.0952, "Robot1");
-	TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, 0.0952, "Robot2");
-	tracker.RegisterTrackedObject(robot1);
-	tracker.RegisterTrackedObject(robot2);
+	bluetracker.RegisterTrackedObject(boardobj); 
+	greentracker.RegisterTrackedObject(boardobj);
+	//TrackerCube* robot1 = new TrackerCube({51, 52, 54, 55}, 0.06, 0.0952, "Robot1");
+	//TrackerCube* robot2 = new TrackerCube({57, 58, 59, 61}, 0.06, 0.0952, "Robot2");
+	//bluetracker.RegisterTrackedObject(robot1);
+	//bluetracker.RegisterTrackedObject(robot2);
 	
 	BoardGL OpenGLBoard;
-	//TrackerCube* testcube = new TrackerCube({51, 52, 53, 54, 55}, 0.05, 85.065/1000.0, "test");
-	//OpenGLBoard.InspectObject(testcube);
+	TrackerCube* blue1 = new TrackerCube({51, 52, 53, 54, 55}, 0.05, 85.065/1000.0, "blue1");
+	TrackerCube* blue2 = new TrackerCube({56, 57, 58, 59, 60}, 0.05, 85.065/1000.0, "blue2");
+	bluetracker.RegisterTrackedObject(blue1);
+	bluetracker.RegisterTrackedObject(blue2);
+
+	TrackerCube* green1 = new TrackerCube({71, 72, 73, 74, 75}, 0.05, 85.065/1000.0, "green1");
+	TrackerCube* green2 = new TrackerCube({76, 77, 78, 79, 80}, 0.05, 85.065/1000.0, "green2");
+	greentracker.RegisterTrackedObject(green1);
+	greentracker.RegisterTrackedObject(green2);
+	
+	//OpenGLBoard.InspectObject(blue1);
 	if (v3d)
 	{
 		OpenGLBoard.Start();
@@ -55,15 +136,17 @@ void CDFRExternalMain(bool direct, bool v3d)
 	
 	
 	//track and untrack cameras dynamically
-	CameraMan.PostCameraConnect = [&tracker](ArucoCamera* cam) -> bool
+	CameraMan.PostCameraConnect = [&bluetracker, &greentracker](ArucoCamera* cam) -> bool
 	{
-		tracker.RegisterTrackedObject(cam);
+		bluetracker.RegisterTrackedObject(cam);
+		greentracker.RegisterTrackedObject(cam);
 		cout << "Registering new camera @" << cam << endl;
 		return true;
 	};
-	CameraMan.OnDisconnect = [&tracker](ArucoCamera* cam) -> bool
+	CameraMan.OnDisconnect = [&bluetracker, &greentracker](ArucoCamera* cam) -> bool
 	{
-		tracker.UnregisterTrackedObject(cam);
+		bluetracker.UnregisterTrackedObject(cam);
+		greentracker.UnregisterTrackedObject(cam);
 		cout << "Unregistering camera @" << cam << endl;
 		return true;
 	};
@@ -87,6 +170,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 	}
 
 	int lastmarker = 0;
+	CDFRTeam LastTeam = CDFRTeam::Unknown;
 	for (;;)
 	{
 
@@ -94,9 +178,22 @@ void CDFRExternalMain(bool direct, bool v3d)
 		ps = 0;
 		prof.EnterSection(ps++);
 		CameraMan.Tick<VideoCaptureCamera>();
+		CDFRTeam Team = GetTeamFromCameras(CameraMan.Cameras);
+		if (Team != LastTeam)
+		{
+			const string teamname = TeamNames.at(Team);
+			cout << "Detected team change : to " << teamname <<endl; 
+		}
+		
 		prof.EnterSection(ps++);
 		int64 GrabTick = getTickCount();
-		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), Detector, &tracker);
+		ObjectTracker* TrackerToUse = &bluetracker;
+		if (Team == CDFRTeam::Green)
+		{
+			TrackerToUse = &greentracker;
+		}
+		 
+		BufferedPipeline(0, vector<ArucoCamera*>(physicalCameras.begin(), physicalCameras.end()), Detector, TrackerToUse);
 		prof.EnterSection(ps++);
 		int NumCams = physicalCameras.size();
 		vector<CameraArucoData> arucoDatas;
@@ -133,8 +230,8 @@ void CDFRExternalMain(bool direct, bool v3d)
 			
 		}
 		prof.EnterSection(ps++);
-		tracker.SolveLocationsPerObject(arucoDatas, GrabTick);
-		vector<ObjectData> ObjData = tracker.GetObjectDataVector(GrabTick);
+		TrackerToUse->SolveLocationsPerObject(arucoDatas, GrabTick);
+		vector<ObjectData> ObjData = TrackerToUse->GetObjectDataVector(GrabTick);
 
 		//Vec3d diff = robot1->GetLocation().translation() - robot2->GetLocation().translation(); 
 		//cout << "Robot 1 location : " << robot1->GetLocation().translation() << endl;
