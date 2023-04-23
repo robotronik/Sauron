@@ -22,6 +22,8 @@
 #include "Scenarios/CDFRInternal.hpp"
 #include "mapping.hpp"
 
+#include "Overlord/Overlord.hpp"
+
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <iostream>
@@ -193,6 +195,9 @@ int main(int argc, char** argv )
 		SLAMSolve();
 		exit(EXIT_SUCCESS);
 	}
+
+	Overlord::Manager man;
+	man.Thread();
 	
 	cout << "Starting main program" <<endl;
 

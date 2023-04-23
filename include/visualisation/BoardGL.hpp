@@ -7,6 +7,7 @@
 
 #include "TrackedObjects/ObjectIdentity.hpp"
 
+#include "visualisation/GLWindow.hpp"
 #include "visualisation/openGL/Mesh.hpp"
 #include "visualisation/openGL/Shader.hpp"
 
@@ -24,22 +25,15 @@ enum class MeshNames
 	trackercube,
 	toptracker
 };
-class BoardGL
+class BoardGL : public GLWindow
 {
 private:
-	bool HasWindow = false;
-	GLFWwindow* window;
-	static bool HasContext;
-	bool HasInit = false;
 	GLuint VertexArrayID;
 	Shader ShaderProgram;
 
 	bool MeshesLoaded = false, TagsLoaded= false;
 	std::map<MeshNames, Mesh> Meshes;
 	std::vector<Texture> TagTextures;
-
-	void GLInit(); //Start OpenGL
-	GLFWwindow* GLCreateWindow(cv::Size windowsize); //Create a window
 
 	glm::mat4 GetVPMatrix(glm::vec3 forward, glm::vec3 up);
 public:
@@ -67,5 +61,7 @@ public:
 	void runTest();
 
 	void InspectObject(TrackedObject* object); //Dsiplay this objects and it's tags
+
+	virtual void WindowSizeCallback(int width, int height) override;
 
 };
