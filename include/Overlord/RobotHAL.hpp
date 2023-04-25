@@ -9,8 +9,8 @@ namespace Overlord
 	class LinearMovement
 	{
 	public:
-		double Pos, Speed, Acceleration, Deceleration;
-		double MaxSpeed, MinSpeed;
+		double Pos=0, Speed=0, Acceleration=1, Deceleration=2;
+		double MaxSpeed=1, MinSpeed=0;
 		double TargetPos;
 
 		LinearMovement()
@@ -21,6 +21,10 @@ namespace Overlord
 		{};
 
 		virtual ~LinearMovement() {};
+
+		static double wraptwopi(double in);
+
+		static double closestangle(double x, double ref);
 
 		constexpr double SpeedDeltaTime(double v0, double v1, double acc)
 		{
@@ -41,11 +45,13 @@ namespace Overlord
 			NoTimeLeft
 		};
 
-		double GetBrakingPosition(double v0);
+		double GetBrakingDistance(double v0);
 		//Must be going the right direction, will only do a single acceleration/deceleration
 		MoveABResult MoveAB(double Target, double& TimeBudget);
 
 		void SetTarget(double NewTarget);
+
+		void SetTargetAngular(double angle);
 
 		//Try to move to the target pos for dt maximum time.
 		//Returns the time used
@@ -56,8 +62,9 @@ namespace Overlord
 	class RobotHAL
 	{
 	public:
-		double posX, posY, velX, velY;
+		double posX=0, posY=0;
 		LinearMovement PositionLinear;
+		LinearMovement Rotation;
 		LinearMovement ClawHeight, ClawExtension;
 		LinearMovement Trays[3];
 
@@ -65,6 +72,19 @@ namespace Overlord
 		RobotHAL(RobotHAL* CopyFrom);
 		virtual ~RobotHAL();
 
+		virtual void GetForwardVector(double &x, double &y);
+
+		virtual void GetStoppingPosition(double &endX, double &endY);
+
+		virtual double Rotate(double target, double &TimeBudget);
+
+		//positive distance means forwards, negative means backwards
+		virtual double LinearMove(double distance, double &TimeBudget);
+
+		//move to position, no rotation target
+		virtual double MoveTo(double x, double y, double &TimeBudget);
+
+		//move to position with rotation target
 		virtual double MoveTo(double x, double y, double rot, double &TimeBudget);
 
 		virtual double MoveClaw(double height, double extension);

@@ -63,9 +63,9 @@ vector<CameraSettings> CameraManager::autoDetectCameras(CameraStartType Start, s
 	{
 		for (const auto & device : devices) 
 		{
-			cout << device.device_description <<  " at " << device.bus_info << " is attached to\n";
+			cout << device.device_description <<  " at " << device.bus_info << " is attached to :\n";
 			for (const auto & path : device.device_paths) {
-				cout << path << "\n";
+				cout << "\t" << path << "\n";
 			}
 		}
 	}

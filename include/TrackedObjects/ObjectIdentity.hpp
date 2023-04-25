@@ -71,4 +71,15 @@ struct ObjectData
 {
 	ObjectIdentity identity;
 	cv::Affine3d location;
+
+	ObjectData(ObjectIdentity InIdentity = ObjectIdentity(), cv::Affine3d InLocation = cv::Affine3d::Identity())
+		:identity(InIdentity), location(InLocation)
+	{}
+
+	ObjectData(ObjectIdentity InIdentity, double posX, double posY, double posZ)
+		:identity(InIdentity)
+	{
+		location = cv::Affine3d::Identity();
+		location.translation(cv::Vec3d(posX, posY, posZ));
+	}
 };
