@@ -23,7 +23,11 @@ enum class MeshNames
 	skybox,
 	axis,
 	trackercube,
-	toptracker
+	toptracker,
+	cherry,
+	browncake,
+	yellowcake,
+	pinkcake
 };
 class BoardGL : public GLWindow
 {

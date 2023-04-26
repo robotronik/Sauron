@@ -10,12 +10,16 @@ enum class PacketType : uint8_t
 	Null                = 0, //Invalid data
 	Camera				= 0b1, //Object is camera
 	ReferenceAbsolute   = 0b10, //The table or the basket, something that doesn't move when we're in external view
-	ReferenceRelative   = 0b11, //Something that doesn't move and should have a fixed location, 
+	ReferenceRelative, //Something that doesn't move and should have a fixed location, 
 		//but we're moving (internal view), so that thing is moving relative to us, so here's the location of that thing relative to us
-	Robot               = 0b100, //A robot. Ennemy or ally.
-	TrackerCube			= 0b101, //Tracker that we put on the ennemy robot
-	TopTracker			= 0b110, //Tracker that's on every robot
-	Puck                = 0b1000, //A cake or something. 
+	Robot               = 0b100,	//A robot. Ennemy or ally.
+	TrackerCube,					//Tracker that we put on the ennemy robot
+	TopTracker,						//Tracker that's on every robot
+	Puck                = 0b1000,	//A cake or something. 
+	BrownCake,
+	YellowCake,
+	PinkCake,
+	Cherry,
 	Tag					= 0b10000, // Raw tag. Size in metadata, ID is numeral. For debug/inspect purposes
 };
 

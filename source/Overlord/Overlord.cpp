@@ -53,9 +53,9 @@ void Manager::Init()
 
 	PhysicalBoardState.ObjectsOnBoard.clear();
 
-	static const vector<Object> defaultcakes = {Object(ObjectType::CakePink, 0.725, 0.775),
-	Object(ObjectType::CakeYellow, 0.925, 0.775),
-	Object(ObjectType::CakeBrown, 0.375, 0.725)};
+	static const vector<Object> defaultcakes = {Object(ObjectType::CakeYellow, 0.725, 0.775),
+	Object(ObjectType::CakePink, 0.925, 0.775),
+	Object(ObjectType::CakeBrown, 0.375, 0.275)};
 
 	for (int i = 0; i < 4; i++) //mirrors
 	{
@@ -149,15 +149,16 @@ void Manager::Display()
 	static const map<ObjectType, PacketType> boardgltypemap = {
 		{ObjectType::Unknown, PacketType::Null},
 		{ObjectType::Robot, PacketType::Robot},
-		{ObjectType::Cherry, PacketType::TopTracker}, //todo : actual mesh for cherries
-		{ObjectType::CakeBrown, PacketType::Puck},
-		{ObjectType::CakeYellow, PacketType::Puck},
-		{ObjectType::CakePink, PacketType::Puck}
+		{ObjectType::Cherry, PacketType::Cherry},
+		{ObjectType::CakeBrown, PacketType::BrownCake},
+		{ObjectType::CakeYellow, PacketType::YellowCake},
+		{ObjectType::CakePink, PacketType::PinkCake}
 	};
 	for (const auto &object : PhysicalBoardState.ObjectsOnBoard)
 	{
 		PacketType type = boardgltypemap.at(object.Type);
-		dataconcat.emplace_back(ObjectIdentity(type, 0), object.PosX, object.PosY, 0.01);
+		double posZ = object.Type == ObjectType::Cherry ? 0.035 : 0;
+		dataconcat.emplace_back(ObjectIdentity(type, 0), object.PosX, object.PosY, posZ);
 	}
 	for (int robotidx = 0; robotidx < RobotControllers.size(); robotidx++)
 	{

@@ -180,7 +180,12 @@ void BoardGL::LoadModels()
 		{MeshNames::skybox, {"skybox.obj", nullopt}},
 		{MeshNames::tag, {"tag.obj", nullopt}},
 		{MeshNames::trackercube, {"trackercube.obj", nullopt}},
-		{MeshNames::toptracker, {"toptracker.obj", nullopt}}
+		{MeshNames::toptracker, {"toptracker.obj", nullopt}},
+
+		{MeshNames::browncake,	{"cakes/cake.obj", "cakes/cakebrown.png"}},
+		{MeshNames::yellowcake,	{"cakes/cake.obj", "cakes/cakeyellow.png"}},
+		{MeshNames::pinkcake,	{"cakes/cake.obj", "cakes/cakepink.png"}},
+		{MeshNames::cherry,	{"cherry.obj", nullopt}}
 	};
 	//cout << "Loading meshes" << endl;
 
@@ -282,7 +287,12 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 		{PacketType::ReferenceRelative, MeshNames::arena},
 		//{PacketType::Tag, MeshNames::tag}, //Do not add tag, it needs special care
 		{PacketType::TopTracker, MeshNames::toptracker},
-		{PacketType::TrackerCube, MeshNames::trackercube}
+		{PacketType::TrackerCube, MeshNames::trackercube},
+
+		{PacketType::PinkCake, MeshNames::pinkcake},
+		{PacketType::YellowCake, MeshNames::yellowcake},
+		{PacketType::BrownCake, MeshNames::browncake},
+		{PacketType::Cherry, MeshNames::cherry}
 		//no puck yet because puck you !
 	};
 

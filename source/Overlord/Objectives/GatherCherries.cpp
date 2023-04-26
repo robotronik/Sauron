@@ -21,7 +21,6 @@ double Overlord::GatherCherriesObjective::ExecuteObjective(double &TimeBudget, R
 	{
 		return 0; //not able to get to the cherry in time, 0 points
 	}
-	//TODO: take the cherry
 	for (int i = 0; i < BoardState->ObjectsOnBoard.size(); i++)
 	{
 		if (BoardState->ObjectsOnBoard[i] == cherries[0])
