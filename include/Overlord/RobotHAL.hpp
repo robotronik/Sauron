@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include "Overlord/Collision/Vector2d.hpp"
 #include <vector>
 
 namespace Overlord
@@ -62,19 +63,24 @@ namespace Overlord
 	class RobotHAL
 	{
 	public:
-		double posX=0, posY=0;
+		Vector2d<double> position;
 		LinearMovement PositionLinear;
 		LinearMovement Rotation;
 		LinearMovement ClawHeight, ClawExtension;
 		LinearMovement Trays[3];
 
+		double width = 0.2, depth = 0.1; //todo : actual values
+
 		RobotHAL(/* args */);
 		RobotHAL(RobotHAL* CopyFrom);
 		virtual ~RobotHAL();
 
-		virtual void GetForwardVector(double &x, double &y);
+		//Can the robot fit at this location in the terrain ?
+		bool IsLocationValid(Vector2d<double> pos, double rot) const; 
 
-		virtual void GetStoppingPosition(double &endX, double &endY);
+		virtual Vector2d<double> GetForwardVector();
+
+		virtual Vector2d<double> GetStoppingPosition();
 
 		virtual double Rotate(double target, double &TimeBudget);
 
@@ -82,10 +88,10 @@ namespace Overlord
 		virtual double LinearMove(double distance, double &TimeBudget);
 
 		//move to position, no rotation target
-		virtual double MoveTo(double x, double y, double &TimeBudget);
+		virtual double MoveTo(Vector2d<double> target, double &TimeBudget);
 
 		//move to position with rotation target
-		virtual double MoveTo(double x, double y, double rot, double &TimeBudget);
+		virtual double MoveTo(Vector2d<double> target, double rot, double &TimeBudget);
 
 		virtual double MoveClaw(double height, double extension);
 

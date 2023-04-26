@@ -5,10 +5,9 @@
 
 double Overlord::GatherCherriesObjective::ExecuteObjective(double &TimeBudget, RobotHAL* robot, BoardMemory* BoardState, RobotMemory* RobotState)
 {
-	double spx, spy;
 	double BaseTime = TimeBudget;
-	robot->GetStoppingPosition(spx, spy);
-	const auto cherries = BoardState->FindObjectsSorted((uint8_t)ObjectType::Cherry, spx, spy);
+	auto stoppos = robot->GetStoppingPosition();
+	const auto cherries = BoardState->FindObjectsSorted((uint8_t)ObjectType::Cherry, stoppos);
 	if (cherries.size() == 0)
 	{
 		return 0;
@@ -16,7 +15,7 @@ double Overlord::GatherCherriesObjective::ExecuteObjective(double &TimeBudget, R
 	//vacuum to the right of the robot
 	//robot width is 310mm
 	
-	robot->MoveTo(cherries[0].PosX, cherries[0].PosY, TimeBudget); //TODO: move so that the intake is that the cherry position, not the robot
+	robot->MoveTo(cherries[0].position, TimeBudget); //TODO: move so that the intake is that the cherry position, not the robot
 	if (TimeBudget < __DBL_EPSILON__)
 	{
 		return 0; //not able to get to the cherry in time, 0 points

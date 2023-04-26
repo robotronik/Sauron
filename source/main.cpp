@@ -196,8 +196,10 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
 
-	Overlord::Manager man;
-	man.Thread();
+	{
+		Overlord::Manager man;
+		man.Thread();
+	}
 	
 	cout << "Starting main program" <<endl;
 

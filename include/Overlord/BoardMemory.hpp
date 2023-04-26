@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <cstdint>
+#include "Overlord/Collision/Vector2d.hpp"
 
 #ifdef WITH_SAURON
 #include "visualisation/BoardGL.hpp"
@@ -22,10 +23,11 @@ namespace Overlord{
 	struct Object
 	{
 		ObjectType Type;
-		double PosX, PosY, Rot;
+		Vector2d<double> position;
+		double Rot;
 
-		Object(ObjectType type = ObjectType::Unknown, double posx=0, double posy=0, double rot=0)
-		:Type(type), PosX(posx), PosY(posy), Rot(rot)
+		Object(ObjectType type = ObjectType::Unknown, Vector2d<double> InPos = {0,0}, double rot=0)
+		:Type(type), position(InPos), Rot(rot)
 		{};
 
 		const bool operator==(const Object& other)
@@ -34,11 +36,11 @@ namespace Overlord{
 			{
 				return false;
 			}
-			if (abs(PosX-other.PosX) > __DBL_EPSILON__)
+			if (abs(position.x-other.position.x) > __DBL_EPSILON__)
 			{
 				return false;
 			}
-			if (abs(PosY-other.PosY) > __DBL_EPSILON__)
+			if (abs(position.y-other.position.y) > __DBL_EPSILON__)
 			{
 				return false;
 			}
@@ -54,7 +56,7 @@ namespace Overlord{
 
 		std::vector<Object> FindObjects(std::uint8_t TypeFilter);
 
-		std::vector<Object> FindObjectsSorted(std::uint8_t TypeFilter, double posX, double posY);
+		std::vector<Object> FindObjectsSorted(std::uint8_t TypeFilter, Vector2d<double> SearchPos);
 	};
 
 	class RobotMemory

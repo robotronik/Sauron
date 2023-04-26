@@ -31,7 +31,7 @@ namespace Overlord
 
 		void Run();
 
-		void Display();
+		bool Display();
 
 		void Thread();
 	};

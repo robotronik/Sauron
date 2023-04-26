@@ -234,25 +234,25 @@ RobotHAL::~RobotHAL()
 {
 }
 
-void RobotHAL::GetForwardVector(double &x, double &y)
+bool RobotHAL::IsLocationValid(Vector2d<double> pos, double rot) const
 {
-	return sincos(Rotation.Pos, &y, &x);
+	return false; //todo
 }
 
-void RobotHAL::GetStoppingPosition(double &endX, double &endY)
+Vector2d<double> RobotHAL::GetForwardVector()
+{
+	return Vector2d<double>(Rotation.Pos);
+}
+
+Vector2d<double> RobotHAL::GetStoppingPosition()
 {
 	double velmag = PositionLinear.Speed;
 	double stoppingpos1d = PositionLinear.GetBrakingDistance(PositionLinear.Speed);
 	if (velmag <= PositionLinear.MinSpeed + __DBL_EPSILON__)
 	{
-		endX = posX;
-		endY = posY;
-		return;
+		return position;
 	}
-	double xv, yv;
-	GetForwardVector(xv, yv);
-	endX = posX +xv*stoppingpos1d;
-	endY = posY +yv*stoppingpos1d;
+	return position + GetForwardVector()*stoppingpos1d;
 }
 
 double RobotHAL::Rotate(double target, double &TimeBudget)
@@ -276,28 +276,25 @@ double RobotHAL::LinearMove(double distance, double &TimeBudget)
 	PositionLinear.Pos = 0;
 	PositionLinear.Tick(TimeBudget);
 	double xv, yv;
-	GetForwardVector(xv, yv);
-	posX += xv*PositionLinear.Pos;
-	posY += yv*PositionLinear.Pos;
+	auto forward = GetForwardVector();
+	position += forward * PositionLinear.Pos;
 	return TimeBudget;
 }
 
-double RobotHAL::MoveTo(double x, double y, double &TimeBudget)
+double RobotHAL::MoveTo(Vector2d<double> target, double &TimeBudget)
 {
-	double dx = x-posX;
-	double dy = y-posY;
-	double dist = sqrt(dx*dx+dy*dy);
-	double angleneeded = atan2(dy, dx);
+	auto deltapos = target-position;
+	double dist = deltapos.length();
+	double angleneeded = deltapos.angle();
 	double dangle = LinearMovement::wraptwopi(angleneeded-Rotation.Pos);
 	if (abs(dangle)> 1/180.0*M_PI) //not going the right way
 	{
 		if (abs(PositionLinear.Speed) > PositionLinear.MinSpeed + __DBL_EPSILON__) //moving
 		{
 			LinearMove(PositionLinear.GetBrakingDistance(PositionLinear.Speed), TimeBudget); //stop
-			dx = x-posX;
-			dy = y-posY;
-			dist = sqrt(dx*dx+dy*dy);
-			angleneeded = atan2(dy, dx);
+			deltapos = target-position;
+			dist = deltapos.length();
+			angleneeded = deltapos.angle();
 		}
 	}
 	Rotate(angleneeded, TimeBudget);
@@ -305,9 +302,9 @@ double RobotHAL::MoveTo(double x, double y, double &TimeBudget)
 	return TimeBudget;
 }
 
-double RobotHAL::MoveTo(double x, double y, double rot, double &TimeBudget)
+double RobotHAL::MoveTo(Vector2d<double> target, double rot, double &TimeBudget)
 {
-	MoveTo(x, y, TimeBudget);
+	MoveTo(target, TimeBudget);
 	double drot = LinearMovement::wraptwopi(rot-Rotation.Pos);
 	if (abs(drot)> 10.0/180.0*M_PI && TimeBudget > __DBL_EPSILON__) //needs to rotate
 	{

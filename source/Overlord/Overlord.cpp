@@ -53,9 +53,9 @@ void Manager::Init()
 
 	PhysicalBoardState.ObjectsOnBoard.clear();
 
-	static const vector<Object> defaultcakes = {Object(ObjectType::CakeYellow, 0.725, 0.775),
-	Object(ObjectType::CakePink, 0.925, 0.775),
-	Object(ObjectType::CakeBrown, 0.375, 0.275)};
+	static const vector<Object> defaultcakes = {Object(ObjectType::CakeYellow, {0.725, 0.775}),
+	Object(ObjectType::CakePink, {0.925, 0.775}),
+	Object(ObjectType::CakeBrown, {0.375, 0.275})};
 
 	for (int i = 0; i < 4; i++) //mirrors
 	{
@@ -64,8 +64,7 @@ void Manager::Init()
 		for (int j = 0; j < defaultcakes.size(); j++)
 		{
 			Object cake = defaultcakes[j];
-			cake.PosX*=mirrorx;
-			cake.PosY*=mirrory;
+			cake.position*=Vector2d<double>(mirrorx, mirrory);
 			for (int k = 0; k < 3; k++)
 			{
 				PhysicalBoardState.ObjectsOnBoard.push_back(cake);
@@ -78,10 +77,10 @@ void Manager::Init()
 		double mirror = i&1 ? -1:1;
 		for (int j = 0; j < 10; j++)
 		{
-			Object cherryx(ObjectType::Cherry, 1.215+j*0.03, 0);
-			Object cherryy(ObjectType::Cherry, -0.135+j*0.03, 0.985);
-			cherryx.PosX *= mirror;
-			cherryy.PosY *= mirror;
+			Object cherryx(ObjectType::Cherry, {1.215+j*0.03, 0});
+			Object cherryy(ObjectType::Cherry, {-0.135+j*0.03, 0.985});
+			cherryx.position.x *= mirror;
+			cherryy.position.y *= mirror;
 			PhysicalBoardState.ObjectsOnBoard.push_back(cherryx);
 			PhysicalBoardState.ObjectsOnBoard.push_back(cherryy);
 		}
@@ -140,7 +139,7 @@ void Manager::Run()
 	}
 }
 
-void Manager::Display()
+bool Manager::Display()
 {
 #ifdef WITH_SAURON
 	vector<ObjectData> dataconcat;
@@ -158,7 +157,7 @@ void Manager::Display()
 	{
 		PacketType type = boardgltypemap.at(object.Type);
 		double posZ = object.Type == ObjectType::Cherry ? 0.035 : 0;
-		dataconcat.emplace_back(ObjectIdentity(type, 0), object.PosX, object.PosY, posZ);
+		dataconcat.emplace_back(ObjectIdentity(type, 0), object.position.x, object.position.y, posZ);
 	}
 	for (int robotidx = 0; robotidx < RobotControllers.size(); robotidx++)
 	{
@@ -166,11 +165,9 @@ void Manager::Display()
 		const auto& robotmem = PhysicalRobotStates[robotidx];
 		Affine3d robotloc;
 		cout << "Robot " << robotidx << " speed is " << robothandle->PositionLinear.Speed << endl;
-		robotloc.translation(Vec3d(robothandle->posX, robothandle->posY, 0.0));
-		Vec3d xvec(0,0,0), yvec(0,0,0);
-		robothandle->GetForwardVector(xvec[0], xvec[1]);
-		yvec[1] = xvec[0];
-		yvec[0] = -xvec[1];
+		robotloc.translation(Vec3d(robothandle->position.x, robothandle->position.y, 0.0));
+		auto forward  = robothandle->GetForwardVector();
+		Vec3d xvec(forward.x,forward.y,0), yvec(-forward.y,forward.x,0);
 		robotloc.rotation(MakeRotationFromXY(xvec, yvec));
 		dataconcat.emplace_back(ObjectIdentity(PacketType::Robot, 0), robotloc);
 		for (int trayidx = 0; trayidx < sizeof(robotmem.CakeTrays) / sizeof(robotmem.CakeTrays[0]); trayidx++)
@@ -179,14 +176,15 @@ void Manager::Display()
 			for (const auto &object : tray)
 			{
 				PacketType type = boardgltypemap.at(object.Type);
-				dataconcat.emplace_back(ObjectIdentity(type, 0), object.PosX, object.PosY, trayidx*0.2+0.1);
+				dataconcat.emplace_back(ObjectIdentity(type, 0), object.position.x, object.position.y, trayidx*0.2+0.1);
 			}
 		}
 	}
 	
 	
-	visualiser.Tick(dataconcat);
+	return visualiser.Tick(dataconcat);
 #endif
+	return true;
 }
 
 void Manager::Thread()
@@ -194,7 +192,8 @@ void Manager::Thread()
 	Init();
 #ifdef WITH_SAURON
 	visualiser.Start();
-	/*Mat posplotdisc = Mat::zeros(Size(1000,800), CV_8UC3);
+#if false
+	Mat posplotdisc = Mat::zeros(Size(1000,800), CV_8UC3);
 	Mat posplotcont = posplotdisc.clone();
 	LinearMovement dut(1, 2, 2, 0.1, 5.40, 0.30);
 	LinearMovement dutdisc = dut, dutcont = dut;
@@ -244,13 +243,15 @@ void Manager::Thread()
 			//cout << "Current speed : " << dutcont.Speed << endl;
 		}
 		waitKey(10);
-	}*/
+	}
 #endif
-	while (true)
+#endif
+	bool killed = false;
+	while (!killed)
 	{
 		GatherData();
 		Run();
-		Display();
+		killed = !Display();
 		waitKey(1000/50);
 	}
 }
