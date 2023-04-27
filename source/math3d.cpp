@@ -1,5 +1,6 @@
 #include "math3d.hpp"
 #include <math.h>
+#include <glm/glm.hpp>
 
 using namespace cv;
 using namespace std;
@@ -189,4 +190,17 @@ bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Ve
 	Line1Point = Line1Orig + s * Line1Dir;
 	Line2Point = Line2Orig + t * Line2Dir;
 	return true;*/
+}
+
+glm::mat4 Affine3DToGLM(cv::Affine3d Location)
+{
+	glm::mat4 outmat;
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			outmat[j][i] = Location.matrix(i,j);
+		}
+	}
+	return outmat;
 }

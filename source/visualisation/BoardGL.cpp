@@ -15,9 +15,10 @@
 #include <glm/gtx/transform.hpp>
 #include <assimp/Importer.hpp>
 
+#include "GlobalConf.hpp"
+#include "data/metadata.hpp"
 #include "visualisation/openGL/Mesh.hpp"
 #include "TrackedObjects/TrackedObject.hpp"
-#include "GlobalConf.hpp"
 
 using namespace std;
 
@@ -28,6 +29,13 @@ map<MeshNames, Mesh> BoardGL::Meshes;
 vector<Texture> BoardGL::TagTextures;*/
 
 static string shaderfolder = "../source/visualisation/openGL/";
+
+GLObject::GLObject(MeshNames InType, double x, double y, double z, std::string InMetadata)
+{
+	type = InType;
+	location = glm::translate(glm::mat4(1), {x,y,z});
+	metadata = InMetadata;
+}
 
 void BoardGL::WindowSizeCallback(int width, int height)
 {
@@ -84,18 +92,7 @@ glm::vec3 BoardGL::GetRightVector()
 	return right;
 }
 
-glm::mat4 Affine3DToGLM(cv::Affine3d Location)
-{
-	glm::mat4 outmat;
-	for (int i = 0; i < 4; i++)
-	{
-		for (int j = 0; j < 4; j++)
-		{
-			outmat[j][i] = Location.matrix(i,j);
-		}
-	}
-	return outmat;
-}
+
 
 
 void BoardGL::HandleInputs()
@@ -249,7 +246,7 @@ void BoardGL::Start()
 	//cout << "OpenGL init done!" << endl;
 }
 
-bool BoardGL::Tick(std::vector<ObjectData> data)
+bool BoardGL::Tick(std::vector<GLObject> data)
 {
 	glfwMakeContextCurrent(Window);
 	glfwSwapBuffers(Window);
@@ -279,60 +276,38 @@ bool BoardGL::Tick(std::vector<ObjectData> data)
 	Meshes[MeshNames::axis].Draw(ParameterID);
 	Meshes[MeshNames::skybox].Draw(ParameterID);
 
-	static const  map<enum PacketType, enum MeshNames> PacketToMesh = 
-	{
-		{PacketType::Robot, MeshNames::robot},
-		{PacketType::Camera, MeshNames::brio},
-		{PacketType::ReferenceAbsolute, MeshNames::arena},
-		{PacketType::ReferenceRelative, MeshNames::arena},
-		//{PacketType::Tag, MeshNames::tag}, //Do not add tag, it needs special care
-		{PacketType::TopTracker, MeshNames::toptracker},
-		{PacketType::TrackerCube, MeshNames::trackercube},
-
-		{PacketType::PinkCake, MeshNames::pinkcake},
-		{PacketType::YellowCake, MeshNames::yellowcake},
-		{PacketType::BrownCake, MeshNames::browncake},
-		{PacketType::Cherry, MeshNames::cherry}
-		//no puck yet because puck you !
-	};
+	
 
 	for (int i = 0; i < data.size(); i++)
 	{
-		ObjectData &odata = data[i];
-		glm::mat4 ObjectMatrix = Affine3DToGLM(odata.location);
-		glm::mat4 MVPMatrix = VPMatrix * ObjectMatrix;
+		auto &odata = data[i];
+
+		glm::mat4 MVPMatrix = VPMatrix * odata.location;
 
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVPMatrix[0][0]);
 		glUniform1f(ScaleID, 1);
-		switch (odata.identity.type)
+		switch (odata.type)
 		{
-		case PacketType::Camera : //Add an axis to the camera
-			Meshes[MeshNames::axis].Draw(ParameterID);
-			break;
-		case PacketType::Tag :
+		case MeshNames::tag :
 			{
 				if (!TagsLoaded)
 				{
 					cerr << "WARNING Tried to display tags but tags aren't loaded" << endl;
 					break;
 				}
-				
-				float scalefactor = odata.identity.GetTypeFromMetadata<float>(0);
-				glUniform1f(ScaleID, scalefactor);
-				TagTextures[odata.identity.numeral].Draw();
+				int number; float scale;
+				GetTag(odata.metadata, scale, number); 
+				glUniform1f(ScaleID, scale);
+				TagTextures[number].Draw();
 				Meshes[MeshNames::tag].Draw(ParameterID, true);
 			}
 			break;
+		case MeshNames::brio : //Add an axis to the camera
+			Meshes[MeshNames::axis].Draw(ParameterID);
 		default:
+			Meshes[odata.type].Draw(ParameterID);
 			break;
 		}
-
-		auto foundmesh = PacketToMesh.find(odata.identity.type);
-		if (foundmesh != PacketToMesh.end())
-		{
-			Meshes[foundmesh->second].Draw(ParameterID);
-		}
-		
 	}
 
 	bool IsDone = glfwGetKey(Window, GLFW_KEY_ESCAPE ) != GLFW_PRESS && glfwWindowShouldClose(Window) == 0;
@@ -387,25 +362,4 @@ void BoardGL::runTest()
 	} // Check if the ESC key was pressed or the Window was closed
 	while( glfwGetKey(Window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 		glfwWindowShouldClose(Window) == 0 );
-}
-
-void BoardGL::InspectObject(TrackedObject* object)
-{
-	Start();
-
-	LoadTags();
-
-	vector<ObjectData> datas = object->ToObjectData(0);
-	for (size_t i = 0; i < object->markers.size(); i++)
-	{
-		ArucoMarker &m = object->markers[i];
-		ObjectData d;
-		d.identity.numeral = m.number;
-		d.identity.type = PacketType::Tag;
-		d.identity.AddTypeToMetadata(m.sideLength);
-		d.location = m.Pose;
-		datas.push_back(d);
-	}
-	while (Tick(datas));
-	
 }

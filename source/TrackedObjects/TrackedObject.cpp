@@ -7,9 +7,11 @@
 
 
 #include "math3d.hpp"
-#include "Cameras/Camera.hpp"
+#include "metadata.hpp"
 #include "GlobalConf.hpp"
+#include "Cameras/Camera.hpp"
 #include "data/CameraView.hpp"
+#include "visualisation/BoardGL.hpp"
 
 using namespace cv;
 using namespace std;
@@ -346,6 +348,27 @@ vector<ObjectData> TrackedObject::ToObjectData(int BaseNumeral)
 {
 	cerr << "WARNING: Call to base TrackedObject::ToObjectData function. That function is uninplemented. Override it." <<endl;
 	return {};
+}
+
+void TrackedObject::Inspect()
+{
+	BoardGL board;
+	board.Start();
+
+	board.LoadTags();
+
+	vector<ObjectData> datas = ToObjectData(0);
+	for (size_t i = 0; i < markers.size(); i++)
+	{
+		ArucoMarker &m = markers[i];
+		ObjectData d;
+		d.identity.numeral = m.number;
+		d.identity.type = PacketType::Tag;
+		d.identity.metadata = MakeTag(m.sideLength, m.number);
+		d.location = m.Pose;
+		datas.push_back(d);
+	}
+	while (board.Tick(ObjectData::ToGLObjects(datas)));
 }
 
 Affine3d GetTagTransform(float SideLength, std::vector<Point2f> Corners, Mat& CameraMatrix, Mat& DistanceCoefficients)

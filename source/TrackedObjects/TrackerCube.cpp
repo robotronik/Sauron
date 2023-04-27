@@ -3,6 +3,7 @@
 #include "TrackedObjects/ObjectIdentity.hpp"
 
 #include "math3d.hpp"
+#include "metadata.hpp"
 
 using namespace cv;
 using namespace std;
@@ -47,7 +48,7 @@ vector<ObjectData> TrackerCube::ToObjectData(int BaseNumeral)
 	robot.identity.type = PacketType::TrackerCube;
 	for (int i = 0; i < markers.size(); i++)
 	{
-		robot.identity.AddTypeToMetadata<uint8_t>(markers[i].number);
+		AddTypeToMetadata<uint8_t>(robot.identity.metadata, markers[i].number);
 	}
 	robot.location = Location;
 	return {robot};

@@ -2,12 +2,14 @@
 
 #include "Overlord/BoardMemory.hpp"
 #include "Overlord/RobotHAL.hpp"
+using namespace Overlord;
+using namespace std;
 
 double Overlord::GatherCherriesObjective::ExecuteObjective(double &TimeBudget, RobotHAL* robot, BoardMemory* BoardState, RobotMemory* RobotState)
 {
 	double BaseTime = TimeBudget;
 	auto stoppos = robot->GetStoppingPosition();
-	const auto cherries = BoardState->FindObjectsSorted((uint8_t)ObjectType::Cherry, stoppos);
+	const auto cherries = BoardState->FindObjectsSorted((uint32_t)ObjectType::Cherry, stoppos);
 	if (cherries.size() == 0)
 	{
 		return 0;

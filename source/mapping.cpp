@@ -16,6 +16,7 @@
 #include <opencv2/sfm.hpp>
 
 #include "math3d.hpp"
+#include "data/metadata.hpp"
 #include "Calibfile.hpp"
 #include "GlobalConf.hpp"
 #include "TrackedObjects/TrackedObject.hpp"
@@ -146,7 +147,7 @@ void SLAMSolve(void)
 		ObjectData d;
 		d.identity.type = PacketType::Tag;
 		d.identity.numeral = referenceMarker.number;
-		d.identity.AddTypeToMetadata(referenceMarker.sideLength);
+		d.identity.metadata = MakeTag(referenceMarker.sideLength, referenceMarker.number);
 		d.location = referenceMarker.Pose;
 		vizdata.push_back(d);
 	}
@@ -342,7 +343,7 @@ void SLAMSolve(void)
 			ObjectData d;
 			d.identity.type = PacketType::Tag;
 			d.identity.numeral = marker.number;
-			d.identity.AddTypeToMetadata(marker.sideLength);
+			d.identity.metadata = MakeTag(marker.sideLength, marker.number);
 			d.location = marker.Pose;
 			vizdata.push_back(d);
 		}
@@ -354,7 +355,7 @@ void SLAMSolve(void)
 	visualiser.Start();
 	visualiser.LoadTags();
 	
-	while (visualiser.Tick(vizdata))
+	while (visualiser.Tick(ObjectData::ToGLObjects(vizdata)))
 	{
 		
 	}

@@ -225,11 +225,6 @@ RobotHAL::RobotHAL()
 {
 }
 
-RobotHAL::RobotHAL(RobotHAL* CopyFrom)
-{
-	memcpy(this, CopyFrom, sizeof(RobotHAL));
-}
-
 RobotHAL::~RobotHAL()
 {
 }
@@ -313,12 +308,12 @@ double RobotHAL::MoveTo(Vector2d<double> target, double rot, double &TimeBudget)
 	return TimeBudget;
 }
 
-double RobotHAL::MoveClaw(double height, double extension)
+double RobotHAL::MoveClaw(double height, double extension, double& TimeBudget)
 {
 	return 0;
 }
 
-double RobotHAL::MoveTray(int index, double extension)
+double RobotHAL::MoveTray(int index, double extension, double& TimeBudget)
 {
 	return 0;
 }

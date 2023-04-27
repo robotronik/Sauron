@@ -85,7 +85,7 @@ void CDFRInternalMain(bool direct, bool v3d)
 			imshow("Cameras", image);
 		}
 
-		if (!OpenGLBoard.Tick(ObjData))
+		if (!OpenGLBoard.Tick(ObjectData::ToGLObjects(ObjData)))
 		{
 			break;
 		}

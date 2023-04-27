@@ -1,7 +1,9 @@
 #include "Overlord/Overlord.hpp"
 
 #include "Overlord/Objectives/GatherCherries.hpp"
-
+#include "Overlord/Objectives/MakeCake.hpp"
+#include "Overlord/RobotHandle.hpp"
+#include "thirdparty/serialib.h"
 #ifdef WITH_SAURON
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -23,7 +25,10 @@ void Manager::Init()
 	for (int i = 0; i < numbots; i++)
 	{
 		RobotHAL* &RC = RobotControllers[i];
-		RC = new RobotHAL();
+		serialib* bridge = new serialib();
+		bridge->openDevice("/dev/COM", 115200);
+		RC = new RobotHandle(bridge);
+		//RC = new RobotHAL();
 		RC->PositionLinear = LinearMovement(0.1, 0.2, 0.1, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
 		RC->ClawExtension = LinearMovement(0.1, 0.3, 1, 0);
@@ -52,6 +57,24 @@ void Manager::Init()
 	*/
 
 	PhysicalBoardState.ObjectsOnBoard.clear();
+	static const vector<Object> greendropzones = {
+		Object(ObjectType::GreenDropZone, {-0.375,-0.775}),
+		Object(ObjectType::GreenDropZone, {0.375,0.775}),
+		Object(ObjectType::GreenDropZone, {1.275,-0.775}),
+		Object(ObjectType::GreenDropZone, {1.275,0.275}),
+		Object(ObjectType::GreenDropZone, {-1.275,0.775})
+	};
+
+	for (int i = 0; i < greendropzones.size(); i++)
+	{
+		Object dropzone = greendropzones[i];
+		PhysicalBoardState.ObjectsOnBoard.push_back(dropzone);
+		dropzone.Type = ObjectType::BlueDropZone;
+		dropzone.position.y *=-1;
+		PhysicalBoardState.ObjectsOnBoard.push_back(dropzone);
+	}
+	
+
 
 	static const vector<Object> defaultcakes = {Object(ObjectType::CakeYellow, {0.725, 0.775}),
 	Object(ObjectType::CakePink, {0.925, 0.775}),
@@ -92,7 +115,11 @@ void Manager::Init()
 
 void Manager::GatherData()
 {
-
+	for (int i = 0; i < RobotControllers.size(); i++)
+	{
+		RobotControllers[i]->Tick();
+	}
+	
 }
 
 void Manager::Run()
@@ -113,7 +140,7 @@ void Manager::Run()
 		SimulationRobotStates = PhysicalRobotStates;
 		for (int ciddx = 0; ciddx < RobotControllers.size(); ciddx++)
 		{
-			SimulatedControllers[ciddx] = RobotHAL(RobotControllers[ciddx]);
+			SimulatedControllers[ciddx] = RobotHAL(*RobotControllers[ciddx]);
 		}
 		int robotidx =  0;
 		double timebudget = TimeLeft;
@@ -142,22 +169,23 @@ void Manager::Run()
 bool Manager::Display()
 {
 #ifdef WITH_SAURON
-	vector<ObjectData> dataconcat;
-	dataconcat.emplace_back(ObjectIdentity(PacketType::ReferenceAbsolute, 0), 0, 0, 0);
+	vector<GLObject> dataconcat;
+	dataconcat.emplace_back(MeshNames::arena);
 
-	static const map<ObjectType, PacketType> boardgltypemap = {
-		{ObjectType::Unknown, PacketType::Null},
-		{ObjectType::Robot, PacketType::Robot},
-		{ObjectType::Cherry, PacketType::Cherry},
-		{ObjectType::CakeBrown, PacketType::BrownCake},
-		{ObjectType::CakeYellow, PacketType::YellowCake},
-		{ObjectType::CakePink, PacketType::PinkCake}
+	static const map<ObjectType, MeshNames> boardgltypemap = {
+		{ObjectType::Robot, 		MeshNames::robot},
+		{ObjectType::Cherry, 		MeshNames::cherry},
+		{ObjectType::CakeBrown, 	MeshNames::browncake},
+		{ObjectType::CakeYellow, 	MeshNames::yellowcake},
+		{ObjectType::CakePink, 		MeshNames::pinkcake},
+		{ObjectType::GreenDropZone, MeshNames::yellowcake},
+		{ObjectType::BlueDropZone, 	MeshNames::pinkcake}
 	};
 	for (const auto &object : PhysicalBoardState.ObjectsOnBoard)
 	{
-		PacketType type = boardgltypemap.at(object.Type);
-		double posZ = object.Type == ObjectType::Cherry ? 0.035 : 0;
-		dataconcat.emplace_back(ObjectIdentity(type, 0), object.position.x, object.position.y, posZ);
+		MeshNames type = boardgltypemap.at(object.Type);
+		double posZ = object.Type == ObjectType::Cherry ? 0.035 : 0.0;
+		dataconcat.emplace_back(type, object.position.x, object.position.y, posZ);
 	}
 	for (int robotidx = 0; robotidx < RobotControllers.size(); robotidx++)
 	{
@@ -169,14 +197,15 @@ bool Manager::Display()
 		auto forward  = robothandle->GetForwardVector();
 		Vec3d xvec(forward.x,forward.y,0), yvec(-forward.y,forward.x,0);
 		robotloc.rotation(MakeRotationFromXY(xvec, yvec));
-		dataconcat.emplace_back(ObjectIdentity(PacketType::Robot, 0), robotloc);
+		dataconcat.emplace_back(MeshNames::robot, Affine3DToGLM(robotloc));
 		for (int trayidx = 0; trayidx < sizeof(robotmem.CakeTrays) / sizeof(robotmem.CakeTrays[0]); trayidx++)
 		{
 			const auto& tray = robotmem.CakeTrays[trayidx];
-			for (const auto &object : tray)
+			for (int cakeidx = 0; cakeidx < tray.size(); cakeidx++)
 			{
-				PacketType type = boardgltypemap.at(object.Type);
-				dataconcat.emplace_back(ObjectIdentity(type, 0), object.position.x, object.position.y, trayidx*0.2+0.1);
+				const Object& object = tray[cakeidx];
+				MeshNames type = boardgltypemap.at(object.Type);
+				dataconcat.emplace_back(type, robothandle->position.x, robothandle->position.y, trayidx*0.08+cakeidx*0.02+0.01);
 			}
 		}
 	}

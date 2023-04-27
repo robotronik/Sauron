@@ -97,6 +97,8 @@ public:
 	virtual cv::Affine3d GetObjectTransform(const CameraArucoData& CameraData, float& Surface, float& ReprojectionError);
 
 	virtual std::vector<ObjectData> ToObjectData(int BaseNumeral);
+
+	void Inspect();
 };
 
 

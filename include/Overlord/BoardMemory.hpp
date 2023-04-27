@@ -10,14 +10,16 @@
 
 namespace Overlord{
 
-	enum class ObjectType : std::uint8_t
+	enum class ObjectType : std::uint32_t
 	{
 		Unknown 	= 0,
 		Robot 		= 0b1,
 		Cherry 		= 0b10,
 		CakeBrown 	= 0b100,
 		CakeYellow 	= 0b1000,
-		CakePink 	= 0b10000
+		CakePink 	= 0b10000,
+		BlueDropZone	= 0b100000,
+		GreenDropZone	= 0b1000000
 	};
 
 	struct Object
@@ -54,9 +56,9 @@ namespace Overlord{
 	public:
 		std::vector<Object> ObjectsOnBoard;
 
-		std::vector<Object> FindObjects(std::uint8_t TypeFilter);
+		std::vector<Object> FindObjects(std::uint32_t TypeFilter);
 
-		std::vector<Object> FindObjectsSorted(std::uint8_t TypeFilter, Vector2d<double> SearchPos);
+		std::vector<Object> FindObjectsSorted(std::uint32_t TypeFilter, Vector2d<double> SearchPos);
 	};
 
 	class RobotMemory

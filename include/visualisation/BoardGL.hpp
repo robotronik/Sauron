@@ -2,10 +2,8 @@
 
 #include <vector>
 #include <map>
-
+#include <string>
 #include <glm/glm.hpp>
-
-#include "TrackedObjects/ObjectIdentity.hpp"
 
 #include "visualisation/GLWindow.hpp"
 #include "visualisation/openGL/Mesh.hpp"
@@ -16,6 +14,7 @@ class TrackedObject;
 
 enum class MeshNames
 {
+	unknown,
 	robot,
 	tag,
 	arena,
@@ -29,6 +28,23 @@ enum class MeshNames
 	yellowcake,
 	pinkcake
 };
+
+struct GLObject
+{
+	MeshNames type;
+	glm::mat4 location;
+	std::string metadata;
+
+	GLObject(MeshNames InType = MeshNames::unknown, glm::mat4 InLoc = glm::mat4(1), std::string InMetadata = "")
+		:type(InType), location(InLoc), metadata(InMetadata)
+	{
+
+	}
+
+	GLObject(MeshNames InType, double x, double y, double z, std::string InMetadata = "");
+};
+
+
 class BoardGL : public GLWindow
 {
 private:
@@ -60,11 +76,9 @@ public:
 	
 	void Start();
 
-	bool Tick(std::vector<ObjectData> data); //Run display loop for these objects, returns false if exit was asked.
+	bool Tick(std::vector<GLObject> data); //Run display loop for these objects, returns false if exit was asked.
 
 	void runTest();
-
-	void InspectObject(TrackedObject* object); //Dsiplay this objects and it's tags
 
 	virtual void WindowSizeCallback(int width, int height) override;
 

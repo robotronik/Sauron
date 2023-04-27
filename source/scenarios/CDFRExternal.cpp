@@ -241,7 +241,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		
 		if (v3d)
 		{
-			if(!OpenGLBoard.Tick(ObjData))
+			if(!OpenGLBoard.Tick(ObjectData::ToGLObjects(ObjData)))
 			{
 				break;
 			}

@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <string>
+#include <optional>
+#include <vector>
 #include <opencv2/core/affine.hpp>
 
 
@@ -55,20 +57,6 @@ struct ObjectIdentity
 	};
 
 	int PackInto(char* buffer, int maxlength) const;
-
-	template<class T>
-	T& GetTypeFromMetadata(size_t pos)
-	{
-		return *(T*)&metadata[pos];
-	};
-
-	template<class T>
-	void AddTypeToMetadata(T value)
-	{
-		std::size_t pos = metadata.size();
-		metadata.resize(pos + sizeof(T));
-		GetTypeFromMetadata<T>(pos) = value;
-	};
 };
 
 struct ObjectData
@@ -86,4 +74,8 @@ struct ObjectData
 		location = cv::Affine3d::Identity();
 		location.translation(cv::Vec3d(posX, posY, posZ));
 	}
+
+	std::optional<struct GLObject> ToGLObject() const;
+
+	static std::vector<GLObject> ToGLObjects(const std::vector<ObjectData>& data);
 };

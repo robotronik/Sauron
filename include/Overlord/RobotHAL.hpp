@@ -72,8 +72,11 @@ namespace Overlord
 		double width = 0.2, depth = 0.1; //todo : actual values
 
 		RobotHAL(/* args */);
-		RobotHAL(RobotHAL* CopyFrom);
 		virtual ~RobotHAL();
+
+		virtual void Tick() {};
+
+		virtual bool IsBlueTeam() { return true; };
 
 		//Can the robot fit at this location in the terrain ?
 		bool IsLocationValid(Vector2d<double> pos, double rot) const; 
@@ -93,9 +96,9 @@ namespace Overlord
 		//move to position with rotation target
 		virtual double MoveTo(Vector2d<double> target, double rot, double &TimeBudget);
 
-		virtual double MoveClaw(double height, double extension);
+		virtual double MoveClaw(double height, double extension, double &TimeBudget);
 
-		virtual double MoveTray(int index, double extension);
+		virtual double MoveTray(int index, double extension, double &TimeBudget);
 	};
 
 } // namespace overlord

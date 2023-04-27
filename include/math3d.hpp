@@ -3,6 +3,7 @@
 #include <vector>
 #include <opencv2/core.hpp>
 #include <opencv2/core/affine.hpp>
+#include <glm/glm.hpp>
 
 //Gives the new size to use to fit inside the target size while keeping aspect ratio
 cv::Size ScaleToFit(cv::Size original, cv::Size target);
@@ -56,3 +57,5 @@ double GetRotZ(cv::Matx33d rotation);
 cv::Vec3d ProjectPointOnLine(cv::Vec3d Point, cv::Vec3d LineOrig, cv::Vec3d LineDir);
 
 bool ClosestPointsOnTwoLine(cv::Vec3d Line1Orig, cv::Vec3d Line1Dir, cv::Vec3d Line2Orig, cv::Vec3d Line2Dir, cv::Vec3d& Line1Point, cv::Vec3d& Line2Point);
+
+glm::mat4 Affine3DToGLM(cv::Affine3d Location);
