@@ -1,7 +1,7 @@
 #include "Overlord/Overlord.hpp"
 
 #include "Overlord/Objectives/GatherCherries.hpp"
-#include "Overlord/Objectives/MakeCake.hpp"
+#include "Overlord/Objectives/TakeStack.hpp"
 #include "Overlord/RobotHandle.hpp"
 #include "thirdparty/serialib.h"
 #ifdef WITH_SAURON
@@ -9,6 +9,7 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <map>
+#include <tuple>
 #include "math3d.hpp"
 using namespace std;
 using namespace cv;
@@ -27,8 +28,8 @@ void Manager::Init()
 		RobotHAL* &RC = RobotControllers[i];
 		serialib* bridge = new serialib();
 		bridge->openDevice("/dev/COM", 115200);
-		RC = new RobotHandle(bridge);
-		//RC = new RobotHAL();
+		//RC = new RobotHandle(bridge);
+		RC = new RobotHAL();
 		RC->PositionLinear = LinearMovement(0.1, 0.2, 0.1, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
 		RC->ClawExtension = LinearMovement(0.1, 0.3, 1, 0);
@@ -56,7 +57,7 @@ void Manager::Init()
 		- bleus : (375, -775); (1275, -275); (1275; 775); (-375; 775)
 	*/
 
-	PhysicalBoardState.ObjectsOnBoard.clear();
+	PhysicalBoardState.clear();
 	static const vector<Object> greendropzones = {
 		Object(ObjectType::GreenDropZone, {-0.375,-0.775}),
 		Object(ObjectType::GreenDropZone, {0.375,0.775}),
@@ -68,10 +69,10 @@ void Manager::Init()
 	for (int i = 0; i < greendropzones.size(); i++)
 	{
 		Object dropzone = greendropzones[i];
-		PhysicalBoardState.ObjectsOnBoard.push_back(dropzone);
+		PhysicalBoardState.push_back(dropzone);
 		dropzone.Type = ObjectType::BlueDropZone;
 		dropzone.position.y *=-1;
-		PhysicalBoardState.ObjectsOnBoard.push_back(dropzone);
+		PhysicalBoardState.push_back(dropzone);
 	}
 	
 
@@ -90,7 +91,7 @@ void Manager::Init()
 			cake.position*=Vector2d<double>(mirrorx, mirrory);
 			for (int k = 0; k < 3; k++)
 			{
-				PhysicalBoardState.ObjectsOnBoard.push_back(cake);
+				PhysicalBoardState.push_back(cake);
 			}
 		}
 	}
@@ -104,8 +105,8 @@ void Manager::Init()
 			Object cherryy(ObjectType::Cherry, {-0.135+j*0.03, 0.985});
 			cherryx.position.x *= mirror;
 			cherryy.position.y *= mirror;
-			PhysicalBoardState.ObjectsOnBoard.push_back(cherryx);
-			PhysicalBoardState.ObjectsOnBoard.push_back(cherryy);
+			PhysicalBoardState.push_back(cherryx);
+			PhysicalBoardState.push_back(cherryy);
 		}
 	}
 
@@ -130,7 +131,7 @@ void Manager::Run()
 	vector<double> BestObjectiveScore(numrobots, 0);
 
 	//Copy the state of the board, and simulate every objective to pick the one that makes the most points
-	BoardMemory SimulationBoardState;
+	std::vector<Object> SimulationBoardState;
 	std::vector<RobotMemory> SimulationRobotStates;
 	std::vector<RobotHAL> SimulatedControllers;
 	SimulatedControllers.resize(numrobots);
@@ -144,7 +145,7 @@ void Manager::Run()
 		}
 		int robotidx =  0;
 		double timebudget = TimeLeft;
-		double score = objective->ExecuteObjective(timebudget, &SimulatedControllers[robotidx], &SimulationBoardState, &SimulationRobotStates[robotidx]);
+		double score = objective->ExecuteObjective(timebudget, &SimulatedControllers[robotidx], SimulationBoardState, &SimulationRobotStates[robotidx]);
 		cout << "Objective gave score " << score << endl;
 		if (score > BestObjectiveScore[robotidx])
 		{
@@ -162,7 +163,7 @@ void Manager::Run()
 			continue;
 		}
 		double timebudget = 1.0/50; //todo : this should be the cycle time
-		BestObjective[robotidx]->ExecuteObjective(timebudget, RobotControllers[robotidx], &PhysicalBoardState, &PhysicalRobotStates[robotidx]);
+		BestObjective[robotidx]->ExecuteObjective(timebudget, RobotControllers[robotidx], PhysicalBoardState, &PhysicalRobotStates[robotidx]);
 	}
 }
 
@@ -171,20 +172,46 @@ bool Manager::Display()
 #ifdef WITH_SAURON
 	vector<GLObject> dataconcat;
 	dataconcat.emplace_back(MeshNames::arena);
-
+	vector<tuple<Vector2d<double>, double>> CakeHeights;
 	static const map<ObjectType, MeshNames> boardgltypemap = {
 		{ObjectType::Robot, 		MeshNames::robot},
 		{ObjectType::Cherry, 		MeshNames::cherry},
 		{ObjectType::CakeBrown, 	MeshNames::browncake},
 		{ObjectType::CakeYellow, 	MeshNames::yellowcake},
 		{ObjectType::CakePink, 		MeshNames::pinkcake},
-		{ObjectType::GreenDropZone, MeshNames::yellowcake},
-		{ObjectType::BlueDropZone, 	MeshNames::pinkcake}
+		{ObjectType::GreenDropZone, MeshNames::axis},
+		{ObjectType::BlueDropZone, 	MeshNames::axis}
 	};
-	for (const auto &object : PhysicalBoardState.ObjectsOnBoard)
+	for (const auto &object : PhysicalBoardState)
 	{
 		MeshNames type = boardgltypemap.at(object.Type);
-		double posZ = object.Type == ObjectType::Cherry ? 0.035 : 0.0;
+		double posZ = 0.0;
+		switch (object.Type)
+		{
+		case ObjectType::Cherry:
+			posZ = 0.035;
+			break;
+		case ObjectType::CakeBrown:
+		case ObjectType::CakePink:
+		case ObjectType::CakeYellow:
+			{
+				for (int i = 0; i < CakeHeights.size(); i++)
+				{
+					auto cake = CakeHeights[i];
+					auto pos = std::get<0>(cake);
+					auto height = std::get<1>(cake);
+					if ((pos-object.position).length() < 0.12)
+					{
+						posZ = max(posZ, height+0.02);
+					}
+					
+				}
+				CakeHeights.push_back({object.position, posZ});
+			}
+			break;
+		default:
+			break;
+		}
 		dataconcat.emplace_back(type, object.position.x, object.position.y, posZ);
 	}
 	for (int robotidx = 0; robotidx < RobotControllers.size(); robotidx++)
@@ -198,14 +225,38 @@ bool Manager::Display()
 		Vec3d xvec(forward.x,forward.y,0), yvec(-forward.y,forward.x,0);
 		robotloc.rotation(MakeRotationFromXY(xvec, yvec));
 		dataconcat.emplace_back(MeshNames::robot, Affine3DToGLM(robotloc));
+		Affine3d cherrypos = robotloc;
+		auto cherrypos2d = robothandle->CherryPickupPosition.rotate(robothandle->Rotation.Pos);
+		cherrypos.translation(cherrypos.translation() + Vec3d(cherrypos2d.x, cherrypos2d.y, 0));
+		dataconcat.emplace_back(MeshNames::axis, Affine3DToGLM(cherrypos));
 		for (int trayidx = 0; trayidx < sizeof(robotmem.CakeTrays) / sizeof(robotmem.CakeTrays[0]); trayidx++)
 		{
 			const auto& tray = robotmem.CakeTrays[trayidx];
+			Vec3d traypos;
+			MeshNames meshtype;
+			if (trayidx == 0)
+			{
+				traypos = robotloc.translation() 
+					+ xvec * (robothandle->ClawPickupPosition.x + robothandle->ClawExtension.Pos) 
+					+ yvec * robothandle->ClawPickupPosition.y
+					+ Vec3d(0,0,robothandle->ClawHeight.Pos);
+				meshtype = MeshNames::robot_claw;
+			}
+			else
+			{
+				traypos = robotloc.translation() 
+					+ xvec * robothandle->Trays[trayidx].Pos * robothandle->ClawPickupPosition.x
+					+ Vec3d(0,0,robothandle->TrayHeights[trayidx]);
+				meshtype = MeshNames::robot_tray;
+			}
+			Affine3d traytransform(robotloc.rotation(), traypos);
+			dataconcat.emplace_back(meshtype, Affine3DToGLM(traytransform));
 			for (int cakeidx = 0; cakeidx < tray.size(); cakeidx++)
 			{
 				const Object& object = tray[cakeidx];
 				MeshNames type = boardgltypemap.at(object.Type);
-				dataconcat.emplace_back(type, robothandle->position.x, robothandle->position.y, trayidx*0.08+cakeidx*0.02+0.01);
+				Affine3d caketransform(traytransform.rotation(), traytransform.translation() + Vec3d(0,0,0.02*cakeidx));
+				dataconcat.emplace_back(type, Affine3DToGLM(caketransform));
 			}
 		}
 	}

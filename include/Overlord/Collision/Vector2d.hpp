@@ -37,6 +37,13 @@ namespace Overlord
 			return atan2(y, x);
 		}
 
+		Vector2d<T> rotate(T angle) const
+		{
+			T sv, cv;
+			sincos(angle, &sv, &cv);
+			return {x*cv-y*sv, x*sv+y*cv};
+		}
+
 		void normalize()
 		{
 			T len = length();

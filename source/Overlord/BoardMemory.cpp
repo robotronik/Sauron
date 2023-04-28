@@ -5,11 +5,11 @@
 using namespace std;
 using namespace Overlord;
 
-vector<Object> BoardMemory::FindObjects(uint32_t TypeFilter)
+vector<Object> Overlord::FindObjects(const std::vector<Object> &in, uint32_t TypeFilter)
 {
 	vector<Object> outvec;
-	outvec.reserve(ObjectsOnBoard.size());
-	for (const auto &obj : ObjectsOnBoard)
+	outvec.reserve(in.size());
+	for (const auto &obj : in)
 	{
 		if ((uint8_t)obj.Type & TypeFilter)
 		{
@@ -19,9 +19,9 @@ vector<Object> BoardMemory::FindObjects(uint32_t TypeFilter)
 	return outvec;
 }
 
-vector<Object> BoardMemory::FindObjectsSorted(uint32_t TypeFilter, Vector2d<double> SearchPos)
+vector<Object> Overlord::FindObjectsSorted(const std::vector<Object> &in, uint32_t TypeFilter, Vector2d<double> SearchPos)
 {
-	vector<Object> outvec = FindObjects(TypeFilter);
+	vector<Object> outvec = FindObjects(in, TypeFilter);
 	sort(outvec.begin(), outvec.end(), [SearchPos](Object a, Object b)
 	{
 		return (SearchPos-a.position).lengthsquared()<(SearchPos-b.position).lengthsquared();

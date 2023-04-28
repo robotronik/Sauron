@@ -51,20 +51,16 @@ namespace Overlord{
 
 	};
 
-	class BoardMemory
-	{
-	public:
-		std::vector<Object> ObjectsOnBoard;
-
-		std::vector<Object> FindObjects(std::uint32_t TypeFilter);
-
-		std::vector<Object> FindObjectsSorted(std::uint32_t TypeFilter, Vector2d<double> SearchPos);
-	};
-
 	class RobotMemory
 	{
 	public:
 		std::vector<Object> CakeTrays[4]; //Tray 0 is the claws
 		std::vector<Object> Cherries;
 	};
+
+	std::vector<Object> FindObjects(const std::vector<Object> &in, std::uint32_t TypeFilter);
+
+	std::vector<Object> FindObjectsSorted(const std::vector<Object> &in, std::uint32_t TypeFilter, Vector2d<double> SearchPos);
+
+	Vector2d<double> FindNearestCakeStack(const std::vector<Object> &in, Vector2d<double> SearchPos);
 }

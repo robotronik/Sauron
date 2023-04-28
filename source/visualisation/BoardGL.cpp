@@ -172,6 +172,8 @@ void BoardGL::LoadModels()
 	{
 		{MeshNames::arena, {"board.obj", "boardtex.png"}},
 		{MeshNames::robot, {"robot.obj", nullopt}},
+		{MeshNames::robot_tray, {"robot/tray.obj", nullopt}},
+		{MeshNames::robot_claw, {"robot/claws.obj", nullopt}},
 		{MeshNames::axis, {"axis.obj", nullopt}},
 		{MeshNames::brio, {"BRIO.obj", nullopt}},
 		{MeshNames::skybox, {"skybox.obj", nullopt}},
@@ -288,6 +290,8 @@ bool BoardGL::Tick(std::vector<GLObject> data)
 		glUniform1f(ScaleID, 1);
 		switch (odata.type)
 		{
+		case MeshNames::unknown:
+			break;
 		case MeshNames::tag :
 			{
 				if (!TagsLoaded)

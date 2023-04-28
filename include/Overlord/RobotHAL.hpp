@@ -63,6 +63,16 @@ namespace Overlord
 	class RobotHAL
 	{
 	public:
+		enum class ForceDirection
+		{
+			None,
+			Forward,
+			Backwards
+		};
+
+		std::vector<double> TrayHeights = {0,0.02,0.1,0.18};
+		Vector2d<double> ClawPickupPosition = {0.2,0};
+		Vector2d<double> CherryPickupPosition = {0.1,0.1};
 		Vector2d<double> position;
 		LinearMovement PositionLinear;
 		LinearMovement Rotation;
@@ -91,10 +101,13 @@ namespace Overlord
 		virtual double LinearMove(double distance, double &TimeBudget);
 
 		//move to position, no rotation target
-		virtual double MoveTo(Vector2d<double> target, double &TimeBudget);
+		virtual double MoveTo(Vector2d<double> target, double &TimeBudget, ForceDirection direction = ForceDirection::None);
 
 		//move to position with rotation target
-		virtual double MoveTo(Vector2d<double> target, double rot, double &TimeBudget);
+		virtual double MoveTo(Vector2d<double> target, double rot, double &TimeBudget, ForceDirection direction = ForceDirection::None);
+
+		//Move the robot so that pos + rotated(offset) = target
+		double MoveToOffset(Vector2d<double> target, Vector2d<double> offset, double &TimeBudget);
 
 		virtual double MoveClaw(double height, double extension, double &TimeBudget);
 

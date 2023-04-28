@@ -14,7 +14,7 @@ namespace Overlord
 	class Manager
 	{
 	public:
-		BoardMemory PhysicalBoardState;
+		std::vector<Object> PhysicalBoardState;
 		std::vector<RobotMemory> PhysicalRobotStates;
 		std::vector<RobotHAL*> RobotControllers; 
 		std::vector<std::unique_ptr<BaseObjective>> Objectives;

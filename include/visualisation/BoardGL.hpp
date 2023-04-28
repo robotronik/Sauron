@@ -16,6 +16,8 @@ enum class MeshNames
 {
 	unknown,
 	robot,
+	robot_tray,
+	robot_claw,
 	tag,
 	arena,
 	brio,
