@@ -76,7 +76,7 @@ public:
 	void LoadModels();
 	void LoadTags();
 	
-	void Start();
+	void Start(std::string name = "Sauron");
 
 	bool Tick(std::vector<GLObject> data); //Run display loop for these objects, returns false if exit was asked.
 

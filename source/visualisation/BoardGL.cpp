@@ -233,9 +233,9 @@ void BoardGL::LoadTags()
 	glfwMakeContextCurrent(NULL);
 }
 
-void BoardGL::Start()
+void BoardGL::Start(string name)
 {
-	GLCreateWindow(1280, 720, "Sauron");
+	GLCreateWindow(1280, 720, name);
 	// Create and compile our GLSL program from the shaders
 	ShaderProgram.LoadShader(shaderfolder + "vertexshader.vs", shaderfolder + "fragmentshader.fs");
 

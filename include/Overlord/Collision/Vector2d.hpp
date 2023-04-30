@@ -1,9 +1,13 @@
 #pragma once
 
 #include <cmath>
-
+#include <sstream>
+#include <string>
 namespace Overlord
 {
+
+	extern const double CakeTolerance, PositionTolerance, CakeHeight;
+	
 	template<class T>
 	struct Vector2d
 	{
@@ -65,14 +69,21 @@ namespace Overlord
 			return (*this)/length();
 		}
 
-		Vector2d<T> dot(Vector2d<T> &other) const
+		T dot(Vector2d<T> &other) const
 		{
-			return Vector2d<T>(x*other.x, y*other.y);
+			return x*other.x + y*other.y;
 		}
 
 		T sum()
 		{
 			return x+y;
+		}
+
+		std::string ToString() const
+		{
+			std::ostringstream oss;
+			oss << "(" << x << ", " << y << ")";
+			return oss.str();
 		}
 
 		void operator+=(const Vector2d<T>& other)
@@ -130,5 +141,7 @@ namespace Overlord
 			return Vector2d<T>(x/value, y/value);
 		}
 	};
+
+	typedef Vector2d<double> Vector2dd;
 	
 } // namespace Overlord

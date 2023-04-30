@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <chrono>
 #include "Overlord/BoardMemory.hpp"
 #include "Overlord/RobotHAL.hpp"
 #include "Overlord/BaseObjective.hpp"
@@ -19,6 +20,7 @@ namespace Overlord
 		std::vector<RobotHAL*> RobotControllers; 
 		std::vector<std::unique_ptr<BaseObjective>> Objectives;
 
+		std::chrono::time_point<std::chrono::steady_clock> lastTick;
 		double TimeLeft;
 
 		#ifdef WITH_SAURON
@@ -29,7 +31,7 @@ namespace Overlord
 
 		void GatherData(); //Update memories
 
-		void Run();
+		void Run(double delta);
 
 		bool Display();
 

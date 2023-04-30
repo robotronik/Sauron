@@ -3,10 +3,10 @@
 using namespace Overlord;
 using namespace std;
 
-std::vector<Vector2d<double>> Box::GetCorners() const
+std::vector<Vector2dd> Box::GetCorners() const
 {
-	Vector2d<double> xvec(rot), yvec(rot+M_PI_2);
-	vector<Vector2d<double>> corners(4, Vector2d<double>(0,0));
+	Vector2dd xvec(rot), yvec(rot+M_PI_2);
+	vector<Vector2dd> corners(4, Vector2dd(0,0));
 	for (int i = 0; i < 4; i++)
 	{
 		double xmir = i & 1 ? -1:1;

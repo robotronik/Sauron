@@ -10,6 +10,8 @@
 using namespace std;
 using namespace Overlord;
 
+#define ReturnIfNoBudget {if(TimeBudget < __DBL_EPSILON__) {return 0;}}
+
 double LinearMovement::wraptwopi(double in)
 {
 	double rem = fmod(in, M_PI*2);
@@ -46,6 +48,11 @@ double LinearMovement::GetBrakingDistance(double v0)
 	double v1 = copysign(MinSpeed, v0);
 	double dec = -copysign(Deceleration, v0);
 	return SpeedDeltaDistance(v0, v1, dec);
+}
+
+double LinearMovement::GetStoppingPosition()
+{
+	return Pos+GetBrakingDistance(Speed);
 }
 
 LinearMovement::MoveABResult LinearMovement::MoveAB(double Target, double &TimeBudget)
@@ -229,17 +236,17 @@ RobotHAL::~RobotHAL()
 {
 }
 
-bool RobotHAL::IsLocationValid(Vector2d<double> pos, double rot) const
+bool RobotHAL::IsLocationValid(Vector2dd pos, double rot) const
 {
 	return false; //todo
 }
 
-Vector2d<double> RobotHAL::GetForwardVector()
+Vector2dd RobotHAL::GetForwardVector()
 {
-	return Vector2d<double>(Rotation.Pos);
+	return Vector2dd(Rotation.Pos);
 }
 
-Vector2d<double> RobotHAL::GetStoppingPosition()
+Vector2dd RobotHAL::GetStoppingPosition()
 {
 	double velmag = PositionLinear.Speed;
 	double stoppingpos1d = PositionLinear.GetBrakingDistance(PositionLinear.Speed);
@@ -252,10 +259,7 @@ Vector2d<double> RobotHAL::GetStoppingPosition()
 
 double RobotHAL::Rotate(double target, double &TimeBudget)
 {
-	if (TimeBudget < __DBL_EPSILON__)
-	{
-		return TimeBudget;
-	}
+	ReturnIfNoBudget
 	Rotation.SetTargetAngular(target);
 	Rotation.Tick(TimeBudget);
 	return TimeBudget;
@@ -263,10 +267,7 @@ double RobotHAL::Rotate(double target, double &TimeBudget)
 
 double RobotHAL::LinearMove(double distance, double &TimeBudget)
 {
-	if (TimeBudget < __DBL_EPSILON__)
-	{
-		return TimeBudget;
-	}
+	ReturnIfNoBudget
 	PositionLinear.SetTarget(distance);
 	PositionLinear.Pos = 0;
 	PositionLinear.Tick(TimeBudget);
@@ -276,39 +277,42 @@ double RobotHAL::LinearMove(double distance, double &TimeBudget)
 	return TimeBudget;
 }
 
-double RobotHAL::MoveTo(Vector2d<double> target, double &TimeBudget, ForceDirection direction)
+double RobotHAL::MoveTo(Vector2dd target, double &TimeBudget, ForceDirection direction)
 {
-	Vector2d<double> deltapos;
+	
+	Vector2dd deltapos;
 	double dist;
 	double angleneeded;
 	double dangle;
 	bool goingbackwards;
 	auto reevaluate = [&](){
-	deltapos = target-position;
-	dist = deltapos.length();
-	angleneeded = deltapos.angle();
-	dangle = LinearMovement::wraptwopi(angleneeded-Rotation.Pos);
-	switch (direction)
-	{
-	case ForceDirection::Backwards :
-		goingbackwards = true;
-		break;
-	case ForceDirection::Forward : 
-		goingbackwards = false;
-		break;
-	default:
-		goingbackwards = abs(dangle) > M_PI_2;
-		break;
-	}
+		deltapos = target-position;
+		dist = deltapos.length();
+		angleneeded = deltapos.angle();
+		dangle = LinearMovement::wraptwopi(angleneeded-Rotation.Pos);
+		switch (direction)
+		{
+		case ForceDirection::Backwards :
+			goingbackwards = true;
+			break;
+		case ForceDirection::Forward : 
+			goingbackwards = false;
+			break;
+		default:
+			goingbackwards = abs(dangle) > M_PI_2;
+			cout << "MoveTo : detected " << (goingbackwards ? "backwards" : "forward") << " move" << endl;
+			break;
+		}
+		if (goingbackwards)
+		{
+			angleneeded = LinearMovement::wraptwopi(angleneeded + M_PI);
+			dangle = LinearMovement::wraptwopi(dangle + M_PI);
+		}
 	};
 
 	reevaluate();
 	
-	if (goingbackwards)
-	{
-		angleneeded = LinearMovement::wraptwopi(angleneeded + M_PI);
-		dangle = LinearMovement::wraptwopi(dangle + M_PI);
-	}
+	
 	if (abs(dangle)> 1/180.0*M_PI) //not going the right way
 	{
 		if (abs(PositionLinear.Speed) > PositionLinear.MinSpeed + __DBL_EPSILON__) //moving
@@ -322,87 +326,188 @@ double RobotHAL::MoveTo(Vector2d<double> target, double &TimeBudget, ForceDirect
 	return TimeBudget;
 }
 
-double RobotHAL::MoveTo(Vector2d<double> target, double rot, double &TimeBudget, ForceDirection direction)
+bool RobotHAL::IsOffsetInSingularity(Vector2dd target, Vector2dd offset)
 {
-	MoveTo(target, TimeBudget, direction);
-	double drot = LinearMovement::wraptwopi(rot-Rotation.Pos);
-	if (abs(drot)> 10.0/180.0*M_PI && TimeBudget > __DBL_EPSILON__) //needs to rotate
-	{
-		Rotate(drot, TimeBudget);
-	}
-	return TimeBudget;
+	auto deltapos = target-position;
+	return deltapos.lengthsquared() < offset.lengthsquared() + __DBL_EPSILON__;
 }
 
-double RobotHAL::MoveToOffset(Vector2d<double> target, Vector2d<double> offset, double &TimeBudget)
+vector<pair<Vector2dd, double>> RobotHAL::GetOffsetTarget(Vector2dd target, Vector2dd offset)
 {
-	if ((position + offset.rotate(Rotation.Pos) - target).length() < 0.001) //at target
-	{
-		return TimeBudget;
-	}
-	cout << "new attempt" <<endl;
-	
 	auto deltapos = target-position;
-	if (deltapos.lengthsquared() < offset.lengthsquared())
-	{
-		double dneed = offset.length() - deltapos.length() + __DBL_EPSILON__;
-		cout << "singularity : moving " << dneed << endl;
-		double fmove = offset.x >= 0 ? -dneed : dneed; //if the offset is in the front, move back, else move forward
-		MoveTo(position + GetForwardVector() * fmove, TimeBudget, offset.x >= 0 ? ForceDirection::Backwards : ForceDirection::Forward);
-		if (TimeBudget < __DBL_EPSILON__)
-		{
-			return 0;
-		}
-		deltapos = target-position;
-	}
 	double angle = deltapos.angle();
-	double dplen = deltapos.lengthsquared();
-	double xsq = dplen - offset.y*offset.y;
+	double dplen2 = deltapos.lengthsquared();
+	double xsq = dplen2 - offset.y*offset.y;
 	assert(xsq>=0);
 	double x = sqrt(xsq);
-	double offsetangle = atan2(offset.y, x);
+	double offsetangle = asin(offset.y/sqrt(dplen2));
 	
 	
-	vector<double> anglestotry = {angle-offsetangle};
-	vector<double> distancetotry = {x-offset.x};
+	vector<double> anglestotry = {angle-offsetangle, angle+offsetangle, angle-offsetangle+M_PI, angle+offsetangle+M_PI};
+	vector<double> distancetotry = {x-offset.x, x+offset.x, -x-offset.x, -x+offset.x};
+	vector<pair<Vector2dd, double>> solutions;
 	int correctangle = -1, correctdistance = -1;
+	//goto foundcorrect;
 	for (int i = 0; i < anglestotry.size(); i++)
 	{
 		for (int j = 0; j < distancetotry.size(); j++)
 		{
-			double thisangle = LinearMovement::wraptwopi(anglestotry[i]);
-			Vector2d<double> fp = position + Vector2d<double>(thisangle) * distancetotry[j]; //final position of the robot : go forward the distance
-			Vector2d<double> ofp = fp + offset.rotate(thisangle); //final pos of the offset
+			double thisangle = LinearMovement::wraptwopi(anglestotry[i]); //thisangle will be the rotation we take
+			Vector2dd fp = position + Vector2dd(thisangle) * distancetotry[j]; //final position of the robot : go forward the distance
+			Vector2dd ofp = fp + offset.rotate(thisangle); //final pos of the offset
 			auto error = ofp-target;
 			auto errorloc = error.rotate(-thisangle);
-			if (error.length() < 0.001)
+			if (error.length() < 1e-5)
 			{
-				cout << "\tCorrect is " << i << " and " << j << ", angle is " << thisangle*180/M_PI <<endl;
-				correctangle = i;
-				correctdistance = j;
-				goto foundcorrect;
-			}
-			else
-			{
-				cout << "\tIncorrect " << i << " and " << j << " : (" << errorloc.x << ", " << errorloc.y << ")" <<endl;
+				solutions.push_back({fp, thisangle});
 			}
 			
 		}
 	}
-foundcorrect:
-	assert(correctangle != -1);
+	return solutions;
+}
+
+double RobotHAL::MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBudget, ForceDirection direction)
+{
+	if ((position + offset.rotate(Rotation.Pos) - target).length() < PositionTolerance) //at target
+	{
+		return TimeBudget;
+	}
+	//cout << "new attempt" <<endl;
 	
+	auto deltapos = target-position;
+	if (IsOffsetInSingularity(target, offset))
+	{
+		auto targetlocal = deltapos.rotate(-Rotation.Pos);
+		auto deltaloc = offset + targetlocal;
+		double dneed = deltaloc.length();
+		cout << "target is nearer to robot than offset " << deltaloc.ToString() << " : moving " << dneed << endl;
+		double fmove = deltaloc.x < 0 ? -dneed : dneed; //if the offset is in the front, move back, else move forward
+		MoveTo(position + GetForwardVector() * fmove, TimeBudget/*, offset.x >= 0 ? ForceDirection::Backwards : ForceDirection::Forward*/);
+		ReturnIfNoBudget
+		deltapos = target-position;
+	}
+	auto allsolutions = GetOffsetTarget(target, offset);
+	cout << "Found " << allsolutions.size() << " solutions to go to the target with offset" <<endl;
+	ForceDirection memdir = direction;
+	pair<Vector2dd, double> bestsolution = {{0,0},0}, forwardsolution = {{0,0},0}, backwardssolution = {{0,0},0};
+	bool HasForward = false, HasBackwards = false;
+	for (int i = 0; i < allsolutions.size(); i++)
+	{
+		auto& thissolution = allsolutions[i];
+		auto solutionforward = Vector2dd(thissolution.second);
+		auto solutiondelta = thissolution.first-position;
+		bool IsForwardSolution = solutionforward.dot(solutiondelta) > 0;
+		if (IsForwardSolution)
+		{
+			forwardsolution = thissolution;
+			HasForward= true;
+		}
+		else
+		{
+			backwardssolution = thissolution;
+			HasBackwards= true;
+		}
+	}
 	
-	auto offsettarget = position + Vector2d<double>(anglestotry[correctangle]) * distancetotry[correctdistance];
-	MoveTo(offsettarget, TimeBudget, offset.x >= 0 ? ForceDirection::Forward : ForceDirection::Backwards);
+	if (direction == ForceDirection::None)
+	{
+		if (!HasBackwards)
+		{
+			memdir = ForceDirection::Forward;
+		}
+		else if (!HasForward)
+		{
+			memdir = ForceDirection::Forward;
+		}
+		else if ((forwardsolution.first-position).lengthsquared() < (backwardssolution.first-position).lengthsquared())
+		{
+			memdir = ForceDirection::Forward;
+		}
+		else
+		{
+			memdir = ForceDirection::Backwards;
+		}
+	}
+	switch (memdir)
+	{
+	case ForceDirection::Forward :
+		assert(HasForward);
+		bestsolution = forwardsolution;
+		break;
+	case ForceDirection::Backwards :
+		assert(HasBackwards);
+		bestsolution = backwardssolution;
+		break;
+	}
+	
+	cout << "solution is at " << bestsolution.first.ToString() << endl;
+
+	Rotate(bestsolution.second, TimeBudget);
+	ReturnIfNoBudget
+	MoveTo(bestsolution.first, TimeBudget, memdir);
+	ReturnIfNoBudget
+	Rotate(bestsolution.second, TimeBudget);
+	ReturnIfNoBudget
+	
+	//cout << "Delta after offset move : " << (position-offsettarget).ToString() 
+	//<< " rotation : " << LinearMovement::wraptwopi(anglestotry[correctangle]-Rotation.Pos)*180.0/M_PI << endl;
+
+	auto offworld = GetOffsetWorld(offset);
+	double distancetotarget = (offworld-target).length();
+	assert(distancetotarget < PositionTolerance);
 	return TimeBudget;
 }
 
-double RobotHAL::MoveClaw(double height, double extension, double& TimeBudget)
+double RobotHAL::MovePath(Vector2dd Target, Vector2dd offset, double& TimeBudget)
 {
 	return 0;
+}
+
+double RobotHAL::MoveClawVertical(double height, double& TimeBudget)
+{
+	ReturnIfNoBudget
+	ClawHeight.SetTarget(height);
+	ClawHeight.Tick(TimeBudget);
+	return TimeBudget;
+}
+
+double RobotHAL::MoveClawExtension(double extension, double &TimeBudget)
+{
+	ReturnIfNoBudget
+	ClawExtension.SetTarget(extension);
+	ClawExtension.Tick(TimeBudget);
+	return TimeBudget;
 }
 
 double RobotHAL::MoveTray(int index, double extension, double& TimeBudget)
 {
-	return 0;
+	ReturnIfNoBudget
+	assert(index < sizeof(Trays)/sizeof(Trays[0]));
+	Trays[index].SetTarget(extension);
+	Trays[index].Tick(TimeBudget);
+	return TimeBudget;
+}
+
+double RobotHAL::MoveClawTo(double height, double &TimeBudget, double InitialExtension, double FinalExtension)
+{
+	//if not at the target, close the claws and retract the trays
+	if (abs(ClawHeight.Pos-height) > PositionTolerance)
+	{
+		MoveClawExtension(InitialExtension, TimeBudget);
+		double minbudget = TimeBudget;
+		/*for (int i = 0; i < 3; i++) //retract all trays at once
+		{
+			double localbudget = TimeBudget;
+			MoveTray(i, 0, localbudget);
+			if (localbudget < minbudget)
+			{
+				minbudget = localbudget;
+			}
+		}*/
+		TimeBudget = minbudget;
+		MoveClawVertical(height, TimeBudget);
+	}
+	MoveClawExtension(FinalExtension, TimeBudget);
+	return TimeBudget;
 }

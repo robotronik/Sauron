@@ -5,22 +5,21 @@
 using namespace Overlord;
 using namespace std;
 
-double Overlord::GatherCherriesObjective::ExecuteObjective(double &TimeBudget, RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState)
+pair<double, vector<ActuatorType>> GatherCherriesObjective::ExecuteObjective(double &TimeBudget, RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState)
 {
 	double BaseTime = TimeBudget;
 	auto stoppos = robot->GetStoppingPosition() + robot->CherryPickupPosition.rotate(robot->Rotation.Pos);
 	const auto cherries = FindObjectsSorted(BoardState, (uint32_t)ObjectType::Cherry, stoppos);
-	if (cherries.size() == 0)
+	static const vector<ActuatorType> act = {ActuatorType::Wheels};
+	if (cherries.size() == 0 || RobotState->Cherries.size() >= 10)
 	{
-		return 0;
+		return {0, act};
 	}
-	//vacuum to the right of the robot
-	//robot width is 310mm
 	
 	robot->MoveToOffset(cherries[0].position, robot->CherryPickupPosition, TimeBudget); //TODO: move so that the intake is that the cherry position, not the robot
 	if (TimeBudget < __DBL_EPSILON__)
 	{
-		return 0; //not able to get to the cherry in time, 0 points
+		return {0, act}; //not able to get to the cherry in time, 0 points
 	}
 	for (int i = 0; i < BoardState.size(); i++)
 	{
@@ -33,10 +32,10 @@ double Overlord::GatherCherriesObjective::ExecuteObjective(double &TimeBudget, R
 	RobotState->Cherries.push_back(cherries[0]);
 
 	double timeittook = BaseTime-TimeBudget;
-	return 1/timeittook; //we'll say it gives one point, even though it doesn't
+	return {1/timeittook, act}; //we'll say it gives one point, even though it doesn't
 }
 
-double Overlord::GatherCherriesObjective::GetPoints()
+double GatherCherriesObjective::GetPoints()
 {
 	return 0;
 }

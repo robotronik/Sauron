@@ -1,7 +1,13 @@
 #include "Overlord/Overlord.hpp"
 
+#include <utility>
+
 #include "Overlord/Objectives/GatherCherries.hpp"
+#include "Overlord/Objectives/DepositCherries.hpp"
 #include "Overlord/Objectives/TakeStack.hpp"
+#include "Overlord/Objectives/TrayRoutine.hpp"
+#include "Overlord/Objectives/RetractTray.hpp"
+#include "Overlord/Objectives/RetractClaws.hpp"
 #include "Overlord/RobotHandle.hpp"
 #include "thirdparty/serialib.h"
 #ifdef WITH_SAURON
@@ -32,11 +38,11 @@ void Manager::Init()
 		RC = new RobotHAL();
 		RC->PositionLinear = LinearMovement(0.1, 0.2, 0.1, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
-		RC->ClawExtension = LinearMovement(0.1, 0.3, 1, 0);
-		RC->ClawHeight = LinearMovement(0.1, 0.3, 1, 0);
+		RC->ClawExtension = LinearMovement(1, 3, 3, 0);
+		RC->ClawHeight = LinearMovement(.1, .3, 1, 0);
 		for (int j = 0; j < 3; j++)
 		{
-			RC->Trays[j] = LinearMovement(0.1, 0.3, 1, 0);
+			RC->Trays[j] = LinearMovement(1, 3, 3, 0);
 		}
 		
 	}
@@ -88,7 +94,7 @@ void Manager::Init()
 		for (int j = 0; j < defaultcakes.size(); j++)
 		{
 			Object cake = defaultcakes[j];
-			cake.position*=Vector2d<double>(mirrorx, mirrory);
+			cake.position*=Vector2dd(mirrorx, mirrory);
 			for (int k = 0; k < 3; k++)
 			{
 				PhysicalBoardState.push_back(cake);
@@ -111,7 +117,16 @@ void Manager::Init()
 	}
 
 	Objectives.clear();
+	//Bigger objectives should be at the back of the list
+	for (int i = 0; i < 3; i++)
+	{
+		Objectives.push_back(make_unique<RetractTrayObjective>(i));
+	}
+	Objectives.push_back(make_unique<RetractClawsObjective>());
 	Objectives.push_back(make_unique<GatherCherriesObjective>());
+	Objectives.push_back(make_unique<DepositCherriesObjective>());
+	Objectives.push_back(make_unique<TrayRoutine>());
+	Objectives.push_back(make_unique<TakeStackObjective>());
 }
 
 void Manager::GatherData()
@@ -123,47 +138,103 @@ void Manager::GatherData()
 	
 }
 
-void Manager::Run()
+void Manager::Run(double delta)
 {
 	int numrobots = RobotControllers.size();
 	assert(numrobots ==1); //todo: make the following code work for multiple robots. Should be numobjective^robots in complexity tho if we try everything :/
-	vector<BaseObjective*> BestObjective(numrobots, nullptr);
-	vector<double> BestObjectiveScore(numrobots, 0);
+	vector<map<ActuatorType, std::pair<BaseObjective*, double>>> BestObjective;
+	vector<map<BaseObjective*, vector<ActuatorType>>> ObjectiveActuators;
+	BestObjective.resize(numrobots);
+	ObjectiveActuators.resize(numrobots);
 
 	//Copy the state of the board, and simulate every objective to pick the one that makes the most points
 	std::vector<Object> SimulationBoardState;
 	std::vector<RobotMemory> SimulationRobotStates;
 	std::vector<RobotHAL> SimulatedControllers;
 	SimulatedControllers.resize(numrobots);
+	SimulationRobotStates.resize(numrobots);
+	int robotidx = 0;
+	auto& robjectives = BestObjective[robotidx];//Best objectives for the current robot
+	auto& ractuators = ObjectiveActuators[robotidx]; //Actuators used for each objective
 	for (auto &objective : Objectives)
 	{
 		SimulationBoardState = PhysicalBoardState;
-		SimulationRobotStates = PhysicalRobotStates;
-		for (int ciddx = 0; ciddx < RobotControllers.size(); ciddx++)
+		for (int copyrobotidx = 0; copyrobotidx < RobotControllers.size(); copyrobotidx++)
 		{
-			SimulatedControllers[ciddx] = RobotHAL(*RobotControllers[ciddx]);
+			SimulationRobotStates[copyrobotidx].CopyFrom(PhysicalRobotStates[copyrobotidx]);
+			SimulatedControllers[copyrobotidx] = RobotHAL(*RobotControllers[copyrobotidx]);
 		}
-		int robotidx =  0;
 		double timebudget = TimeLeft;
-		double score = objective->ExecuteObjective(timebudget, &SimulatedControllers[robotidx], SimulationBoardState, &SimulationRobotStates[robotidx]);
-		cout << "Objective gave score " << score << endl;
-		if (score > BestObjectiveScore[robotidx])
+		auto ExecutionPair = objective->ExecuteObjective(timebudget, &SimulatedControllers[robotidx], SimulationBoardState, &SimulationRobotStates[robotidx]);
+		double Score = ExecutionPair.first;
+		auto& categories = ExecutionPair.second;
+		//cout << "Objective " << objective->GetName() << " gave score " << Score << endl;
+		ractuators[objective.get()] = categories;
+		double ScoreThreshold = 0;
+		vector<BaseObjective*> seenObj;
+		for (auto category : categories)
 		{
-			BestObjectiveScore[robotidx] = score;
-			BestObjective[robotidx] = objective.get();
+			auto found = robjectives.find(category);
+			auto& thepair = found->second;
+			if (found != robjectives.end()) //if there's an objective using that actuator
+			{
+				auto seen = find(seenObj.begin(), seenObj.end(), thepair.first);
+				if (seen != seenObj.end())
+				{
+					continue; //already seen this objective, don't add it's score
+				}
+				
+				ScoreThreshold += thepair.second;
+				seenObj.push_back(thepair.first);
+			}
 		}
+		if (Score > ScoreThreshold)
+		{
+			//remove all objectives that have been seen from the best objectives, as we're now using those actuators
+			for (auto & obj : seenObj)
+			{
+				auto cats = ractuators[obj];
+				for (auto& cat : cats)
+				{
+					auto found = robjectives.find(cat);
+					if (found == robjectives.end())
+					{
+						continue;
+					}
+					robjectives.erase(found);
+					//cout << "Objective " << objective->GetName() << " is displacing objective " << obj->GetName() << " at " << (int)cat <<endl;
+				}
+			}
+			//register that objective as the objective for those actuators
+			for (auto category : categories)
+			{
+				robjectives[category] = make_pair(objective.get(), Score);
+			}
+		}
+		
 	}
+
+	//BestObjective[0] = Objectives[1].get();
 
 	//Objectives selected : execute them for real
 	for (int robotidx = 0; robotidx < numrobots; robotidx++)
 	{
-		if (BestObjective[robotidx] == nullptr)
+		vector<BaseObjective*> seenObj;
+		string ObjectivesChosen = "";
+		for (auto& entry : BestObjective[robotidx])
 		{
-			cerr << "Robot " << robotidx << " did not find a suitable objective" << endl;
-			continue;
+			auto& pair = entry.second;
+			auto seen = find(seenObj.begin(), seenObj.end(), pair.first);
+			if (seen != seenObj.end())
+			{
+				continue;
+			}
+			double timebudget = delta;
+			seenObj.push_back(pair.first);
+			pair.first->ExecuteObjective(timebudget, RobotControllers[robotidx], PhysicalBoardState, &PhysicalRobotStates[robotidx]);
+			ObjectivesChosen += " " + pair.first->GetName(); 
 		}
-		double timebudget = 1.0/50; //todo : this should be the cycle time
-		BestObjective[robotidx]->ExecuteObjective(timebudget, RobotControllers[robotidx], PhysicalBoardState, &PhysicalRobotStates[robotidx]);
+		cout << "Robot " << robotidx << " chose objectives" << ObjectivesChosen <<endl;
 	}
 }
 
@@ -172,7 +243,7 @@ bool Manager::Display()
 #ifdef WITH_SAURON
 	vector<GLObject> dataconcat;
 	dataconcat.emplace_back(MeshNames::arena);
-	vector<tuple<Vector2d<double>, double>> CakeHeights;
+	vector<pair<Vector2dd, double>> CakeHeights;
 	static const map<ObjectType, MeshNames> boardgltypemap = {
 		{ObjectType::Robot, 		MeshNames::robot},
 		{ObjectType::Cherry, 		MeshNames::cherry},
@@ -198,11 +269,11 @@ bool Manager::Display()
 				for (int i = 0; i < CakeHeights.size(); i++)
 				{
 					auto cake = CakeHeights[i];
-					auto pos = std::get<0>(cake);
-					auto height = std::get<1>(cake);
-					if ((pos-object.position).length() < 0.12)
+					auto pos = cake.first;
+					auto height = cake.second;
+					if ((pos-object.position).length() < 0.12) //0.12 is the cake diameter
 					{
-						posZ = max(posZ, height+0.02);
+						posZ = max(posZ, height+CakeHeight);
 					}
 					
 				}
@@ -219,7 +290,7 @@ bool Manager::Display()
 		const auto& robothandle = RobotControllers[robotidx];
 		const auto& robotmem = PhysicalRobotStates[robotidx];
 		Affine3d robotloc;
-		cout << "Robot " << robotidx << " speed is " << robothandle->PositionLinear.Speed << endl;
+		//cout << "Robot " << robotidx << " speed is " << robothandle->PositionLinear.Speed << endl;
 		robotloc.translation(Vec3d(robothandle->position.x, robothandle->position.y, 0.0));
 		auto forward  = robothandle->GetForwardVector();
 		Vec3d xvec(forward.x,forward.y,0), yvec(-forward.y,forward.x,0);
@@ -237,7 +308,7 @@ bool Manager::Display()
 			if (trayidx == 0)
 			{
 				traypos = robotloc.translation() 
-					+ xvec * (robothandle->ClawPickupPosition.x + robothandle->ClawExtension.Pos) 
+					+ xvec * (robothandle->ClawPickupPosition.x * robothandle->ClawExtension.Pos) 
 					+ yvec * robothandle->ClawPickupPosition.y
 					+ Vec3d(0,0,robothandle->ClawHeight.Pos);
 				meshtype = MeshNames::robot_claw;
@@ -245,7 +316,7 @@ bool Manager::Display()
 			else
 			{
 				traypos = robotloc.translation() 
-					+ xvec * robothandle->Trays[trayidx].Pos * robothandle->ClawPickupPosition.x
+					+ xvec * robothandle->Trays[trayidx-1].Pos * robothandle->ClawPickupPosition.x
 					+ Vec3d(0,0,robothandle->TrayHeights[trayidx]);
 				meshtype = MeshNames::robot_tray;
 			}
@@ -271,7 +342,7 @@ void Manager::Thread()
 {
 	Init();
 #ifdef WITH_SAURON
-	visualiser.Start();
+	visualiser.Start("Overlord");
 #if false
 	Mat posplotdisc = Mat::zeros(Size(1000,800), CV_8UC3);
 	Mat posplotcont = posplotdisc.clone();
@@ -327,11 +398,17 @@ void Manager::Thread()
 #endif
 #endif
 	bool killed = false;
+	//usleep(2*1000000);
+	lastTick = chrono::steady_clock::now();
 	while (!killed)
 	{
+		auto now = chrono::steady_clock::now();
+		std::chrono::duration<double> delta = now - lastTick;
 		GatherData();
-		Run();
+		//Run(delta.count()*2);
+		Run(1.0/200);
 		killed = !Display();
-		waitKey(1000/50);
+		//waitKey(1000/50);
+		lastTick = now;
 	}
 }
