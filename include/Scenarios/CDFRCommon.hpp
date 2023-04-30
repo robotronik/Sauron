@@ -12,6 +12,7 @@
 #include "Cameras/VideoCaptureCamera.hpp"
 #include "Cameras/CameraManager.hpp"
 #include "TrackedObjects/TrackerCube.hpp"
+#include "TrackedObjects/TopTracker.hpp"
 #include "TrackedObjects/StaticObject.hpp"
 #include "ObjectTracker.hpp"
 

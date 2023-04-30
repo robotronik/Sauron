@@ -10,6 +10,11 @@
 #include "Overlord/Objectives/RetractClaws.hpp"
 #include "Overlord/RobotHandle.hpp"
 #include "thirdparty/serialib.h"
+
+#include "GlobalConf.hpp"
+
+#include "data/senders/Encoders/MinimalEncoder.hpp"
+#include "data/metadata.hpp"
 #ifdef WITH_SAURON
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
@@ -27,13 +32,15 @@ void Manager::Init()
 {
 	int numbots = 1;
 	TimeLeft = 100;
+	receiver = make_unique<TCPTransport>(false, GetWebsocketConfig().IP, GetWebsocketConfig().Port, GetWebsocketConfig().Interface);
+	receiveptr = receivebuffer;
 	RobotControllers.resize(numbots);
 	PhysicalRobotStates.resize(numbots);
 	for (int i = 0; i < numbots; i++)
 	{
 		RobotHAL* &RC = RobotControllers[i];
 		serialib* bridge = new serialib();
-		bridge->openDevice("/dev/COM", 115200);
+		bridge->openDevice("/dev/ttyACM0", 115200);
 		//RC = new RobotHandle(bridge);
 		RC = new RobotHAL();
 		RC->PositionLinear = LinearMovement(0.1, 0.2, 0.1, 0); //TODO: add real params 
@@ -44,7 +51,6 @@ void Manager::Init()
 		{
 			RC->Trays[j] = LinearMovement(1, 3, 3, 0);
 		}
-		
 	}
 	
 	/*
@@ -131,9 +137,77 @@ void Manager::Init()
 
 void Manager::GatherData()
 {
+	//receivee from external sauron
+	int numrecv = receiver->Receive(receiveptr, sizeof(receivebuffer)+receivebuffer-receiveptr, false);
+	DecodedMinimalData data;
+	if (numrecv > 0)
+	{
+		receiveptr += numrecv;
+		int numdecoded;
+		char* decodestartptr = receivebuffer;
+		int available = receiveptr-receivebuffer;
+		while (numdecoded = MinimalEncoder::Decode(EncodedData(receiveptr-receivebuffer, decodestartptr), data))
+		{
+			decodestartptr += numdecoded;
+		}
+		memmove(receivebuffer, decodestartptr, receiveptr-decodestartptr);
+		receiveptr -= decodestartptr-receivebuffer;
+	}
+	
+	
+	
+	//gather data from bots
 	for (int i = 0; i < RobotControllers.size(); i++)
 	{
 		RobotControllers[i]->Tick();
+	}
+	if (data.Objects.size() == 0)
+	{
+		return; //we're done here; no machine vision data
+	}
+	
+	//clear all robots
+	for (int i = PhysicalBoardState.size() - 1; i >= 0; i--)
+	{
+		if (PhysicalBoardState[i].Type == ObjectType::Robot)
+		{
+			PhysicalBoardState.erase(PhysicalBoardState.begin() + i);
+		}
+	}
+	for (int i = 0; i < data.Objects.size(); i++)
+	{
+		auto& obj = data.Objects[i];
+		Vector2dd pos = Vector2dd(obj.X, obj.Y);
+		double rot = obj.rotation;
+		switch (obj.identity.type)
+		{
+
+		case PacketType::Team :
+			{
+				Team = (CDFRTeam)obj.identity.numeral;
+				for (int j = 0; j < RobotControllers.size(); j++)
+				{
+					RobotControllers[j]->BlueTeam = Team == CDFRTeam::Blue;
+				}
+			}
+			break;
+		case PacketType::TopTracker : //may be us or the ennemy
+			{
+				int markeridx = GetTypeFromMetadata<uint8_t>(obj.identity.metadata, 0);
+				if ((markeridx >= 1 && markeridx <= 5 && Team == CDFRTeam::Blue) || (markeridx >= 6 && markeridx <= 10 && Team==CDFRTeam::Green))
+				{
+					//it's our robot : todo give the pos (maybe)
+					break;
+				}
+			}
+		case PacketType::TrackerCube : 
+			{
+				PhysicalBoardState.emplace_back(ObjectType::Robot, pos, rot);
+			}
+		
+		default:
+			break;
+		}
 	}
 	
 }
@@ -405,8 +479,8 @@ void Manager::Thread()
 		auto now = chrono::steady_clock::now();
 		std::chrono::duration<double> delta = now - lastTick;
 		GatherData();
-		//Run(delta.count()*2);
-		Run(1.0/200);
+		Run(delta.count()*4);
+		//Run(1.0/200);
 		killed = !Display();
 		//waitKey(1000/50);
 		lastTick = now;

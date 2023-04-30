@@ -85,6 +85,7 @@ namespace Overlord
 		LinearMovement ClawHeight, ClawExtension;
 		LinearMovement Trays[3];
 		Pathfinder* pf = nullptr;
+		bool BlueTeam = true;
 
 		double width = 0.2, depth = 0.1; //todo : actual values
 
@@ -93,7 +94,7 @@ namespace Overlord
 
 		virtual void Tick() {};
 
-		virtual bool IsBlueTeam() { return true; };
+		virtual bool IsBlueTeam() { return BlueTeam; };
 
 		//Can the robot fit at this location in the terrain ?
 		bool IsLocationValid(Vector2dd pos, double rot) const; 
@@ -116,7 +117,8 @@ namespace Overlord
 		virtual double MoveTo(Vector2dd target, double &TimeBudget, ForceDirection direction = ForceDirection::None);
 
 		bool IsOffsetInSingularity(Vector2dd target, Vector2dd offset);
-		std::vector<std::pair<Vector2dd, double>> GetOffsetTarget(Vector2dd target, Vector2dd offset);
+		//the pair is distance, angle
+		std::vector<std::pair<double, double>> GetOffsetTarget(Vector2dd target, Vector2dd offset);
 
 		//Move the robot so that pos + rotated(offset) = target
 		double MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBudget, ForceDirection direction = ForceDirection::None);

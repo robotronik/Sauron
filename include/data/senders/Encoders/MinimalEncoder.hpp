@@ -3,6 +3,7 @@
 #include "data/senders/Encoders/GenericEncoder.hpp"
 
 #include <map>
+#include <vector>
 
 struct __attribute__ ((packed)) MinimalPacketHeader
 {
@@ -12,7 +13,6 @@ struct __attribute__ ((packed)) MinimalPacketHeader
 	uint32_t TickRate; //ticks/s
 	uint32_t NumDatas; //number of PositionPackets
 };
-
 
 struct PositionPacket
 {
@@ -35,6 +35,15 @@ struct PositionPacket
 	};
 
 	int PackInto(char* buffer, int maxlength) const;
+
+	int UnpackFrom(const char* buffer, int maxlength);
+};
+
+
+struct DecodedMinimalData
+{
+	MinimalPacketHeader Header;
+	std::vector<PositionPacket> Objects;
 };
 
 //An encoder that only sends X, Y and rot according to the struct above.
@@ -48,7 +57,9 @@ public:
 		:GenericEncoder(), AllowMask(InAllowMask)
 	{}
 
-	static void Affine3dToVictor(PositionPacket &InPacket, cv::Affine3d position);
+	static void Affine3dTo2D(PositionPacket &InPacket, cv::Affine3d position);
 
 	virtual EncodedData Encode(int64 GrabTime, std::vector<ObjectData> &objects) override;
+
+	static int Decode(const EncodedData &data, DecodedMinimalData &outdecoded);
 };

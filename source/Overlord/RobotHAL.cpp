@@ -332,7 +332,7 @@ bool RobotHAL::IsOffsetInSingularity(Vector2dd target, Vector2dd offset)
 	return deltapos.lengthsquared() < offset.lengthsquared() + __DBL_EPSILON__;
 }
 
-vector<pair<Vector2dd, double>> RobotHAL::GetOffsetTarget(Vector2dd target, Vector2dd offset)
+vector<pair<double, double>> RobotHAL::GetOffsetTarget(Vector2dd target, Vector2dd offset)
 {
 	auto deltapos = target-position;
 	double angle = deltapos.angle();
@@ -344,24 +344,21 @@ vector<pair<Vector2dd, double>> RobotHAL::GetOffsetTarget(Vector2dd target, Vect
 	
 	
 	vector<double> anglestotry = {angle-offsetangle, angle+offsetangle, angle-offsetangle+M_PI, angle+offsetangle+M_PI};
-	vector<double> distancetotry = {x-offset.x, x+offset.x, -x-offset.x, -x+offset.x};
-	vector<pair<Vector2dd, double>> solutions;
-	int correctangle = -1, correctdistance = -1;
+	vector<pair<double, double>> solutions;
+	int correctangle = -1;
 	//goto foundcorrect;
 	for (int i = 0; i < anglestotry.size(); i++)
 	{
-		for (int j = 0; j < distancetotry.size(); j++)
+		double thisangle = LinearMovement::wraptwopi(anglestotry[i]); //thisangle will be the rotation we take
+		Vector2dd offsetrotworld = position + offset.rotate(thisangle); //final pos of the offset
+		Vector2dd deltalin = target-offsetrotworld; //final position of the robot : go forward the distance
+		auto forward = Vector2dd(thisangle);
+		auto side = Vector2d(thisangle+M_PI_2);
+		double dist = deltalin.dot(forward);
+		auto sideerror = deltalin.dot(side);
+		if (abs(sideerror) < 1e-5)
 		{
-			double thisangle = LinearMovement::wraptwopi(anglestotry[i]); //thisangle will be the rotation we take
-			Vector2dd fp = position + Vector2dd(thisangle) * distancetotry[j]; //final position of the robot : go forward the distance
-			Vector2dd ofp = fp + offset.rotate(thisangle); //final pos of the offset
-			auto error = ofp-target;
-			auto errorloc = error.rotate(-thisangle);
-			if (error.length() < 1e-5)
-			{
-				solutions.push_back({fp, thisangle});
-			}
-			
+			solutions.push_back({dist, thisangle});
 		}
 	}
 	return solutions;
@@ -382,71 +379,82 @@ double RobotHAL::MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBu
 		auto deltaloc = offset + targetlocal;
 		double dneed = deltaloc.length();
 		cout << "target is nearer to robot than offset " << deltaloc.ToString() << " : moving " << dneed << endl;
-		double fmove = deltaloc.x < 0 ? -dneed : dneed; //if the offset is in the front, move back, else move forward
+		double fmove = deltaloc.x > 0 ? -dneed : dneed; //if the offset is in the front, move back, else move forward
 		MoveTo(position + GetForwardVector() * fmove, TimeBudget/*, offset.x >= 0 ? ForceDirection::Backwards : ForceDirection::Forward*/);
 		ReturnIfNoBudget
 		deltapos = target-position;
 	}
-	auto allsolutions = GetOffsetTarget(target, offset);
-	cout << "Found " << allsolutions.size() << " solutions to go to the target with offset" <<endl;
-	ForceDirection memdir = direction;
-	pair<Vector2dd, double> bestsolution = {{0,0},0}, forwardsolution = {{0,0},0}, backwardssolution = {{0,0},0};
-	bool HasForward = false, HasBackwards = false;
-	for (int i = 0; i < allsolutions.size(); i++)
-	{
-		auto& thissolution = allsolutions[i];
-		auto solutionforward = Vector2dd(thissolution.second);
-		auto solutiondelta = thissolution.first-position;
-		bool IsForwardSolution = solutionforward.dot(solutiondelta) > 0;
-		if (IsForwardSolution)
+	pair<double, double> bestsolution= {0,0};
+	ForceDirection memdir;
+	auto reevaluate = [&](){
+		auto allsolutions = GetOffsetTarget(target, offset);
+		cout << "Found " << allsolutions.size() << " solutions to go to the target with offset" <<endl;
+		memdir = direction;
+		pair<double, double> forwardsolution = {0,0}, backwardssolution = {0,0};
+		bool HasForward = false, HasBackwards = false;
+		for (int i = 0; i < allsolutions.size(); i++)
 		{
-			forwardsolution = thissolution;
-			HasForward= true;
+			auto& thissolution = allsolutions[i];
+			auto solutionforward = Vector2dd(thissolution.second);
+			bool IsForwardSolution = thissolution.first > 0;
+			if (IsForwardSolution && (!HasForward || abs(thissolution.first)<abs(forwardsolution.first)))
+			{
+				forwardsolution = thissolution;
+				HasForward= true;
+			}
+			else if (!IsForwardSolution && (!HasBackwards || abs(thissolution.first)<abs(backwardssolution.first)))
+			{
+				backwardssolution = thissolution;
+				HasBackwards= true;
+			}
 		}
-		else
-		{
-			backwardssolution = thissolution;
-			HasBackwards= true;
-		}
-	}
-	
-	if (direction == ForceDirection::None)
-	{
-		if (!HasBackwards)
-		{
-			memdir = ForceDirection::Forward;
-		}
-		else if (!HasForward)
+		
+		if (!HasBackwards) //must go forward
 		{
 			memdir = ForceDirection::Forward;
 		}
-		else if ((forwardsolution.first-position).lengthsquared() < (backwardssolution.first-position).lengthsquared())
-		{
-			memdir = ForceDirection::Forward;
-		}
-		else
+		else if (!HasForward) //must go backwards
 		{
 			memdir = ForceDirection::Backwards;
 		}
-	}
-	switch (memdir)
-	{
-	case ForceDirection::Forward :
-		assert(HasForward);
-		bestsolution = forwardsolution;
-		break;
-	case ForceDirection::Backwards :
-		assert(HasBackwards);
-		bestsolution = backwardssolution;
-		break;
-	}
+		else if (direction == ForceDirection::None) //choose what's best
+		{
+			if (abs(forwardsolution.first) < abs(backwardssolution.first))
+			{
+				memdir = ForceDirection::Forward;
+			}
+			else
+			{
+				memdir = ForceDirection::Backwards;
+			}
+		}
+		else //user-decided
+		{
+			memdir = direction;
+		}
+		
+		
+		switch (memdir)
+		{
+		case ForceDirection::Forward :
+			assert(HasForward);
+			bestsolution = forwardsolution;
+			cout << "Forward";
+			break;
+		case ForceDirection::Backwards :
+			assert(HasBackwards);
+			bestsolution = backwardssolution;
+			cout << "Backwards";
+			break;
+		}
+		cout << " solution : linear " << bestsolution.first << " angle " << bestsolution.second*180.0/M_PI << endl;
+	};
 	
-	cout << "solution is at " << bestsolution.first.ToString() << endl;
-
-	Rotate(bestsolution.second, TimeBudget);
+	reevaluate();
+	
+	MoveTo(position+Vector2dd(bestsolution.second) * bestsolution.first, TimeBudget, memdir);
 	ReturnIfNoBudget
-	MoveTo(bestsolution.first, TimeBudget, memdir);
-	ReturnIfNoBudget
+	reevaluate();
 	Rotate(bestsolution.second, TimeBudget);
 	ReturnIfNoBudget
 	

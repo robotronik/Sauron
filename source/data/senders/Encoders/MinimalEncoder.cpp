@@ -20,12 +20,21 @@ int PositionPacket::PackInto(char* buffer, int maxlength) const
 	return size;
 }
 
-void MinimalEncoder::Affine3dToVictor(PositionPacket &InPacket, Affine3d position)
+int PositionPacket::UnpackFrom(const char* buffer, int maxlength)
 {
-	Vec3d pos3d = position.translation() * 1000.0; //convert to mm
+	int taken = identity.UnpackFrom(buffer, maxlength);
+	assert(maxlength >= taken + 3*sizeof(float));
+	memcpy(&X, buffer + taken, sizeof(float)*3);
+	taken += sizeof(float)*3;
+	return taken;
+}
+
+void MinimalEncoder::Affine3dTo2D(PositionPacket &InPacket, Affine3d position)
+{
+	Vec3d pos3d = position.translation(); //convert to mm
 	InPacket.X = pos3d(0);
 	InPacket.Y = pos3d(1);
-	double angle = GetRotZ(position.linear()) * 180.f / M_PI;
+	double angle = GetRotZ(position.linear());
 	InPacket.rotation = angle;
 }
 
@@ -43,7 +52,7 @@ EncodedData MinimalEncoder::Encode(int64 GrabTime, std::vector<ObjectData> &obje
 		{
 			PositionPacket packet;
 			packet.identity = ObjectDatas[i].identity;
-			Affine3dToVictor(packet, ObjectDatas[i].location);
+			Affine3dTo2D(packet, ObjectDatas[i].location);
 			packetsize += packet.GetSize();
 			ObjectPackets.push_back(packet);
 		}
@@ -67,4 +76,26 @@ EncodedData MinimalEncoder::Encode(int64 GrabTime, std::vector<ObjectData> &obje
 	//memcpy(buffer, &header, sizeof(MinimalPacketHeader));
 	return EncodedData(buffersize, buffer);
 
+}
+
+int MinimalEncoder::Decode(const EncodedData &data, DecodedMinimalData &outdecoded)
+{
+	if (data.length < sizeof(MinimalPacketHeader))
+	{
+		return 0;
+	}
+	const MinimalPacketHeader* header = reinterpret_cast<MinimalPacketHeader*>(data.buffer);
+	if (data.length < header->TotalLength)
+	{
+		return 0;
+	}
+	outdecoded.Header = *header;
+	outdecoded.Objects.resize(header->NumDatas);
+	const char* decodeptr = data.buffer + sizeof(MinimalPacketHeader);
+	for (int i = 0; i < header->NumDatas; i++)
+	{
+		int eaten = decodeptr - data.buffer;
+		outdecoded.Objects[i].UnpackFrom(decodeptr, data.length-eaten);
+	}
+	return decodeptr - data.buffer;
 }

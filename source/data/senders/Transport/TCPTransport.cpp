@@ -18,11 +18,14 @@
 using namespace std;
 
 TCPTransport::TCPTransport(bool inServer, string inIP, int inPort, string inInterface)
-	: GenericTransport(),
-	Server(inServer),
-	IP(inIP), Port(inPort), Interface(inInterface),
-	sockfd(-1), Connected(false)
+	: GenericTransport()
 {	
+	Server = inServer;
+	IP = inIP;
+	Port = inPort;
+	Interface = inInterface;
+	sockfd = -1;
+	Connected = false;
 	CreateSocket();
 	Connect();
 
@@ -31,12 +34,15 @@ TCPTransport::TCPTransport(bool inServer, string inIP, int inPort, string inInte
 
 TCPTransport::~TCPTransport()
 {
+	cout << "Destroying TCP transport " << IP << ":" << Port << " @ " << Interface <<endl;
 	for (int i = 0; i < connectionfd.size(); i++)
 	{
+		shutdown(connectionfd[i], SHUT_RDWR);
 		close(connectionfd[i]);
 	}
 	if (sockfd != -1)
 	{
+		shutdown(sockfd, SHUT_RDWR);
 		close(sockfd);
 	}
 }
@@ -47,17 +53,17 @@ void TCPTransport::CreateSocket()
 	{
 		return;
 	}
-	
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	int type = Server ? SOCK_STREAM : SOCK_STREAM | SOCK_NONBLOCK;
+	sockfd = socket(AF_INET, type, 0);
 	if (sockfd == -1)
 	{
 		cerr << "TCP Failed to create socket, port " << Port << endl;
 	}
 	
-	/*if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, Interface.c_str(), Interface.size()))
+	if(setsockopt(sockfd, SOL_SOCKET, SO_BINDTODEVICE, Interface.c_str(), Interface.size()))
 	{
-		cerr << "TCP Failed to bind tcp interface : " << errno << endl;
-	}*/
+		cerr << "TCP Failed to bind to interface : " << errno << endl;
+	}
 	LowerLatency(sockfd);
 	
 }

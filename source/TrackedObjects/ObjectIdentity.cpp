@@ -20,6 +20,17 @@ int ObjectIdentity::PackInto(char* buffer, int maxlength) const
 	return size;
 }
 
+int ObjectIdentity::UnpackFrom(const char* buffer, int maxlength)
+{
+	assert(maxlength >= sizeof(PackedIdentity));
+	const PackedIdentity* pi = reinterpret_cast<const PackedIdentity*>(buffer);
+	numeral = pi->numeral;
+	type = pi->type;
+	assert(maxlength >= sizeof(PackedIdentity) + pi->MetadataLength);
+	metadata = string(buffer + sizeof(PackedIdentity), pi->MetadataLength);
+	return sizeof(PackedIdentity) + pi->MetadataLength;
+}
+
 std::optional<GLObject> ObjectData::ToGLObject() const
 {
 	static const map<enum PacketType, enum MeshNames> PacketToMesh = 

@@ -69,7 +69,7 @@ namespace Overlord
 			return (*this)/length();
 		}
 
-		T dot(Vector2d<T> &other) const
+		T dot(const Vector2d<T> &other) const
 		{
 			return x*other.x + y*other.y;
 		}

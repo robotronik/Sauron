@@ -33,9 +33,9 @@ pair<double, vector<ActuatorType>> DepositCherriesObjective::ExecuteObjective(do
 	}
 	int nc = RobotState->Cherries.size();
 	RobotState->Cherries.clear();
-
+	double score = nc*nc/100.0;
 	double timeittook = BaseTime-TimeBudget;
-	return {nc/timeittook, act};
+	return {score/timeittook, act};
 }
 
 double DepositCherriesObjective::GetPoints()

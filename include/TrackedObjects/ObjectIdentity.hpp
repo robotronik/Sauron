@@ -4,8 +4,21 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <map>
 #include <opencv2/core/affine.hpp>
 
+enum class CDFRTeam
+{
+	Unknown,
+	Green,
+	Blue
+};
+
+const std::map<CDFRTeam, std::string> TeamNames = {
+	{CDFRTeam::Unknown, "Unknown"},
+	{CDFRTeam::Blue, "Blue"},
+	{CDFRTeam::Green, "Green"}
+};
 
 enum class PacketType : uint8_t
 {
@@ -23,6 +36,7 @@ enum class PacketType : uint8_t
 	PinkCake,
 	Cherry,
 	Tag					= 0b10000, // Raw tag. Size in metadata, ID is numeral. For debug/inspect purposes
+	Team
 };
 
 struct __attribute__ ((packed)) PackedIdentity
@@ -57,6 +71,8 @@ struct ObjectIdentity
 	};
 
 	int PackInto(char* buffer, int maxlength) const;
+
+	int UnpackFrom(const char* buffer, int maxlength);
 };
 
 struct ObjectData
