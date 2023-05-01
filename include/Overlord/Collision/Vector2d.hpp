@@ -6,7 +6,7 @@
 namespace Overlord
 {
 
-	extern const double CakeTolerance, PositionTolerance, CakeHeight;
+	extern const double CakeTolerance, PositionTolerance, CakeHeight, CakeRadius;
 	
 	template<class T>
 	struct Vector2d

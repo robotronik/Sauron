@@ -137,6 +137,7 @@ void BoardGL::HandleInputs()
 
 	glm::vec3 direction = GetDirection();
 	glm::vec3 right = GetRightVector();
+	glm::vec3 up = glm::cross(right, direction);
 
 	float speed = 1;
 	// Move forward
@@ -154,6 +155,14 @@ void BoardGL::HandleInputs()
 	// Strafe left
 	if (glfwGetKey(Window, GLFW_KEY_LEFT) == GLFW_PRESS){
 		cameraPosition -= right * deltaTime * speed;
+	}
+	// Move up
+	if (glfwGetKey(Window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS){
+		cameraPosition += up * deltaTime * speed;
+	}
+	// Move down
+	if (glfwGetKey(Window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS){
+		cameraPosition -= up * deltaTime * speed;
 	}
 
 	//cout << "pos: " << cameraPosition.x << " " << cameraPosition.y << " " << cameraPosition.z << endl;

@@ -1,8 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <set>
 #include <cstdint>
 #include <optional>
+#include <utility>
 #include "Overlord/Collision/Vector2d.hpp"
 
 #ifdef WITH_SAURON
@@ -78,11 +80,22 @@ namespace Overlord{
 
 		//push cakes from the claws to a tray or back
 		bool TransferCake(RobotHAL* robot, int trayidx, bool ToTray);
+
+		std::set<ObjectType> GetCakeColorsStored();
+
+		std::set<ObjectType> GetCakeColorsNeeded();
 	};
 
-	std::vector<Object> FindObjects(const std::vector<Object> &in, unsigned int TypeFilter);
+	//Returns ObjectType::Unknown if it's multicolor, and the type of the stack if it's single color
+	ObjectType IsSingleColorStack(const std::vector<Object> &in);
 
-	std::vector<Object> FindObjectsSorted(const std::vector<Object> &in, unsigned int TypeFilter, Vector2dd SearchPos);
+	std::vector<std::vector<Object>> FindCakeStacks(const std::vector<Object> &in);
 
-	std::optional<Vector2dd> FindNearestCakeStack(const std::vector<Object> &in, Vector2dd SearchPos);
+	void FilterType(std::vector<Object> &in, const std::set<ObjectType> allowed);
+
+	void DistanceSort(std::vector<Object> &in, Vector2dd reference);
+
+	void DistanceClip(std::vector<Object> &in, Vector2dd reference, double MaxDistance);
+
+	std::set<ObjectType> GetCakeComplement(const std::set<ObjectType> &In);
 }

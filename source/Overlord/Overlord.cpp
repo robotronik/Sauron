@@ -345,11 +345,10 @@ bool Manager::Display()
 					auto cake = CakeHeights[i];
 					auto pos = cake.first;
 					auto height = cake.second;
-					if ((pos-object.position).length() < 0.12) //0.12 is the cake diameter
+					if ((pos-object.position).length() < CakeRadius*2)
 					{
 						posZ = max(posZ, height+CakeHeight);
 					}
-					
 				}
 				CakeHeights.push_back({object.position, posZ});
 			}

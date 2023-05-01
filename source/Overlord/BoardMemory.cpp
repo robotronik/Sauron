@@ -34,6 +34,7 @@ int RobotMemory::ClawCake(RobotHAL* robot, std::vector<Object> &BoardState, bool
 				continue;
 			}
 			object.position = {0.01, 0}; //not correctly inserted yet
+			object.Rot -= robot->Rotation.Pos;
 			CakeTrays[0].push_back(object);
 			BoardState.erase(BoardState.begin() + i);
 			numtransfered++;
@@ -45,6 +46,7 @@ int RobotMemory::ClawCake(RobotHAL* robot, std::vector<Object> &BoardState, bool
 		{
 			Object &object = CakeTrays[0][i];
 			object.position = clawpos;
+			object.Rot = robot->Rotation.Pos;
 			BoardState.push_back(object);
 			numtransfered++;
 		}
@@ -103,36 +105,49 @@ bool RobotMemory::TransferCake(RobotHAL* robot, int trayidx, bool ToTray)
 		CakeTrays[trayidx].resize(NumToSkip);
 	}
 	return true;
-	
 }
 
-vector<Object> Overlord::FindObjects(const std::vector<Object> &in, uint TypeFilter)
+set<ObjectType> RobotMemory::GetCakeColorsStored()
 {
-	vector<Object> outvec;
-	outvec.reserve(in.size());
-	for (const auto &obj : in)
+	set<ObjectType> ColorsGot;
+	for (int i = 0; i < 4; i++)
 	{
-		if ((uint)obj.Type & TypeFilter)
+		auto& tray = CakeTrays[i];
+		for (int j = 0; j < tray.size(); j++)
 		{
-			outvec.push_back(obj);
+			ColorsGot.insert(tray[j].Type);
 		}
 	}
-	return outvec;
+	return ColorsGot;
 }
 
-vector<Object> Overlord::FindObjectsSorted(const std::vector<Object> &in, uint TypeFilter, Vector2dd SearchPos)
+set<ObjectType> RobotMemory::GetCakeColorsNeeded()
 {
-	vector<Object> outvec = FindObjects(in, TypeFilter);
-	sort(outvec.begin(), outvec.end(), [SearchPos](Object a, Object b)
+	return GetCakeComplement(GetCakeColorsStored());
+}
+
+ObjectType Overlord::IsSingleColorStack(const std::vector<Object> &in)
+{
+	assert(in.size() > 0);
+	if (!in[0].IsCake())
 	{
-		return (SearchPos-a.position).lengthsquared()<(SearchPos-b.position).lengthsquared();
-	});
-	return outvec;
+		return ObjectType::Unknown;
+	}
+	ObjectType color = in[0].Type;
+	for (int i = 1; i < in.size(); i++)
+	{
+		if (in[i].Type != color)
+		{
+			return ObjectType::Unknown;
+		}
+	}
+	return color;
 }
 
-std::optional<Vector2dd> Overlord::FindNearestCakeStack(const std::vector<Object> &in, Vector2dd SearchPos)
+vector<vector<Object>> Overlord::FindCakeStacks(const std::vector<Object> &in)
 {
-	std::optional<Vector2dd> closest = nullopt;
+	vector<vector<Object>> outvec;
+	vector<bool> observed(in.size(), false);
 	for (int i = 0; i < in.size(); i++)
 	{
 		auto& cake0 = in[i];
@@ -143,9 +158,16 @@ std::optional<Vector2dd> Overlord::FindNearestCakeStack(const std::vector<Object
 			//not cake
 			continue;
 		}
+		vector<Object> stack;
+		stack.reserve(3);
+		stack.push_back(cake0);
 		for (int j = i+1; j < in.size(); j++)
 		{
 			auto& caken = in[j];
+			if (observed[j])
+			{
+				continue;
+			}
 			if (!caken.IsCake())
 			{
 				//not cake
@@ -156,20 +178,48 @@ std::optional<Vector2dd> Overlord::FindNearestCakeStack(const std::vector<Object
 				numcakes++;
 				mean += caken.position;
 			}
+			observed[j] = true;
+			stack.push_back(caken);
 		}
-		mean/=numcakes;
-		if (numcakes < 3)
-		{
-			continue;
-		}
-		if (closest.has_value())
-		{
-			if ((SearchPos-closest.value()).length() < (SearchPos-mean).length()) //farther than the best
-			{
-				continue;
-			}
-		}
-		closest = mean;
+		outvec.push_back(stack);
 	}
-	return closest;
+	return outvec;
+}
+
+void Overlord::FilterType(std::vector<Object> &in, const set<ObjectType> allowed)
+{
+	in.erase(std::remove_if(in.begin(), in.end(), [&allowed](Object o)
+	{
+		return allowed.find(o.Type) == allowed.end();
+	}), in.end());
+}
+
+void Overlord::DistanceSort(std::vector<Object> &in, Vector2dd reference)
+{
+	sort(in.begin(), in.end(), [&reference](Object a, Object b)
+	{
+		return (reference-a.position).lengthsquared()<(reference-b.position).lengthsquared();
+	});
+}
+
+void Overlord::DistanceClip(std::vector<Object> &in, Vector2dd reference, double MaxDistance)
+{
+	double d2 = MaxDistance*MaxDistance;
+	in.erase(std::remove_if(in.begin(), in.end(), [&reference, d2](Object o)
+	{
+		return (o.position-reference).lengthsquared() > d2;
+	}), in.end());
+}
+
+std::set<ObjectType> Overlord::GetCakeComplement(const std::set<ObjectType> &In)
+{
+	set<ObjectType> AllColors = {ObjectType::CakeBrown, ObjectType::CakeYellow, ObjectType::CakePink}, ColorsNeeded;
+	for (auto color : AllColors) //ColorsNeeded = AllColors - ColorsGot
+	{
+		if (In.find(color) == In.end())
+		{
+			ColorsNeeded.insert(color);
+		}
+	}
+	return ColorsNeeded;
 }

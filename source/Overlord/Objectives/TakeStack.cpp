@@ -2,6 +2,7 @@
 
 #include <map>
 #include <vector>
+#include <set>
 
 #include "Overlord/BoardMemory.hpp"
 #include "Overlord/RobotHAL.hpp"
@@ -19,34 +20,24 @@ pair<double, vector<ActuatorType>> TakeStackObjective::ExecuteObjective(double &
 		//Gather Cakes
 		vector<bool> DoneCakes(4, false);
 		bool AnyDone = false;
-		int NextEmpty = -1;
-		for (int i = 1; i < 4; i++)
-		{
-			if (RobotState->CakeTrays[i].size() == 0)
-			{
-				NextEmpty = i;
-				break;
-			}
-			
-		}
-
-		if (NextEmpty == -1)
-		{
-			break;
-		}
+		set<ObjectType> ColorsNeeded = RobotState->GetCakeColorsNeeded();
 		
 		bool ClawsEmpty = RobotState->CakeTrays[0].size() == 0;
-		auto nearestStack = FindNearestCakeStack(BoardState, robot->GetStoppingPosition() + robot->ClawPickupPosition.rotate(robot->Rotation.Pos));
-		if (ClawsEmpty && nearestStack.has_value())
+		auto cakes = BoardState;
+		FilterType(cakes, ColorsNeeded);
+		DistanceSort(cakes, robot->GetStoppingPosition() + robot->ClawPickupPosition.rotate(robot->Rotation.Pos));
+		auto Stacks = FindCakeStacks(cakes);
+		if (ClawsEmpty && Stacks.size() > 0)
 		{
-			
+			auto neareststack = Stacks[0];
+			auto nspos = neareststack[0].position;
 			double clawbudget = TimeBudget;
 			double movebudget = TimeBudget;
-			if ((nearestStack.value()-robot->GetOffsetWorld(robot->ClawPickupPosition)).length() > PositionTolerance)
+			if ((nspos-robot->GetOffsetWorld(robot->ClawPickupPosition)).length() > PositionTolerance)
 			{
-				robot->MoveToOffset(nearestStack.value(), robot->ClawPickupPosition, movebudget);
+				robot->MoveToOffset(nspos, robot->ClawPickupPosition, movebudget);
 				auto clawpos = robot->GetOffsetWorld(robot->ClawPickupPosition);
-				double distancetotarget = (clawpos-nearestStack.value()).length();
+				double distancetotarget = (clawpos-nspos).length();
 				assert(distancetotarget < PositionTolerance || movebudget < __DBL_EPSILON__);
 				robot->MoveClawExtension(0, clawbudget);
 				robot->MoveClawVertical(robot->TrayHeights[0], clawbudget);

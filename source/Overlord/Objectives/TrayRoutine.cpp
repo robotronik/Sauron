@@ -8,7 +8,7 @@
 using namespace Overlord;
 using namespace std;
 
-#define CheckTimeBudget(actuators) if(TimeBudget < __DBL_EPSILON__) {return make_pair(1.0, actuators);}
+#define CheckTimeBudget(points, actuators) if(TimeBudget < __DBL_EPSILON__) {return make_pair(points/(BaseTime-TimeBudget), actuators);}
 
 pair<double, vector<ActuatorType>> TrayRoutine::ExecuteObjective(double &TimeBudget, RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState)
 {
@@ -19,15 +19,10 @@ pair<double, vector<ActuatorType>> TrayRoutine::ExecuteObjective(double &TimeBud
 		//Gather Cakes
 		vector<bool> NeedsPush(4, false);
 		bool AnyDone = false;
-		int NextEmpty = -1; //1 to 4
 		int NextPush = -1; //1 to 4
 		for (int i = 1; i < 4; i++)
 		{
 			auto & tray = RobotState->CakeTrays[i];
-			if (tray.size() == 0 && NextEmpty == -1)
-			{
-				NextEmpty = i;
-			}
 			for (int j = 0; j < tray.size(); j++)
 			{
 				if (tray[j].position.length() > PositionTolerance)
@@ -40,25 +35,40 @@ pair<double, vector<ActuatorType>> TrayRoutine::ExecuteObjective(double &TimeBud
 			{
 				NextPush = i;
 			}
-			
 		}
+
+		static const vector<ObjectType> TrayColors = {ObjectType::CakeBrown, ObjectType::CakeYellow, ObjectType::CakePink};
 		
 		bool ClawsEmpty = RobotState->CakeTrays[0].size() == 0;
-		if (!ClawsEmpty && NextEmpty != -1)
+		
+		if (!ClawsEmpty)
 		{
-			double targetheight = robot->TrayHeights[NextEmpty] + PositionTolerance;
-			vector<ActuatorType> act = {ActuatorType::Claws, GetTrayType(NextEmpty-1)};
+			ObjectType ClawColor = IsSingleColorStack(RobotState->CakeTrays[0]);
+			if (ClawColor == ObjectType::Unknown)
+			{
+				return {0, {}}; //not single color
+			}
+			
+			auto StoreTray = std::find(TrayColors.begin(), TrayColors.end(), ClawColor);
+			int StoreIdx = StoreTray - TrayColors.begin() +1;
+			if (RobotState->CakeTrays[0].size() + RobotState->CakeTrays[StoreIdx].size() > 3) //can't store : already full
+			{
+				return {0, {}};
+			}
+			
+			double targetheight = robot->TrayHeights[StoreIdx] + PositionTolerance;
+			vector<ActuatorType> act = {ActuatorType::Claws, GetTrayType(StoreIdx-1)};
 			if (abs(robot->ClawHeight.Pos-targetheight) > PositionTolerance)
 			{
 				robot->MoveClawTo(targetheight, TimeBudget, 1, 1);
-				CheckTimeBudget(act);
+				CheckTimeBudget(1, act);
 			}
 			
-			robot->MoveTray(NextEmpty-1, 1, TimeBudget); //extend tray
-			CheckTimeBudget(act)
+			robot->MoveTray(StoreIdx-1, 1, TimeBudget); //extend tray
+			CheckTimeBudget(1, act)
 			robot->MoveClawTo(robot->ClawHeight.Pos, TimeBudget, 1, 0); //retract claw
-			CheckTimeBudget(act)
-			RobotState->TransferCake(robot, NextEmpty, true);
+			CheckTimeBudget(1, act)
+			RobotState->TransferCake(robot, StoreIdx, true);
 			return make_pair(1,act);
 		}
 		else if (ClawsEmpty && NextPush != -1)
@@ -77,16 +87,16 @@ pair<double, vector<ActuatorType>> TrayRoutine::ExecuteObjective(double &TimeBud
 				if (deltapark > PositionTolerance)
 				{
 					robot->MoveClawTo(parkposition, TimeBudget, 0, 0);
-					CheckTimeBudget(act)
+					CheckTimeBudget(1, act)
 					
 				}
 				robot->MoveTray(NextPush-1, 0, TimeBudget);
-				CheckTimeBudget(act)
+				CheckTimeBudget(1, act)
 			}
 			robot->MoveClawTo(robot->TrayHeights[NextPush], TimeBudget, 0, 1);
-			CheckTimeBudget(act)
+			CheckTimeBudget(1, act)
 			robot->MoveTray(NextPush-1, 0.2, TimeBudget); // todo: set push amount here
-			CheckTimeBudget(act)
+			CheckTimeBudget(1, act)
 			for (int i = 0; i < RobotState->CakeTrays[NextPush].size(); i++)
 			{
 				RobotState->CakeTrays[NextPush][i].position = {0.0,0.0};

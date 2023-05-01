@@ -9,7 +9,9 @@ pair<double, vector<ActuatorType>> GatherCherriesObjective::ExecuteObjective(dou
 {
 	double BaseTime = TimeBudget;
 	auto stoppos = robot->GetStoppingPosition() + robot->CherryPickupPosition.rotate(robot->Rotation.Pos);
-	const auto cherries = FindObjectsSorted(BoardState, (uint32_t)ObjectType::Cherry, stoppos);
+	auto cherries = BoardState;
+	FilterType(cherries, {ObjectType::Cherry});
+	DistanceSort(cherries, stoppos);
 	static const vector<ActuatorType> act = {ActuatorType::Wheels};
 	if (cherries.size() == 0 || RobotState->Cherries.size() >= 10)
 	{
