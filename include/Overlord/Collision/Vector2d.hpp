@@ -6,7 +6,7 @@
 namespace Overlord
 {
 
-	extern const double CakeTolerance, PositionTolerance, CakeHeight, CakeRadius;
+	extern const double CakeTolerance, PositionTolerance, AngleTolerance, CakeHeight, CakeRadius;
 	
 	template<class T>
 	struct Vector2d
@@ -139,6 +139,16 @@ namespace Overlord
 		Vector2d<T> operator/(T value) const
 		{
 			return Vector2d<T>(x/value, y/value);
+		}
+
+		bool operator==(const Vector2d<T> &other)
+		{
+			return other.x==x && other.y==y;
+		}
+
+		bool operator!=(const Vector2d<T> &other)
+		{
+			return other.x!=x || other.y!=y;
 		}
 	};
 

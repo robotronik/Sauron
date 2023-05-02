@@ -5,6 +5,7 @@
 #include "Overlord/Objectives/GatherCherries.hpp"
 #include "Overlord/Objectives/DepositCherries.hpp"
 #include "Overlord/Objectives/TakeStack.hpp"
+#include "Overlord/Objectives/MakeCake.hpp"
 #include "Overlord/Objectives/TrayRoutine.hpp"
 #include "Overlord/Objectives/RetractTray.hpp"
 #include "Overlord/Objectives/RetractClaws.hpp"
@@ -41,8 +42,8 @@ void Manager::Init()
 		RobotHAL* &RC = RobotControllers[i];
 		serialib* bridge = new serialib();
 		bridge->openDevice("/dev/ttyACM0", 115200);
-		//RC = new RobotHandle(bridge);
-		RC = new RobotHAL();
+		//RC = new RobotHandle(bridge); //vrai robot
+		RC = new RobotHAL(); //simulation
 		RC->PositionLinear = LinearMovement(0.1, 0.2, 0.1, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
 		RC->ClawExtension = LinearMovement(1, 3, 3, 0);
@@ -133,6 +134,7 @@ void Manager::Init()
 	Objectives.push_back(make_unique<DepositCherriesObjective>());
 	Objectives.push_back(make_unique<TrayRoutine>());
 	Objectives.push_back(make_unique<TakeStackObjective>());
+	Objectives.push_back(make_unique<MakeCakeObjective>());
 }
 
 void Manager::GatherData()

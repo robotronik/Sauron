@@ -96,17 +96,23 @@ namespace Overlord
 
 		virtual bool IsBlueTeam() { return BlueTeam; };
 
+		virtual bool HasConnection() { return true; };
+
+		virtual bool IsStarted() { return true; };
+
 		//Can the robot fit at this location in the terrain ?
 		bool IsLocationValid(Vector2dd pos, double rot) const; 
 
-		virtual Vector2dd GetForwardVector();
+		Vector2dd GetForwardVector();
 
-		virtual Vector2dd GetStoppingPosition();
+		Vector2dd GetStoppingPosition();
 
 		Vector2dd GetOffsetWorld(Vector2dd offset)
 		{
 			return position + offset.rotate(Rotation.Pos);
 		}
+
+		virtual void SetPosition(Vector2dd NewPosition, double NewRotation) {position = NewPosition; Rotation.Pos = NewRotation;};
 
 		virtual double Rotate(double target, double &TimeBudget);
 
@@ -132,7 +138,7 @@ namespace Overlord
 		virtual double MoveTray(int index, double extension, double &TimeBudget);
 		
 		//move the claw to height, while keeping the claw at InitialExtension during the travel
-		virtual double MoveClawTo(double height, double &TimeBudget, double InitialExtension, double FinalExtension);
+		double MoveClawTo(double height, double &TimeBudget, double InitialExtension, double FinalExtension);
 	};
 
 } // namespace overlord

@@ -16,29 +16,43 @@ int RobotMemory::ClawCake(RobotHAL* robot, std::vector<Object> &BoardState, bool
 	{
 		int couldhavetaken = 0;
 		int numtoskip = robot->ClawHeight.Pos/CakeHeight - __DBL_EPSILON__;
-		for (int i = BoardState.size()-1; i >=0 ; i--)
+		auto couldtake = [&](int index)
 		{
-			Object &object = BoardState[i];
+			const Object &object = BoardState[index];
 			if (!object.IsCake())
 			{
-				continue;
+				return false;
 			}
 			if ((clawpos-object.position).length() > CakeTolerance)
 			{
-				continue;
+				return false;
 			}
-			if (couldhavetaken < numtoskip)
+			return true;
+		};
+		int startidx;
+		for (startidx = 0; startidx < BoardState.size() && couldhavetaken < numtoskip; startidx++)
+		{
+			if(couldtake(startidx))
 			{
 				couldhavetaken++;
 				cout << "Skipping taking a cake from the board because the claw was too high" << endl;
 				continue;
 			}
-			object.position = {0.01, 0}; //not correctly inserted yet
-			object.Rot -= robot->Rotation.Pos;
-			CakeTrays[0].push_back(object);
-			BoardState.erase(BoardState.begin() + i);
-			numtransfered++;
+			
 		}
+		for (int i = BoardState.size() - 1; i >= startidx; i--)
+		{
+			if(couldtake(i))
+			{
+				Object &object = BoardState[i];
+				object.position = {0.01, 0}; //not correctly inserted yet
+				object.Rot -= robot->Rotation.Pos;
+				CakeTrays[0].push_back(object);
+				BoardState.erase(BoardState.begin() + i);
+				numtransfered++;
+			}
+		}
+		
 	}
 	else
 	{
@@ -159,7 +173,6 @@ vector<vector<Object>> Overlord::FindCakeStacks(const std::vector<Object> &in)
 			continue;
 		}
 		vector<Object> stack;
-		stack.reserve(3);
 		stack.push_back(cake0);
 		for (int j = i+1; j < in.size(); j++)
 		{
@@ -177,9 +190,10 @@ vector<vector<Object>> Overlord::FindCakeStacks(const std::vector<Object> &in)
 			{
 				numcakes++;
 				mean += caken.position;
+				observed[j] = true;
+				stack.push_back(caken);
 			}
-			observed[j] = true;
-			stack.push_back(caken);
+			
 		}
 		outvec.push_back(stack);
 	}

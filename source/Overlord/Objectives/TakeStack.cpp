@@ -24,12 +24,26 @@ pair<double, vector<ActuatorType>> TakeStackObjective::ExecuteObjective(double &
 		
 		bool ClawsEmpty = RobotState->CakeTrays[0].size() == 0;
 		auto cakes = BoardState;
-		FilterType(cakes, ColorsNeeded);
+		FilterType(cakes, GetCakeComplement({}));
 		DistanceSort(cakes, robot->GetStoppingPosition() + robot->ClawPickupPosition.rotate(robot->Rotation.Pos));
 		auto Stacks = FindCakeStacks(cakes);
 		if (ClawsEmpty && Stacks.size() > 0)
 		{
-			auto neareststack = Stacks[0];
+			vector<Object> neareststack;
+			for (auto &stack : Stacks)
+			{
+				ObjectType stackColor = IsSingleColorStack(stack);
+				if (ColorsNeeded.find(stackColor) != ColorsNeeded.end())
+				{
+					neareststack = stack;
+					break;
+				}
+			}
+			if (neareststack.size() != 3)
+			{
+				break;
+			}
+			
 			auto nspos = neareststack[0].position;
 			double clawbudget = TimeBudget;
 			double movebudget = TimeBudget;

@@ -300,7 +300,7 @@ double RobotHAL::MoveTo(Vector2dd target, double &TimeBudget, ForceDirection dir
 			break;
 		default:
 			goingbackwards = abs(dangle) > M_PI_2;
-			cout << "MoveTo : detected " << (goingbackwards ? "backwards" : "forward") << " move" << endl;
+			//cout << "MoveTo : detected " << (goingbackwards ? "backwards" : "forward") << " move" << endl;
 			break;
 		}
 		if (goingbackwards)
@@ -313,7 +313,7 @@ double RobotHAL::MoveTo(Vector2dd target, double &TimeBudget, ForceDirection dir
 	reevaluate();
 	
 	
-	if (abs(dangle)> 1/180.0*M_PI) //not going the right way
+	if (abs(dangle)>AngleTolerance) //not going the right way
 	{
 		if (abs(PositionLinear.Speed) > PositionLinear.MinSpeed + __DBL_EPSILON__) //moving
 		{
@@ -378,7 +378,7 @@ double RobotHAL::MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBu
 		auto targetlocal = deltapos.rotate(-Rotation.Pos);
 		auto deltaloc = offset + targetlocal;
 		double dneed = deltaloc.length();
-		cout << "target is nearer to robot than offset " << deltaloc.ToString() << " : moving " << dneed << endl;
+		//cout << "target is nearer to robot than offset " << deltaloc.ToString() << " : moving " << dneed << endl;
 		double fmove = deltaloc.x > 0 ? -dneed : dneed; //if the offset is in the front, move back, else move forward
 		MoveTo(position + GetForwardVector() * fmove, TimeBudget/*, offset.x >= 0 ? ForceDirection::Backwards : ForceDirection::Forward*/);
 		ReturnIfNoBudget
@@ -388,7 +388,7 @@ double RobotHAL::MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBu
 	ForceDirection memdir;
 	auto reevaluate = [&](){
 		auto allsolutions = GetOffsetTarget(target, offset);
-		cout << "Found " << allsolutions.size() << " solutions to go to the target with offset" <<endl;
+		//cout << "Found " << allsolutions.size() << " solutions to go to the target with offset" <<endl;
 		memdir = direction;
 		pair<double, double> forwardsolution = {0,0}, backwardssolution = {0,0};
 		bool HasForward = false, HasBackwards = false;
@@ -439,15 +439,15 @@ double RobotHAL::MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBu
 		case ForceDirection::Forward :
 			assert(HasForward);
 			bestsolution = forwardsolution;
-			cout << "Forward";
+			//cout << "Forward";
 			break;
 		case ForceDirection::Backwards :
 			assert(HasBackwards);
 			bestsolution = backwardssolution;
-			cout << "Backwards";
+			//cout << "Backwards";
 			break;
 		}
-		cout << " solution : linear " << bestsolution.first << " angle " << bestsolution.second*180.0/M_PI << endl;
+		//cout << " solution : linear " << bestsolution.first << " angle " << bestsolution.second*180.0/M_PI << endl;
 	};
 	
 	reevaluate();

@@ -55,6 +55,20 @@ pair<double, vector<ActuatorType>> TrayRoutine::ExecuteObjective(double &TimeBud
 			{
 				return {0, {}};
 			}
+			bool deposit = true;
+			for (auto &o : RobotState->CakeTrays[0])
+			{
+				if (o.position.length() < PositionTolerance)
+				{
+					deposit = false;
+				}
+			}
+			if (!deposit)
+			{
+				return {0, {}};
+			}
+			
+			
 			
 			double targetheight = robot->TrayHeights[StoreIdx] + PositionTolerance;
 			vector<ActuatorType> act = {ActuatorType::Claws, GetTrayType(StoreIdx-1)};

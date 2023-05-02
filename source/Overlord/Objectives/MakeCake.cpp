@@ -12,8 +12,8 @@ pair<double, vector<ActuatorType>> MakeCakeObjective::ExecuteObjective(double &T
 {
 	bool InSim = TimeBudget > 50;
 	double BaseTime = TimeBudget;
-	int PointsMade =0;
-	vector<ActuatorType> act = {ActuatorType::Wheels, ActuatorType::Claws};
+	int PointsMade = 0;
+	vector<ActuatorType> act = {ActuatorType::Wheels, ActuatorType::Claws, ActuatorType::Tray0, ActuatorType::Tray1, ActuatorType::Tray2};
 	while (TimeBudget > __DBL_EPSILON__)
 	{
 		//Gather Cakes
@@ -131,27 +131,151 @@ pair<double, vector<ActuatorType>> MakeCakeObjective::ExecuteObjective(double &T
 			int bottomsize = bottomtray.size();
 			auto& middletray = RobotState->CakeTrays[yellowtray];
 			int middlesize = middletray.size();
-			if (bottomsize > 2 && bottomtray[bottomsize-1].Type == ObjectType::CakeYellow && bottomtray[bottomsize-2].Type == ObjectType::CakeBrown)
+			if (bottomsize >= 2 && bottomtray[bottomsize-1].Type == ObjectType::CakeYellow && bottomtray[bottomsize-2].Type == ObjectType::CakeBrown)
 			{
 				stageidx = 3;
 			}
-			else if (middlesize > 1 && middletray[middlesize-1].Type == ObjectType::CakeYellow)
+			else if (middlesize >= 1 && middletray[middlesize-1].Type == ObjectType::CakeYellow)
 			{
 				stageidx = 1;
 			}
-		}
-		if (HasIngredients && stageidx == -1)
-		{
-			stageidx = 0;
 		}
 		
 		if (stageidx == -1)
 		{
 			break;
 		}
+
+		auto PickupFromTray = [&](int trayidx, int num)
+		{
+			int numcakes;
+			if (trayidx == 0)
+			{
+				numcakes = cakes.size();
+			}
+			else
+			{
+				numcakes = RobotState->CakeTrays[trayidx].size();
+				if (robot->Trays[trayidx-1].Pos < 1- PositionTolerance)
+				{
+					double parkpos = trayidx == pinktray ? robot->TrayHeights[trayidx-1] : robot->TrayHeights[trayidx] + (RobotState->CakeTrays[trayidx].size()+0.5)*CakeHeight;
+					robot->MoveClawTo(parkpos, TimeBudget, 0, 0);
+					robot->MoveTray(trayidx-1, 1, TimeBudget);
+				}
+			}
+			robot->MoveClawTo(robot->TrayHeights[trayidx] + (numcakes-num)*CakeHeight + PositionTolerance, TimeBudget, 0, 1);
+			if (TimeBudget < __DBL_EPSILON__)
+			{
+				return false;
+			}
+			if (trayidx == 0)
+			{
+				RobotState->ClawCake(robot, BoardState, true);
+			}
+			else
+			{
+				RobotState->TransferCake(robot, trayidx, false);
+			}
+			return true;
+		};
+
+		auto DepositToTray = [&](int prevtray, int trayidx)
+		{
+			if (prevtray > 0 && robot->Trays[prevtray-1].Pos > PositionTolerance)
+			{
+				robot->MoveClawTo(robot->TrayHeights[prevtray] + (RobotState->CakeTrays[prevtray].size()+0.5)*CakeHeight, TimeBudget, 1, 1);
+				robot->MoveTray(prevtray-1, 0, TimeBudget);
+			}
+			int numcakes;
+			if (trayidx > 0)
+			{
+				robot->MoveTray(trayidx-1, 1, TimeBudget);
+				numcakes = RobotState->CakeTrays[trayidx].size();
+			}
+			else
+			{
+				numcakes = cakes.size();
+			}
+			robot->MoveClawTo(robot->TrayHeights[trayidx] + numcakes*CakeHeight + PositionTolerance, TimeBudget, 1, 0);
+			if (TimeBudget < __DBL_EPSILON__)
+			{
+				return false;
+			}
+			if (trayidx>0)
+			{
+				RobotState->TransferCake(robot, trayidx, true);
+			}
+			else
+			{
+				RobotState->ClawCake(robot, BoardState, false);
+			}
+			return true;
+		};
 		
+		bool donenothing = false;
+		switch (stageidx)
+		{
+		case 1:
+			{
+				PickupFromTray(yellowtray, 1);
+			}
+			break;
+		case 2:
+			{
+				DepositToTray(yellowtray, browntray);
+			}
+			break;
+		case 3:
+			{
+				PickupFromTray(browntray, 2);
+			}
+			break;
+		case 4:
+			{
+				if (DepositToTray(browntray, 0))
+				{
+					PointsMade+=2;
+				}
+			}
+			break;
+		case 5:
+			{
+				PickupFromTray(pinktray, RobotState->CakeTrays[pinktray].size());
+			}
+			break;
+		case 6:
+			{
+				if(DepositToTray(pinktray, 0))
+				{
+					PointsMade+=2;
+				}
+			}
+			break;
+		case 7:
+			{
+				int layersleft = cakes.size()-3;
+				if(PickupFromTray(0, cakes.size()-3))
+				{
+					PointsMade+=layersleft;
+				}
+			}
+			break;
+		default:
+			donenothing = true;
+			break;
+		}
+		if (donenothing)
+		{
+			break;
+		}
 		
 	}
 	
+	if (PointsMade == 0)
+	{
+		return {0, act};
+	}
+	
+
 	return {PointsMade/(BaseTime-TimeBudget), act};
 }
