@@ -10,6 +10,7 @@ using namespace std;
 using namespace cv;
 using namespace libconfig;
 
+int ProgramRunType = (int)RunType::CameraExternal;
 aruco::ArucoDetector ArucoDet;
 bool HasDetector = false;
 vector<UMat> MarkerImages;
@@ -144,6 +145,8 @@ void InitConfig()
 
 	Setting& root = cfg.getRoot();
 
+	CopyDefaultCfg(root, "RunType", Setting::TypeInt, ProgramRunType);
+
 	Setting& Capture = EnsureExistCfg(root, "Capture", Setting::Type::TypeGroup, 0);
 	
 	{
@@ -236,6 +239,12 @@ void InitConfig()
 	
 	ConfigInitialised = true;
 	
+}
+
+RunType GetRunType()
+{
+	InitConfig();
+	return (RunType)ProgramRunType;
 }
 
 aruco::ArucoDetector& GetArucoDetector(){

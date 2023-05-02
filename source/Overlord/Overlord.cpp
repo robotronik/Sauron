@@ -29,7 +29,7 @@ using namespace cv;
 
 using namespace Overlord;
 
-void Manager::Init()
+void Manager::Init(bool simulate)
 {
 	int numbots = 1;
 	TimeLeft = 100;
@@ -40,10 +40,16 @@ void Manager::Init()
 	for (int i = 0; i < numbots; i++)
 	{
 		RobotHAL* &RC = RobotControllers[i];
-		serialib* bridge = new serialib();
-		bridge->openDevice("/dev/ttyACM0", 115200);
-		//RC = new RobotHandle(bridge); //vrai robot
-		RC = new RobotHAL(); //simulation
+		if (simulate)
+		{
+			RC = new RobotHAL(); //simulation
+		}
+		else
+		{
+			serialib* bridge = new serialib();
+			bridge->openDevice("/dev/ttyACM0", 115200);
+			RC = new RobotHandle(bridge); //vrai robot
+		}
 		RC->PositionLinear = LinearMovement(0.1, 0.2, 0.1, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
 		RC->ClawExtension = LinearMovement(1, 3, 3, 0);
@@ -218,6 +224,10 @@ void Manager::Run(double delta)
 {
 	int numrobots = RobotControllers.size();
 	assert(numrobots ==1); //todo: make the following code work for multiple robots. Should be numobjective^robots in complexity tho if we try everything :/
+	if(!RobotControllers[0]->IsStarted())
+	{
+		return; //wait for rip cord before doing anything
+	}
 	vector<map<ActuatorType, std::pair<BaseObjective*, double>>> BestObjective;
 	vector<map<BaseObjective*, vector<ActuatorType>>> ObjectiveActuators;
 	BestObjective.resize(numrobots);
@@ -247,7 +257,7 @@ void Manager::Run(double delta)
 		//cout << "Objective " << objective->GetName() << " gave score " << Score << endl;
 		ractuators[objective.get()] = categories;
 		double ScoreThreshold = 0;
-		vector<BaseObjective*> seenObj;
+		set<BaseObjective*> seenObj;
 		for (auto category : categories)
 		{
 			auto found = robjectives.find(category);
@@ -261,9 +271,14 @@ void Manager::Run(double delta)
 				}
 				
 				ScoreThreshold += thepair.second;
-				seenObj.push_back(thepair.first);
+				seenObj.insert(thepair.first);
 			}
 		}
+		if (LastTickObjectives.find(objective.get()) != LastTickObjectives.end())
+		{
+			Score *=1.5;
+		}
+		
 		if (Score > ScoreThreshold)
 		{
 			//remove all objectives that have been seen from the best objectives, as we're now using those actuators
@@ -295,7 +310,7 @@ void Manager::Run(double delta)
 	//Objectives selected : execute them for real
 	for (int robotidx = 0; robotidx < numrobots; robotidx++)
 	{
-		vector<BaseObjective*> seenObj;
+		set<BaseObjective*> seenObj;
 		string ObjectivesChosen = "";
 		for (auto& entry : BestObjective[robotidx])
 		{
@@ -306,17 +321,26 @@ void Manager::Run(double delta)
 				continue;
 			}
 			double timebudget = delta;
-			seenObj.push_back(pair.first);
+			seenObj.insert(pair.first);
 			pair.first->ExecuteObjective(timebudget, RobotControllers[robotidx], PhysicalBoardState, &PhysicalRobotStates[robotidx]);
 			ObjectivesChosen += " " + pair.first->GetName(); 
 		}
-		cout << "Robot " << robotidx << " chose objectives" << ObjectivesChosen <<endl;
+		if (seenObj != LastTickObjectives)
+		{
+			cout << "Robot " << robotidx << " chose objectives" << ObjectivesChosen <<endl;
+			LastTickObjectives = seenObj;
+		}
+		
 	}
 }
 
-bool Manager::Display()
+bool Manager::Display(bool v3d)
 {
 #ifdef WITH_SAURON
+	if(!v3d)
+	{
+		return true;
+	}
 	vector<GLObject> dataconcat;
 	dataconcat.emplace_back(MeshNames::arena);
 	vector<pair<Vector2dd, double>> CakeHeights;
@@ -406,18 +430,19 @@ bool Manager::Display()
 			}
 		}
 	}
-	
-	
 	return visualiser.Tick(dataconcat);
 #endif
 	return true;
 }
 
-void Manager::Thread()
+void Manager::Thread(bool v3d, bool simulate)
 {
-	Init();
+	Init(simulate);
 #ifdef WITH_SAURON
-	visualiser.Start("Overlord");
+	if(v3d)
+	{
+		visualiser.Start("Overlord");
+	}
 #if false
 	Mat posplotdisc = Mat::zeros(Size(1000,800), CV_8UC3);
 	Mat posplotcont = posplotdisc.clone();
@@ -482,7 +507,7 @@ void Manager::Thread()
 		GatherData();
 		Run(delta.count()*4);
 		//Run(1.0/200);
-		killed = !Display();
+		killed = !Display(v3d);
 		//waitKey(1000/50);
 		lastTick = now;
 	}

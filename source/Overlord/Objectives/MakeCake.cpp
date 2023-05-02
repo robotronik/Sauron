@@ -20,7 +20,7 @@ pair<double, vector<ActuatorType>> MakeCakeObjective::ExecuteObjective(double &T
 		bool HasIngredients = RobotState->GetCakeColorsStored().size() == 3;
 		auto cakes = BoardState;
 		FilterType(cakes, {ObjectType::CakeBrown, ObjectType::CakePink, ObjectType::CakeYellow});
-		DistanceClip(cakes, robot->GetStoppingPosition() + robot->ClawPickupPosition.rotate(robot->Rotation.Pos), CakeRadius);
+		DistanceClip(cakes, robot->GetStoppingPosition() + robot->ClawPickupPosition.rotate(robot->Rotation.Pos), CakeRadius*2);
 
 		int browntray = 1;
 		int yellowtray = 2;
@@ -98,13 +98,13 @@ pair<double, vector<ActuatorType>> MakeCakeObjective::ExecuteObjective(double &T
 			ClawsEmpty = true;
 			break;
 		case 1:
-			if (clawtray[0].Type == ObjectType::CakeYellow)
+			if (clawtray[0].Type == ObjectType::CakeYellow && layersneeded.size() == 3)
 			{
 				stageidx = 2;
 			}
 			break;
 		case 2:
-			if (clawtray[0].Type == ObjectType::CakeBrown && clawtray[1].Type == ObjectType::CakeYellow)
+			if (clawtray[0].Type == ObjectType::CakeBrown && clawtray[1].Type == ObjectType::CakeYellow && layersneeded.size() == 3)
 			{
 				stageidx = 4;
 			}
@@ -121,11 +121,27 @@ pair<double, vector<ActuatorType>> MakeCakeObjective::ExecuteObjective(double &T
 				stageidx = 5;
 			}
 		}
-		if (layersneeded.size() == 0 && cakes.size() > 3)
+		if (layersneeded.size() == 0 && cakes.size() > 3) //full cake in front with extra layers
 		{
-			stageidx = 7;
+			int numtotake = -1;
+			for (int i = cakes.size() - 1; i >= 0; i--)
+			{
+				if (cakes[i].Type == ObjectType::CakePink)
+				{
+					numtotake++;
+				}
+				else
+				{
+					break;
+				}
+				
+			}
+			if (numtotake>0)
+			{
+				stageidx = 7;
+			}
 		}
-		if (ClawsEmpty && stageidx == -1)
+		if (ClawsEmpty && stageidx == -1 && layersneeded.size() == 3) //nothing in front + claws empty
 		{
 			auto& bottomtray = RobotState->CakeTrays[browntray];
 			int bottomsize = bottomtray.size();
@@ -234,7 +250,7 @@ pair<double, vector<ActuatorType>> MakeCakeObjective::ExecuteObjective(double &T
 			{
 				if (DepositToTray(browntray, 0))
 				{
-					PointsMade+=2;
+					//PointsMade+=2;
 				}
 			}
 			break;
@@ -245,18 +261,20 @@ pair<double, vector<ActuatorType>> MakeCakeObjective::ExecuteObjective(double &T
 			break;
 		case 6:
 			{
+				int numinclaws = RobotState->CakeTrays[0].size();
 				if(DepositToTray(pinktray, 0))
 				{
-					PointsMade+=2;
+					PointsMade+=numinclaws == 1 ? 4 : 0;
 				}
 			}
 			break;
 		case 7:
 			{
 				int layersleft = cakes.size()-3;
+				robot->MoveToOffset(cakes[cakes.size()-1].position, robot->ClawPickupPosition, TimeBudget, RobotHAL::ForceDirection::Forward);
 				if(PickupFromTray(0, cakes.size()-3))
 				{
-					PointsMade+=layersleft;
+					PointsMade+=4;
 				}
 			}
 			break;

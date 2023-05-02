@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <set>
 #include <memory>
 #include <chrono>
 #include "Overlord/BoardMemory.hpp"
@@ -24,6 +25,7 @@ namespace Overlord
 		std::vector<RobotMemory> PhysicalRobotStates;
 		std::vector<RobotHAL*> RobotControllers; 
 		std::vector<std::unique_ptr<BaseObjective>> Objectives;
+		std::set<BaseObjective*> LastTickObjectives;
 		CDFRTeam Team;
 
 		std::chrono::time_point<std::chrono::steady_clock> lastTick;
@@ -37,14 +39,14 @@ namespace Overlord
 		BoardGL visualiser;
 		#endif
 
-		void Init();
+		void Init(bool simulate = false);
 
 		void GatherData(); //Update memories
 
 		void Run(double delta);
 
-		bool Display();
+		bool Display(bool v3d = true);
 
-		void Thread();
+		void Thread(bool v3d = true, bool simulate = false);
 	};
 }

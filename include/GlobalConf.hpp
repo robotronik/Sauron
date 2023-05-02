@@ -8,6 +8,14 @@
 
 enum class CameraStartType;
 
+enum class RunType
+{
+	CameraExternal,
+	CameraInternal,
+	Overlord,
+	OverlordSim
+};
+
 struct CaptureConfig
 {
 	int StartType; //See CameraStartType in data/ImageTypes.hpp . Chooses method to use to start the camera
@@ -18,6 +26,8 @@ struct CaptureConfig
 	int FramerateDivider;
 	std::string filter; //filter to block or allow certain cameras. If camera name contains the filter string, it's allowed. If the filter string starts with a !, the filter is inverted
 };
+
+RunType GetRunType();
 
 cv::aruco::ArucoDetector& GetArucoDetector();
 

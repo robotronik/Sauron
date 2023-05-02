@@ -18,6 +18,6 @@ namespace Overlord
 		//Get the total number of points that this objective have given us
 		virtual double GetPoints() override {return 0;};
 
-		virtual std::string GetName() override {return "Make SLC";};
+		virtual std::string GetName() override {return "Make cake";};
 	};
 }

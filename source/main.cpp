@@ -196,14 +196,35 @@ int main(int argc, char** argv )
 		exit(EXIT_SUCCESS);
 	}
 
+	switch (GetRunType())
 	{
-		Overlord::Manager man;
-		man.Thread();
+	case RunType::CameraExternal :
+		cout << "Starting external camera program" <<endl;
+		CDFRExternalMain(direct, opengl);
+		break;
+	case RunType::CameraInternal :
+		cout << "Starting internal camera program" <<endl;
+		CDFRInternalMain(direct, opengl);
+		break;
+	case RunType::Overlord : 
+		cout << "Starting Overlord" << endl;
+		{
+			Overlord::Manager man;
+			man.Thread(opengl, false);
+		}
+	case RunType::OverlordSim :
+		cout << "Starting Overlord in simulation mode" << endl;
+		{
+			Overlord::Manager man;
+			man.Thread(opengl, true);
+		}
+	default:
+		cerr << "Run type unknown, nothing started" << endl;
+		break;
 	}
 	
-	cout << "Starting main program" <<endl;
-
-	CDFRExternalMain(direct, opengl);
+	
+	
 	
 	// the camera will be deinitialized automatically in VideoCapture destructor
 	return 0;

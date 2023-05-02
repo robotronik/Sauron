@@ -35,10 +35,9 @@ int RobotMemory::ClawCake(RobotHAL* robot, std::vector<Object> &BoardState, bool
 			if(couldtake(startidx))
 			{
 				couldhavetaken++;
-				cout << "Skipping taking a cake from the board because the claw was too high" << endl;
+				//cout << "Skipping taking a cake from the board because the claw was too high" << endl;
 				continue;
 			}
-			
 		}
 		for (int i = BoardState.size() - 1; i >= startidx; i--)
 		{
@@ -52,7 +51,7 @@ int RobotMemory::ClawCake(RobotHAL* robot, std::vector<Object> &BoardState, bool
 				numtransfered++;
 			}
 		}
-		
+		reverse(CakeTrays[0].begin(), CakeTrays[0].end()); //reverse order of cakes since they were inserted from top to bottom
 	}
 	else
 	{

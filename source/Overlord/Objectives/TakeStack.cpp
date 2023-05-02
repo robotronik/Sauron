@@ -33,7 +33,7 @@ pair<double, vector<ActuatorType>> TakeStackObjective::ExecuteObjective(double &
 			for (auto &stack : Stacks)
 			{
 				ObjectType stackColor = IsSingleColorStack(stack);
-				if (ColorsNeeded.find(stackColor) != ColorsNeeded.end())
+				if (ColorsNeeded.find(stackColor) != ColorsNeeded.end() && stack.size() >= 3)
 				{
 					neareststack = stack;
 					break;
