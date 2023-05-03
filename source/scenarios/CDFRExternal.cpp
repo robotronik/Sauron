@@ -181,6 +181,7 @@ void CDFRExternalMain(bool direct, bool v3d)
 		{
 			const string teamname = TeamNames.at(Team);
 			cout << "Detected team change : to " << teamname <<endl; 
+			LastTeam = Team;
 		}
 		
 		prof.EnterSection(ps++);
