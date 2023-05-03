@@ -231,7 +231,8 @@ void CDFRExternalMain(bool direct, bool v3d)
 		prof.EnterSection(ps++);
 		TrackerToUse->SolveLocationsPerObject(arucoDatas, GrabTick);
 		vector<ObjectData> ObjData = TrackerToUse->GetObjectDataVector(GrabTick);
-		ObjData.insert(ObjData.begin(), ObjectData(ObjectIdentity(PacketType::Team, (int)Team))); //insert team as the first object
+		ObjectData TeamPacket(ObjectIdentity(PacketType::Team, (int)Team));
+		ObjData.insert(ObjData.begin(), TeamPacket); //insert team as the first object
 		//Vec3d diff = robot1->GetLocation().translation() - robot2->GetLocation().translation(); 
 		//cout << "Robot 1 location : " << robot1->GetLocation().translation() << endl;
 		//cout << "Distance robot 1-2: " << sqrt(diff.ddot(diff)) << " m" <<endl;

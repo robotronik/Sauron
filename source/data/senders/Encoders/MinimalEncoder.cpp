@@ -95,7 +95,8 @@ int MinimalEncoder::Decode(const EncodedData &data, DecodedMinimalData &outdecod
 	for (int i = 0; i < header->NumDatas; i++)
 	{
 		int eaten = decodeptr - data.buffer;
-		outdecoded.Objects[i].UnpackFrom(decodeptr, data.length-eaten);
+		decodeptr += outdecoded.Objects[i].UnpackFrom(decodeptr, data.length-eaten);
 	}
-	return decodeptr - data.buffer;
+	assert(decodeptr-data.buffer == header->TotalLength);
+	return header->TotalLength;
 }

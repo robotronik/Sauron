@@ -150,16 +150,20 @@ void Manager::GatherData()
 	DecodedMinimalData data;
 	if (numrecv > 0)
 	{
+		//cout << "Received " << numrecv << " bytes from Sauron" << endl;
 		receiveptr += numrecv;
 		int numdecoded;
 		char* decodestartptr = receivebuffer;
 		int available = receiveptr-receivebuffer;
-		while (numdecoded = MinimalEncoder::Decode(EncodedData(receiveptr-receivebuffer, decodestartptr), data))
+		do
 		{
+			numdecoded = MinimalEncoder::Decode(EncodedData(receiveptr-decodestartptr, decodestartptr), data);
 			decodestartptr += numdecoded;
 		}
+		while (numdecoded >0);
 		memmove(receivebuffer, decodestartptr, receiveptr-decodestartptr);
 		receiveptr -= decodestartptr-receivebuffer;
+		//cout << "Sauron gave " <<data.Objects.size() << " objects" <<endl;
 	}
 	
 	
