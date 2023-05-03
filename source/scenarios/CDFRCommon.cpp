@@ -67,7 +67,8 @@ map<PacketType, bool> GetDefaultAllowMap()
 		{PacketType::TrackerCube, true},
 		{PacketType::TopTracker, true},
 		{PacketType::Puck, true},
-		{PacketType::Tag, false}
+		{PacketType::Tag, false},
+		{PacketType::Team, true}
 	};
 	return allowmap;
 }
