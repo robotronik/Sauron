@@ -212,12 +212,14 @@ int main(int argc, char** argv )
 			Overlord::Manager man;
 			man.Thread(opengl, false);
 		}
+		break;
 	case RunType::OverlordSim :
 		cout << "Starting Overlord in simulation mode" << endl;
 		{
 			Overlord::Manager man;
 			man.Thread(opengl, true);
 		}
+		break;
 	default:
 		cerr << "Run type unknown, nothing started" << endl;
 		break;

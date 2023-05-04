@@ -14,7 +14,7 @@ namespace Overlord
 	{
 		char receivebuffer[1024] = {0};
 		int numreceived = 0;
-		bool RipCordStatus = false;
+		bool RipCordStatus = true;
 		bool keepalivestatus = false;
 		std::chrono::time_point<std::chrono::steady_clock> lastTick;
 		Vector2dd RobotReportedPosition = {0,0};

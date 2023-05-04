@@ -106,11 +106,11 @@ void CDFRExternalMain(bool direct, bool v3d)
 	BoardGL OpenGLBoard;
 	unique_ptr<TrackerCube> blue1 = make_unique<TrackerCube>(vector<int>({51, 52, 53, 54, 55}), 0.05, 85.065/1000.0, "blue1");
 	unique_ptr<TrackerCube> blue2 = make_unique<TrackerCube>(vector<int>({56, 57, 58, 59, 60}), 0.05, 85.065/1000.0, "blue2");
+	unique_ptr<TrackerCube> green1 = make_unique<TrackerCube>(vector<int>({71, 72, 73, 74, 75}), 0.05, 85.065/1000.0, "green1");
+	unique_ptr<TrackerCube> green2 = make_unique<TrackerCube>(vector<int>({76, 77, 78, 79, 80}), 0.05, 85.065/1000.0, "green2");
 	bluetracker.RegisterTrackedObject(blue1.get());
 	bluetracker.RegisterTrackedObject(blue2.get());
 
-	unique_ptr<TrackerCube> green1 = make_unique<TrackerCube>(vector<int>({71, 72, 73, 74, 75}), 0.05, 85.065/1000.0, "green1");
-	unique_ptr<TrackerCube> green2 = make_unique<TrackerCube>(vector<int>({76, 77, 78, 79, 80}), 0.05, 85.065/1000.0, "green2");
 	greentracker.RegisterTrackedObject(green1.get());
 	greentracker.RegisterTrackedObject(green2.get());
 

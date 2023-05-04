@@ -2,6 +2,8 @@
 
 #include <sstream>
 #include <cassert>
+#include <opencv2/core/affine.hpp>
+#include <math3d.hpp>
 #include "thirdparty/serialib.h"
 
 using namespace Overlord;
@@ -34,10 +36,10 @@ void RobotHandle::Tick()
 	{
 		char requestpos[] = "!I2CRequest:6\n!I2CSend:20\n"; //request position
 		bridgehandle->writeString(requestpos);
-		char requestripcord[] = "!Bouton1:\n"; //request ripcord status
+		char requestripcord[] = "!bouton1:\n"; //request ripcord status
 		bridgehandle->writeString(requestripcord);
 		char keepalivebuffer[256];
-		snprintf(keepalivebuffer, sizeof(keepalivebuffer), "!LedUI1:%d\n!I2CSend:%d\n", keepalivestatus, 10+keepalivestatus); 
+		snprintf(keepalivebuffer, sizeof(keepalivebuffer), "!ledUI1:%d\n!I2CSend:%d\n", keepalivestatus, 10+keepalivestatus); 
 		//blink led to show communication success on motors and UI
 		bridgehandle->writeString(keepalivebuffer);
 		keepalivestatus = !keepalivestatus;
@@ -52,18 +54,23 @@ void RobotHandle::Tick()
 	{
 		numreceived = 0;
 	}
-	numreceived += bridgehandle->readBytes(receivebuffer+numreceived, toread);
+	if (toread > 0)
+	{
+		numreceived += bridgehandle->readBytes(receivebuffer+numreceived, toread);
+	}
+	
+	
 	receivebuffer[numreceived] = '\0';
 
 	int readidx = 0;
 	for (int i = 1; i < numreceived; i++)
 	{
-		if (receivebuffer[numreceived] != '\n')
+		if (receivebuffer[i] != '\n')
 		{
 			continue;
 		}
 		char* rcvstart = &receivebuffer[readidx];
-		readidx = numreceived+1;
+		readidx = i+1;
 		int succ;
 		{
 			int x,y,theta;
@@ -118,7 +125,31 @@ bool RobotHandle::HasConnection()
 
 bool RobotHandle::IsStarted()
 {
-	return RipCordStatus;
+	return !RipCordStatus;
+}
+
+cv::Affine3d AffineFromPosAndRot(const Vector2dd& pos, const double& rot)
+{
+	cv::Vec3d offset{pos.x, pos.y, 0};
+	Vector2dd forward(rot);
+	Vector2dd left(rot+M_PI_2);
+	cv::Matx33d rotation(
+		forward.x, forward.y, 0, 
+		left.x, left.y, 0,
+		0,0,1
+	);
+	cv::Affine3d finalmat(rotation, offset);
+	//cout << finalmat.translation() << endl;
+	return finalmat;
+}
+
+void PosAndRotFromAffine(const cv::Affine3d transform, Vector2dd& pos, double& rot)
+{
+	cv::Matx33d rotation = transform.rotation();
+	rot = GetRotZ(rotation);
+	cv::Vec3d translation = transform.translation();
+	pos.x = translation[0];
+	pos.y = translation[1];
 }
 
 void RobotHandle::ToRobotPosition(Vector2dd& pos, double& rot)
@@ -138,9 +169,22 @@ void RobotHandle::SetPosition(Vector2dd NewPosition, double NewRotation)
 	char posbuffer[256];
 	Vector2dd positionRobot = NewPosition;
 	double rotationRobot = NewRotation;
-	ToRobotPosition(positionRobot, rotationRobot);
-	RobotOrigin += positionRobot-RobotReportedPosition;
-	RobotRotationOffset += rotationRobot-RobotReportedRotation;
+	RobotRotationOffset = -rotationRobot+RobotReportedRotation;
+	RobotOrigin = RobotReportedPosition - positionRobot.rotate(RobotRotationOffset);
+
+	Vector2dd startpos = {1,0}, endpos = startpos;
+	double Startrot = M_PI_4*5/8, endrot = Startrot;
+	ToRobotPosition(endpos, endrot);
+	ToWorldPosition(endpos, endrot);
+	assert((endpos-startpos).length() < PositionTolerance);
+	assert(abs(LinearMovement::wraptwopi(endrot-Startrot)) < AngleTolerance);
+
+	Vector2dd SanityPos = RobotReportedPosition;
+	double SanityRot = RobotReportedRotation;
+	ToWorldPosition(SanityPos, SanityRot);
+	assert((SanityPos-NewPosition).length() < PositionTolerance);
+	assert(abs(LinearMovement::wraptwopi(SanityRot-NewRotation)) < AngleTolerance);
+
 	RobotHAL::SetPosition(NewPosition, NewRotation);
 }
 

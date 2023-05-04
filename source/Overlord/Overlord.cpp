@@ -136,8 +136,8 @@ void Manager::Init(bool simulate)
 		Objectives.push_back(make_unique<RetractTrayObjective>(i));
 	}
 	Objectives.push_back(make_unique<RetractClawsObjective>());
-	Objectives.push_back(make_unique<GatherCherriesObjective>());
-	Objectives.push_back(make_unique<DepositCherriesObjective>());
+	//Objectives.push_back(make_unique<GatherCherriesObjective>());
+	//Objectives.push_back(make_unique<DepositCherriesObjective>());
 	Objectives.push_back(make_unique<TrayRoutine>());
 	Objectives.push_back(make_unique<TakeStackObjective>());
 	Objectives.push_back(make_unique<MakeCakeObjective>());
@@ -209,6 +209,7 @@ void Manager::GatherData()
 				if ((markeridx >= 1 && markeridx <= 5 && Team == CDFRTeam::Blue) || (markeridx >= 6 && markeridx <= 10 && Team==CDFRTeam::Green))
 				{
 					//it's our robot : todo give the pos (maybe)
+					RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
 					break;
 				}
 			}
@@ -509,7 +510,7 @@ void Manager::Thread(bool v3d, bool simulate)
 		auto now = chrono::steady_clock::now();
 		std::chrono::duration<double> delta = now - lastTick;
 		GatherData();
-		Run(delta.count()*4);
+		Run(delta.count());
 		//Run(1.0/200);
 		killed = !Display(v3d);
 		//waitKey(1000/50);

@@ -37,10 +37,27 @@ bool VideoCaptureCamera::StartFeed()
 	{
 		FrameBuffer[i] = BufferedFrame();
 	}
+
+	string pathtodevice = Settings.DeviceInfo.device_paths[0];
+	for (int i = 1; i < Settings.DeviceInfo.device_paths.size(); i++)
+	{
+		int curridx;
+		int currread = sscanf(pathtodevice.c_str(), "/dev/video%d", &curridx);
+		int newidx;
+		int newread = sscanf(Settings.DeviceInfo.device_paths[i].c_str(), "/dev/video%d", &curridx);
+		if (currread == 1 && newread == 1)
+		{
+			if (newidx < curridx)
+			{
+				pathtodevice = Settings.DeviceInfo.device_paths[i];
+			}
+		}
+	}
+	
 	
 	if (Settings.StartType == CameraStartType::CUDA)
 	{
-		Settings.StartPath = Settings.DeviceInfo.device_paths[0];
+		Settings.StartPath = pathtodevice;
 		Settings.ApiID = CAP_ANY;
 
 		//d_reader = cudacodec::createVideoReader(Settings.DeviceInfo.device_paths[0], {
@@ -82,7 +99,7 @@ bool VideoCaptureCamera::StartFeed()
 		case CameraStartType::GSTREAMER_JETSON:
 			{
 				ostringstream capnamestream;
-				capnamestream << "v4l2src device=" << Settings.DeviceInfo.device_paths[0] << " io-mode=4 ! image/jpeg, width=" 
+				capnamestream << "v4l2src device=" << pathtodevice << " io-mode=4 ! image/jpeg, width=" 
 				<< Settings.Resolution.width << ", height=" << Settings.Resolution.height << ", framerate="
 				<< (int)Settings.Framerate << "/" << (int)Settings.FramerateDivider << ", num-buffers=1 ! ";
 				if (Settings.StartType == CameraStartType::GSTREAMER_CPU)
@@ -105,12 +122,12 @@ bool VideoCaptureCamera::StartFeed()
 		default:
 			cerr << "WARNING : Unrecognised Camera Start Type in VideoCaptureCamera, defaulting to auto API" << endl;
 		case CameraStartType::ANY:
-			Settings.StartPath = Settings.DeviceInfo.device_paths[0];
+			Settings.StartPath = pathtodevice;
 			Settings.ApiID = CAP_ANY;
 			break;
 		}
 		char commandbuffer[1024];
-		snprintf(commandbuffer, sizeof(commandbuffer), "v4l2-ctl -d %s -c exposure_auto=%d,exposure_absolute=%d", Settings.DeviceInfo.device_paths[0].c_str(), 1, 32);
+		snprintf(commandbuffer, sizeof(commandbuffer), "v4l2-ctl -d %s -c exposure_auto=%d,exposure_absolute=%d", pathtodevice.c_str(), 1, 32);
 		cout << "Aperture system command : " << commandbuffer << endl;
 		system(commandbuffer);
 		feed = new VideoCapture();
