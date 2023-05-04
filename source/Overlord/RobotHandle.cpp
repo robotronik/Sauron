@@ -19,6 +19,7 @@ RobotHandle::RobotHandle(serialib* InBridge)
 
 RobotHandle::~RobotHandle()
 {
+	bridgehandle->closeDevice();
 	delete bridgehandle;
 }
 
@@ -61,7 +62,10 @@ void RobotHandle::Tick()
 	
 	
 	receivebuffer[numreceived] = '\0';
-
+	if (numreceived > 0)
+	{
+		cout << "received : " << receivebuffer << endl;
+	}
 	int readidx = 0;
 	for (int i = 1; i < numreceived; i++)
 	{
@@ -105,6 +109,12 @@ void RobotHandle::Tick()
 				{
 					RipCordStatus = buttonstatus;
 				}
+				if (!IsStarted())
+				{
+					char golimp[] = "!I2CSend:32\n"; //request ripcord status
+					bridgehandle->writeString(golimp);
+				}
+				
 				continue;
 			}
 		}
@@ -191,40 +201,77 @@ void RobotHandle::SetPosition(Vector2dd NewPosition, double NewRotation)
 double RobotHandle::Rotate(double target, double &TimeBudget)
 {
 	CheckRunnable
+	assert(TimeBudget <1);
 	char buffer[256];
 
 	Vector2dd pr = {0,0}; double rr = target;
 	ToRobotPosition(pr, rr);
 	rr = LinearMovement::wraptwopi(rr);
-	int angledeg = -rr*180.0*M_PI; 
+	int angledeg = -rr*180.0/M_PI; 
 	if (angledeg < 0)
 	{
 		angledeg += 360;
 	}
-	if (LastRotate != angledeg)
+	bool NewOrder = LastRotate != angledeg;
+	bool AtRotation = angledeg == RobotReportedRotation;
+	if (NewOrder && !AtRotation)
 	{
+		cout << "Sending rotation order : " << angledeg << endl;
 		snprintf(buffer, sizeof(buffer), "!I2CSend:31,%d\n", angledeg);
 		bridgehandle->writeString(buffer);
 		LastRotate = angledeg;
 	}
-	return RobotHAL::Rotate(target, TimeBudget);
+	if (!AtRotation)
+	{
+		TimeBudget = 0;
+	}
+	return TimeBudget;
 }
 
 double RobotHandle::LinearMove(double distance, double &TimeBudget)
 {
 	CheckRunnable
+	assert(TimeBudget <1);
 	char buffer[256];
 	Vector2dd pr = position + GetForwardVector()*distance; double rr = 0;
+	return MoveTo(pr, TimeBudget, distance >= 0 ? ForceDirection::Forward : ForceDirection::Backwards);
+}
+
+double RobotHandle::MoveTo(Vector2dd target, double &TimeBudget, ForceDirection direction)
+{
+	CheckRunnable
+	assert(TimeBudget <1);
+	char buffer[256];
+	Vector2dd pr = target; double rr = 0;
 	ToRobotPosition(pr, rr);
-	int backwards = distance < 0;
-	Vector2d<int> posmm(pr.x*1000, pr.y*1000);
-	if (posmm != LastPos)
+	bool backwards;
+	switch (direction)
 	{
+	case ForceDirection::Forward :
+		backwards = false;
+		break;
+	case ForceDirection::Backwards : 
+		backwards = true;
+		break;
+	default:
+		backwards = false;
+		break;
+	}
+	Vector2d<int> posmm(pr.x*1000, pr.y*1000);
+	bool AtLocation = (pr-RobotReportedPosition).length() < PositionTolerance;
+	bool NewOrder = posmm != LastPos;
+	if (NewOrder && !AtLocation)
+	{
+		cout << "Sending position order : " << posmm.ToString() << endl;
 		snprintf(buffer, sizeof(buffer), "!I2CSend:30,%d,%d,%d\n", posmm.x, posmm.y, backwards);
 		bridgehandle->writeString(buffer);
 		LastPos = posmm;
 	}
-	return RobotHAL::LinearMove(distance, TimeBudget);
+	if (!AtLocation)
+	{
+		TimeBudget = 0;
+	}
+	return TimeBudget; 
 }
 
 double RobotHandle::MoveClawVertical(double height, double &TimeBudget)

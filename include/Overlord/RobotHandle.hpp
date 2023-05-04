@@ -45,6 +45,8 @@ namespace Overlord
 		//positive distance means forwards, negative means backwards
 		virtual double LinearMove(double distance, double &TimeBudget) override;
 
+		virtual double MoveTo(Vector2dd target, double &TimeBudget, ForceDirection direction) override;
+
 		virtual double MoveClawVertical(double height, double &TimeBudget) override;
 		virtual double MoveClawExtension(double extension, double &TimeBudget) override;
 

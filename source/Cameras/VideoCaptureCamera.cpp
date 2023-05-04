@@ -38,22 +38,7 @@ bool VideoCaptureCamera::StartFeed()
 		FrameBuffer[i] = BufferedFrame();
 	}
 
-	string pathtodevice = Settings.DeviceInfo.device_paths[0];
-	for (int i = 1; i < Settings.DeviceInfo.device_paths.size(); i++)
-	{
-		int curridx;
-		int currread = sscanf(pathtodevice.c_str(), "/dev/video%d", &curridx);
-		int newidx;
-		int newread = sscanf(Settings.DeviceInfo.device_paths[i].c_str(), "/dev/video%d", &curridx);
-		if (currread == 1 && newread == 1)
-		{
-			if (newidx < curridx)
-			{
-				pathtodevice = Settings.DeviceInfo.device_paths[i];
-			}
-		}
-	}
-	
+	string pathtodevice = Settings.DeviceInfo.device_paths[0];	
 	
 	if (Settings.StartType == CameraStartType::CUDA)
 	{

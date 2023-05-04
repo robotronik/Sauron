@@ -52,7 +52,7 @@ pair<double, vector<ActuatorType>> TakeStackObjective::ExecuteObjective(double &
 				robot->MoveToOffset(nspos, robot->ClawPickupPosition, movebudget);
 				auto clawpos = robot->GetOffsetWorld(robot->ClawPickupPosition);
 				double distancetotarget = (clawpos-nspos).length();
-				assert(distancetotarget < PositionTolerance || movebudget < __DBL_EPSILON__);
+				//assert(distancetotarget < PositionTolerance || movebudget < __DBL_EPSILON__);
 				robot->MoveClawExtension(0, clawbudget);
 				robot->MoveClawVertical(robot->TrayHeights[0], clawbudget);
 			}

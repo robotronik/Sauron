@@ -47,7 +47,14 @@ void Manager::Init(bool simulate)
 		else
 		{
 			serialib* bridge = new serialib();
-			bridge->openDevice("/dev/ttyACM0", 115200);
+			while (bridge->openDevice("/dev/ttyACM0", 115200) != 1)
+			{
+				usleep(1000);
+			}
+			bridge->flushReceiver();
+			bridge->setDTR();
+			bridge->setRTS();
+			bridge->writeString("\n\n\n\n\n\n");
 			RC = new RobotHandle(bridge); //vrai robot
 		}
 		RC->PositionLinear = LinearMovement(0.1, 0.2, 0.1, 0); //TODO: add real params 
@@ -58,6 +65,13 @@ void Manager::Init(bool simulate)
 		{
 			RC->Trays[j] = LinearMovement(1, 3, 3, 0);
 		}
+		double TimeBudget = 1000;
+		RC->MoveClawExtension(0, TimeBudget);
+		for (int i = 0; i < 3; i++)
+		{
+			RC->MoveTray(i, 0, TimeBudget);
+		}
+		
 	}
 	
 	/*
@@ -209,7 +223,10 @@ void Manager::GatherData()
 				if ((markeridx >= 1 && markeridx <= 5 && Team == CDFRTeam::Blue) || (markeridx >= 6 && markeridx <= 10 && Team==CDFRTeam::Green))
 				{
 					//it's our robot : todo give the pos (maybe)
-					RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
+					if (!RobotControllers[0]->IsStarted())
+					{
+						RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
+					}
 					break;
 				}
 			}
@@ -330,7 +347,7 @@ void Manager::Run(double delta)
 			pair.first->ExecuteObjective(timebudget, RobotControllers[robotidx], PhysicalBoardState, &PhysicalRobotStates[robotidx]);
 			ObjectivesChosen += " " + pair.first->GetName(); 
 		}
-		if (seenObj != LastTickObjectives)
+		if (seenObj != LastTickObjectives || true)
 		{
 			cout << "Robot " << robotidx << " chose objectives" << ObjectivesChosen <<endl;
 			LastTickObjectives = seenObj;
@@ -507,13 +524,20 @@ void Manager::Thread(bool v3d, bool simulate)
 	lastTick = chrono::steady_clock::now();
 	while (!killed)
 	{
-		auto now = chrono::steady_clock::now();
-		std::chrono::duration<double> delta = now - lastTick;
+		auto then = chrono::steady_clock::now();
+		std::chrono::duration<double> delta = then - lastTick;
 		GatherData();
-		Run(delta.count());
-		//Run(1.0/200);
+		//Run(delta.count());
+		Run(1.0/50);
 		killed = !Display(v3d);
+		auto now = chrono::steady_clock::now();
+		std::chrono::duration<double> deltadel = now - then;
+		int micros = 1000000/50 - delta.count() * 1000000;
+		if (micros > 0)
+		{
+			usleep(micros);
+		}
 		//waitKey(1000/50);
-		lastTick = now;
+		lastTick = then;
 	}
 }

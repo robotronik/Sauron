@@ -30,7 +30,7 @@ CDFRTeam GetTeamFromCameras(vector<ArucoCamera*> Cameras)
 		auto campos = cam->GetLocation().translation();
 		Vec2d pos2d(campos[0], campos[1]);
 		CDFRTeam bestTeam = CDFRTeam::Unknown;
-		double bestdist = 0.2; //tolerance of 20cm
+		double bestdist = 0.5; //tolerance of 50cm
 		for (const auto [team, positions] : CameraPos)
 		{
 			for (const auto position : positions)

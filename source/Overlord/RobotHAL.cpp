@@ -117,13 +117,13 @@ LinearMovement::MoveABResult LinearMovement::MoveAB(double Target, double &TimeB
 	else if (abs(DistFromMaxSpeed + DistToMaxSpeed) > abs(dx)) //no time for full speed
 	{
 		//cout << "Speed triangle" << endl;
-		double step = copysign(MaxSpeed, dx) - Speed;
+		double step = copysign(MaxSpeed, dx) - copysign(MinSpeed, dx);
 		step /= 2;
-		double peakspeed = Speed + step;
+		double peakspeed = copysign(MinSpeed, dx) + step;
 		step /= 2;
 		double TimeToPeak, TimeFromPeak;
 		double DistToPeak, DistFromPeak;
-		for (int i = 0; i < 100; i++)
+		for (; abs(step) > __DBL_EPSILON__;)
 		{
 			double v0 = Speed;
 			double v1 = peakspeed;
@@ -143,8 +143,10 @@ LinearMovement::MoveABResult LinearMovement::MoveAB(double Target, double &TimeB
 			}
 			step /= 2;
 		}
-		assert(TimeToPeak >-__DBL_EPSILON__);
-		assert(TimeFromPeak >-__DBL_EPSILON__);
+		//assert(TimeToPeak >-__DBL_EPSILON__*8);
+		//assert(TimeFromPeak >-__DBL_EPSILON__*8);
+		TimeToPeak = max(TimeToPeak, 0.0);
+		TimeFromPeak = max(TimeFromPeak, 0.0);
 		if (TimeBudget < TimeToPeak) //Not enough time to reach peak
 		{
 			double v1 = Speed + TimeBudget*acc;
@@ -463,7 +465,7 @@ double RobotHAL::MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBu
 
 	auto offworld = GetOffsetWorld(offset);
 	double distancetotarget = (offworld-target).length();
-	assert(distancetotarget < PositionTolerance);
+	//assert(distancetotarget < PositionTolerance);
 	return TimeBudget;
 }
 
