@@ -3,6 +3,7 @@
 
 #include "Overlord/RobotHAL.hpp"
 
+#include <libserial/SerialPort.h>
 #include <string>
 #include <chrono>
 
@@ -21,8 +22,6 @@ namespace Overlord
 		double RobotReportedRotation = 0;
 		Vector2dd RobotOrigin = {0,0};
 		double RobotRotationOffset = 0;
-		int LastRotate = 0;
-		Vector2d<int> LastPos = {0,0};
 	public:
 		serialib* bridgehandle;
 		RobotHandle(serialib* InBridge = nullptr);

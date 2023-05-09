@@ -9,6 +9,7 @@
 #include "Overlord/Objectives/TrayRoutine.hpp"
 #include "Overlord/Objectives/RetractTray.hpp"
 #include "Overlord/Objectives/RetractClaws.hpp"
+#include "Overlord/Objectives/GotoObjective.hpp"
 #include "Overlord/RobotHandle.hpp"
 #include "thirdparty/serialib.h"
 
@@ -57,10 +58,11 @@ void Manager::Init(bool simulate)
 			bridge->writeString("\n\n\n\n\n\n");
 			RC = new RobotHandle(bridge); //vrai robot
 		}
-		RC->PositionLinear = LinearMovement(0.1, 0.2, 0.1, 0); //TODO: add real params 
+		RC->PositionLinear = LinearMovement(0.1, 0.1, 2, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
 		RC->ClawExtension = LinearMovement(1, 3, 3, 0);
-		RC->ClawHeight = LinearMovement(.1, .3, 1, 0);
+		double mperstep = RC->TrayHeights[3]/750.0;
+		RC->ClawHeight = LinearMovement(6000*mperstep*0.8, 6000*mperstep*0.8, 5000*mperstep*0.8, 0);
 		for (int j = 0; j < 3; j++)
 		{
 			RC->Trays[j] = LinearMovement(1, 3, 3, 0);
@@ -155,6 +157,7 @@ void Manager::Init(bool simulate)
 	Objectives.push_back(make_unique<TrayRoutine>());
 	Objectives.push_back(make_unique<TakeStackObjective>());
 	Objectives.push_back(make_unique<MakeCakeObjective>());
+	Objectives.push_back(make_unique<GotoObjective>());
 }
 
 void Manager::GatherData()

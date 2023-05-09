@@ -111,7 +111,7 @@ void RobotHandle::Tick()
 				}
 				if (!IsStarted())
 				{
-					char golimp[] = "!I2CSend:32\n"; //request ripcord status
+					char golimp[] = "!I2CSend:33\n"; //request ripcord status
 					bridgehandle->writeString(golimp);
 				}
 				
@@ -212,15 +212,10 @@ double RobotHandle::Rotate(double target, double &TimeBudget)
 	{
 		angledeg += 360;
 	}
-	bool NewOrder = LastRotate != angledeg;
 	bool AtRotation = angledeg == RobotReportedRotation;
-	if (NewOrder && !AtRotation)
-	{
-		cout << "Sending rotation order : " << angledeg << endl;
-		snprintf(buffer, sizeof(buffer), "!I2CSend:31,%d\n", angledeg);
-		bridgehandle->writeString(buffer);
-		LastRotate = angledeg;
-	}
+	cout << "Sending rotation order : " << angledeg << endl;
+	snprintf(buffer, sizeof(buffer), "!I2CSend:31,%d\n", angledeg);
+	bridgehandle->writeString(buffer);
 	if (!AtRotation)
 	{
 		TimeBudget = 0;
@@ -259,14 +254,9 @@ double RobotHandle::MoveTo(Vector2dd target, double &TimeBudget, ForceDirection 
 	}
 	Vector2d<int> posmm(pr.x*1000, pr.y*1000);
 	bool AtLocation = (pr-RobotReportedPosition).length() < PositionTolerance;
-	bool NewOrder = posmm != LastPos;
-	if (NewOrder && !AtLocation)
-	{
-		cout << "Sending position order : " << posmm.ToString() << endl;
-		snprintf(buffer, sizeof(buffer), "!I2CSend:30,%d,%d,%d\n", posmm.x, posmm.y, backwards);
-		bridgehandle->writeString(buffer);
-		LastPos = posmm;
-	}
+	cout << "Sending position order : " << posmm.ToString() << endl;
+	snprintf(buffer, sizeof(buffer), "!I2CSend:30,%d,%d,%d\n", posmm.x, posmm.y, backwards);
+	bridgehandle->writeString(buffer);
 	if (!AtLocation)
 	{
 		TimeBudget = 0;

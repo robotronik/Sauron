@@ -75,8 +75,8 @@ namespace Overlord
 			Backwards
 		};
 
-		std::vector<double> TrayHeights = {0,0.02,0.1,0.18};
-		Vector2dd ClawPickupPosition = {0.2,0};
+		std::vector<double> TrayHeights = {0,0.04,0.16,0.25};
+		Vector2dd ClawPickupPosition = {0.3,0};
 		Vector2dd CherryPickupPosition = {0.1,0.1};
 		Vector2dd CherryDepositPosition = {-0.1, 0.1};
 		Vector2dd position;

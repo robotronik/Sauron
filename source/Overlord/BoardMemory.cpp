@@ -44,7 +44,7 @@ int RobotMemory::ClawCake(RobotHAL* robot, std::vector<Object> &BoardState, bool
 			if(couldtake(i))
 			{
 				Object &object = BoardState[i];
-				object.position = {0.01, 0}; //not correctly inserted yet
+				object.position = {PositionTolerance*2, 0}; //not correctly inserted yet
 				object.Rot -= robot->Rotation.Pos;
 				CakeTrays[0].push_back(object);
 				BoardState.erase(BoardState.begin() + i);

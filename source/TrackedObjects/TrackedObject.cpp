@@ -41,8 +41,8 @@ TrackedObject::TrackedObject()
 	LocationFilter = cv::KalmanFilter(9, 3, 0, CV_64F);
 
 	cv::setIdentity(LocationFilter.processNoiseCov, cv::Scalar::all(1e-5)); //0.1mm error
-	cv::setIdentity(LocationFilter.measurementNoiseCov, cv::Scalar::all(1e-4));//1mm error
-	cv::setIdentity(LocationFilter.errorCovPost, cv::Scalar::all(0.1));
+	cv::setIdentity(LocationFilter.measurementNoiseCov, cv::Scalar::all(1e-1));//1mm error
+	cv::setIdentity(LocationFilter.errorCovPost, cv::Scalar::all(1));
 };
 
 bool TrackedObject::SetLocation(Affine3d InLocation, unsigned long tick)

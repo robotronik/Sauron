@@ -90,6 +90,22 @@ serialib::~serialib()
                         - 38400
                         - 57600
                         - 115200
+
+               \n Optionally supported baud rates, depending on Linux kernel:\n
+                        - 230400
+                        - 460800
+                        - 500000
+                        - 576000
+                        - 921600
+                        - 1000000
+                        - 1152000
+                        - 1500000
+                        - 2000000
+                        - 2500000
+                        - 3000000
+                        - 3500000
+                        - 4000000
+
      \param Databits : Number of data bits in one UART transmission.
 
             \n Supported values: \n
@@ -254,6 +270,45 @@ char serialib::openDevice(const char *Device, const unsigned int Bauds,
     case 38400 :    Speed=B38400; break;
     case 57600 :    Speed=B57600; break;
     case 115200 :   Speed=B115200; break;
+#if defined (B230400)
+    case 230400 :   Speed=B230400; break;
+#endif
+#if defined (B460800)
+    case 460800 :   Speed=B460800; break;
+#endif
+#if defined (B500000)
+    case 500000 :   Speed=B500000; break;
+#endif
+#if defined (B576000)
+    case 576000 :   Speed=B576000; break;
+#endif
+#if defined (B921600)
+    case 921600 :   Speed=B921600; break;
+#endif
+#if defined (B1000000)
+    case 1000000 :   Speed=B1000000; break;
+#endif
+#if defined (B1152000)
+    case 1152000 :   Speed=B1152000; break;
+#endif
+#if defined (B1500000)
+    case 1500000 :   Speed=B1500000; break;
+#endif
+#if defined (B2000000)
+    case 2000000 :   Speed=B2000000; break;
+#endif
+#if defined (B2500000)
+    case 2500000 :   Speed=B2500000; break;
+#endif
+#if defined (B3000000)
+    case 3000000 :   Speed=B3000000; break;
+#endif
+#if defined (B3500000)
+    case 3500000 :   Speed=B3500000; break;
+#endif
+#if defined (B4000000)
+    case 4000000 :   Speed=B4000000; break;
+#endif
     default : return -4;
     }
     int databits_flag = 0;
@@ -339,7 +394,7 @@ void serialib::closeDevice()
      \return 1 success
      \return -1 error while writting data
   */
-char serialib::writeChar(const char Byte)
+int serialib::writeChar(const char Byte)
 {
 #if defined (_WIN32) || defined( _WIN64)
     // Number of bytes written
@@ -371,7 +426,7 @@ char serialib::writeChar(const char Byte)
      \return     1 success
      \return    -1 error while writting data
   */
-char serialib::writeString(const char *receivedString)
+int serialib::writeString(const char *receivedString)
 {
 #if defined (_WIN32) || defined( _WIN64)
     // Number of bytes written
@@ -405,7 +460,7 @@ char serialib::writeString(const char *receivedString)
      \return 1 success
      \return -1 error while writting data
   */
-char serialib::writeBytes(const void *Buffer, const unsigned int NbBytes)
+int serialib::writeBytes(const void *Buffer, const unsigned int NbBytes)
 {
 #if defined (_WIN32) || defined( _WIN64)
     // Number of bytes written
@@ -437,7 +492,7 @@ char serialib::writeBytes(const void *Buffer, const unsigned int NbBytes)
      \return -1 error while setting the Timeout
      \return -2 error while reading the byte
   */
-char serialib::readChar(char *pByte,unsigned int timeOut_ms)
+int serialib::readChar(char *pByte,unsigned int timeOut_ms)
 {
 #if defined (_WIN32) || defined(_WIN64)
     // Number of bytes read
@@ -529,12 +584,12 @@ int serialib::readStringNoTimeOut(char *receivedString,char finalChar,unsigned i
      \brief Read a string from the serial device (with timeout)
      \param receivedString : string read on the serial device
      \param finalChar : final char of the string
-     \param maxNbBytes : maximum allowed number of bytes read
+     \param maxNbBytes : maximum allowed number of characters read
      \param timeOut_ms : delay of timeout before giving up the reading (optional)
-     \return  >0 success, return the number of bytes read
+     \return  >0 success, return the number of bytes read (including the null character)
      \return  0 timeout is reached
      \return -1 error while setting the Timeout
-     \return -2 error while reading the byte
+     \return -2 error while reading the character
      \return -3 MaxNbBytes is reached
   */
 int serialib::readString(char *receivedString,char finalChar,unsigned int maxNbBytes,unsigned int timeOut_ms)
