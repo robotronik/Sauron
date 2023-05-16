@@ -64,7 +64,7 @@ void RobotHandle::Tick()
 	receivebuffer[numreceived] = '\0';
 	if (numreceived > 0)
 	{
-		cout << "received : " << receivebuffer << endl;
+		//cout << "received : " << receivebuffer << endl;
 	}
 	int readidx = 0;
 	for (int i = 1; i < numreceived; i++)
@@ -117,6 +117,15 @@ void RobotHandle::Tick()
 				
 				continue;
 			}
+		}
+		{
+			int keepalivenum;
+			succ = sscanf(rcvstart, "keepalive:%x", &keepalivenum);
+			if (succ == 1)
+			{
+				cout << "Received keepalive: " << keepalivenum << endl;
+			}
+			
 		}
 	}
 	

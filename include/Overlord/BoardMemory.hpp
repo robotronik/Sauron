@@ -89,6 +89,10 @@ namespace Overlord{
 	//Returns ObjectType::Unknown if it's multicolor, and the type of the stack if it's single color
 	ObjectType IsSingleColorStack(const std::vector<Object> &in);
 
+	const std::vector<Vector2dd>& GetDropZones(bool IsBlue);
+
+	bool IsProtected(Vector2dd pos, bool IsBlue);
+
 	std::vector<std::vector<Object>> FindCakeStacks(const std::vector<Object> &in);
 
 	void FilterType(std::vector<Object> &in, const std::set<ObjectType> allowed);

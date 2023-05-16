@@ -157,6 +157,50 @@ ObjectType Overlord::IsSingleColorStack(const std::vector<Object> &in)
 	return color;
 }
 
+const std::vector<Vector2dd>& Overlord::GetDropZones(bool IsBlue)
+{
+	static const vector<Vector2dd> greendropzones = {
+		{-0.375,-0.775},
+		{0.375,0.775},
+		{1.275,-0.775},
+		{1.275,0.275},
+		{-1.275,0.775} //protected zone
+	};
+
+	if (!IsBlue)
+	{
+		return greendropzones;
+	}
+
+	static vector<Vector2dd> bluedropzones;
+
+	if (bluedropzones.size() != greendropzones.size())
+	{
+		bluedropzones.clear();
+		for (int i = 0; i < greendropzones.size(); i++)
+		{
+			Vector2dd dropzone = greendropzones[i];
+			dropzone.y *=-1;
+			bluedropzones.push_back(dropzone);
+		}
+	}
+
+	return bluedropzones;
+}
+
+bool Overlord::IsProtected(Vector2dd pos, bool IsBlue)
+{
+	Vector2dd protectedzone(-1.275,0.775);
+	if (!IsBlue)
+	{
+		protectedzone.y *= -1;
+	}
+	
+	double absdist = (protectedzone-pos).abs().max();
+	return absdist < ZoneWidth/2+CakeRadius;
+	
+}
+
 vector<vector<Object>> Overlord::FindCakeStacks(const std::vector<Object> &in)
 {
 	vector<vector<Object>> outvec;

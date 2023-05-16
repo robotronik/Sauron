@@ -48,8 +48,8 @@ pair<double, vector<ActuatorType>> TakeStackObjective::ExecuteObjective(double &
 			double clawbudget = TimeBudget;
 			double movebudget = TimeBudget;
 			if ((nspos-robot->GetOffsetWorld(robot->ClawPickupPosition)).length() > PositionTolerance)
-			{
-				robot->MoveToOffset(nspos, robot->ClawPickupPosition, movebudget);
+			{				
+				robot->MovePathOffset(nspos, robot->ClawPickupPosition, movebudget);
 				auto clawpos = robot->GetOffsetWorld(robot->ClawPickupPosition);
 				double distancetotarget = (clawpos-nspos).length();
 				//assert(distancetotarget < PositionTolerance || movebudget < __DBL_EPSILON__);

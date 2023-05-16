@@ -232,6 +232,7 @@ double LinearMovement::Tick(double &TimeBudget)
 
 RobotHAL::RobotHAL()
 {
+	
 }
 
 RobotHAL::~RobotHAL()
@@ -469,9 +470,47 @@ double RobotHAL::MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBu
 	return TimeBudget;
 }
 
-double RobotHAL::MovePath(Vector2dd Target, Vector2dd offset, double& TimeBudget)
+double RobotHAL::MovePath(Vector2dd Target, double& TimeBudget, ForceDirection direction)
 {
-	return 0;
+	auto path = pf->Pathfind(position, Target);
+	if (!path.has_value())
+	{
+		TimeBudget = 0;
+		return 0;
+	}
+	for (int i = 1; i < path.value().size(); i++)
+	{
+		ReturnIfNoBudget
+		MoveTo(path.value()[i], TimeBudget, direction);
+	}
+	return TimeBudget;
+}
+
+double RobotHAL::MovePathOffset(Vector2dd Target, Vector2dd offset, double& TimeBudget, ForceDirection direction)
+{
+	Vector2dd dir = (Target-position).normalized();
+	Vector2dd targetmod = Target - dir*offset.length();
+	auto path = pf->Pathfind(position, targetmod);
+	if (!path.has_value())
+	{
+		TimeBudget = 0;
+		return 0;
+	}
+	Path& p  = path.value();
+	p[p.size()-1] = Target;
+	for (int i = 1; i < p.size(); i++)
+	{
+		ReturnIfNoBudget
+		if (i == p.size()-1)
+		{
+			MoveToOffset(p[i], offset, TimeBudget, direction);
+		}
+		else
+		{
+			MoveTo(p[i], TimeBudget, direction);
+		}
+	}
+	return TimeBudget;
 }
 
 double RobotHAL::MoveClawVertical(double height, double& TimeBudget)

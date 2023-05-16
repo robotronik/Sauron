@@ -9,7 +9,7 @@ pair<double, vector<ActuatorType>> DepositCherriesObjective::ExecuteObjective(do
 {
 	double BaseTime = TimeBudget;
 	auto stoppos = robot->GetStoppingPosition();
-	Vector2dd basketcoords = {-1.5, 0.7};
+	Vector2dd basketcoords = {-1.5, 0.75};
 	if (robot->IsBlueTeam())
 	{
 		basketcoords.y = -basketcoords.y;
@@ -20,7 +20,7 @@ pair<double, vector<ActuatorType>> DepositCherriesObjective::ExecuteObjective(do
 	auto deltapos = parkpos-robot->position;
 	if (deltapos.length()>robot->CherryDepositPosition.length()*1.5)
 	{
-		robot->MoveTo(basketcoords - robot->CherryDepositPosition, TimeBudget, RobotHAL::ForceDirection::Forward);
+		robot->MovePath(parkpos, TimeBudget, RobotHAL::ForceDirection::Forward);
 	}
 	if (TimeBudget < __DBL_EPSILON__)
 	{

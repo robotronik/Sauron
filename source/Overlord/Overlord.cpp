@@ -50,11 +50,13 @@ void Manager::Init(bool simulate)
 			serialib* bridge = new serialib();
 			while (bridge->openDevice("/dev/ttyACM0", 115200) != 1)
 			{
-				usleep(1000);
+				cout << "Failed to open robot serial" << endl;
+				usleep(100000);
 			}
 			bridge->flushReceiver();
-			bridge->setDTR();
-			bridge->setRTS();
+			bridge->setDTR(); //arduino reset
+			usleep(1000000);
+			
 			bridge->writeString("\n\n\n\n\n\n");
 			RC = new RobotHandle(bridge); //vrai robot
 		}
@@ -67,6 +69,8 @@ void Manager::Init(bool simulate)
 		{
 			RC->Trays[j] = LinearMovement(1, 3, 3, 0);
 		}
+		RC->pf = make_shared<Pathfinder>();
+		RC->pf->SetArenaSize({1.5,1}, RC->PathfindingRadius);
 		double TimeBudget = 1000;
 		RC->MoveClawExtension(0, TimeBudget);
 		for (int i = 0; i < 3; i++)
@@ -93,24 +97,6 @@ void Manager::Init(bool simulate)
 	*/
 
 	PhysicalBoardState.clear();
-	static const vector<Object> greendropzones = {
-		Object(ObjectType::GreenDropZone, {-0.375,-0.775}),
-		Object(ObjectType::GreenDropZone, {0.375,0.775}),
-		Object(ObjectType::GreenDropZone, {1.275,-0.775}),
-		Object(ObjectType::GreenDropZone, {1.275,0.275}),
-		Object(ObjectType::GreenDropZone, {-1.275,0.775})
-	};
-
-	for (int i = 0; i < greendropzones.size(); i++)
-	{
-		Object dropzone = greendropzones[i];
-		PhysicalBoardState.push_back(dropzone);
-		dropzone.Type = ObjectType::BlueDropZone;
-		dropzone.position.y *=-1;
-		PhysicalBoardState.push_back(dropzone);
-	}
-	
-
 
 	static const vector<Object> defaultcakes = {Object(ObjectType::CakeYellow, {0.725, 0.775}),
 	Object(ObjectType::CakePink, {0.925, 0.775}),
@@ -152,12 +138,12 @@ void Manager::Init(bool simulate)
 		Objectives.push_back(make_unique<RetractTrayObjective>(i));
 	}
 	Objectives.push_back(make_unique<RetractClawsObjective>());
-	//Objectives.push_back(make_unique<GatherCherriesObjective>());
-	//Objectives.push_back(make_unique<DepositCherriesObjective>());
+	Objectives.push_back(make_unique<GatherCherriesObjective>());
+	Objectives.push_back(make_unique<DepositCherriesObjective>());
 	Objectives.push_back(make_unique<TrayRoutine>());
 	Objectives.push_back(make_unique<TakeStackObjective>());
 	Objectives.push_back(make_unique<MakeCakeObjective>());
-	Objectives.push_back(make_unique<GotoObjective>());
+	//Objectives.push_back(make_unique<GotoObjective>());
 }
 
 void Manager::GatherData()
@@ -192,7 +178,7 @@ void Manager::GatherData()
 	}
 	if (data.Objects.size() == 0)
 	{
-		return; //we're done here; no machine vision data
+		goto updateobstacles; //we're done here; no machine vision data
 	}
 	
 	//clear all robots
@@ -242,7 +228,42 @@ void Manager::GatherData()
 			break;
 		}
 	}
+
+updateobstacles:
 	
+	for (int i = 0; i < RobotControllers.size(); i++)
+	{
+		auto & RC = RobotControllers[i];
+		vector<Obstacle> dynObstacles;
+		for (auto & thing : PhysicalBoardState)
+		{
+			double radius;
+			switch (thing.Type)
+			{
+			case ObjectType::Robot :
+				radius = 0.5;
+				break;
+			case ObjectType::CakeBrown :
+			case ObjectType::CakePink :
+			case ObjectType::CakeYellow : 
+				radius = CakeRadius;
+				break;
+			
+			default:
+				continue;
+				break;
+			}
+			radius += RC->PathfindingRadius;
+			Obstacle dynob;
+			dynob.position = thing.position;
+			dynob.radius = radius;
+			dynob.ClumpIdx = -1;
+			dynObstacles.push_back(dynob);
+		}
+		RC->pf->SetObstacles(dynObstacles);
+		RC->pf->AddCherryHolders(RC->PathfindingRadius);
+		RC->pf->ComputeClumps();
+	}
 }
 
 void Manager::Run(double delta)
@@ -350,7 +371,7 @@ void Manager::Run(double delta)
 			pair.first->ExecuteObjective(timebudget, RobotControllers[robotidx], PhysicalBoardState, &PhysicalRobotStates[robotidx]);
 			ObjectivesChosen += " " + pair.first->GetName(); 
 		}
-		if (seenObj != LastTickObjectives || true)
+		if (seenObj != LastTickObjectives)
 		{
 			cout << "Robot " << robotidx << " chose objectives" << ObjectivesChosen <<endl;
 			LastTickObjectives = seenObj;

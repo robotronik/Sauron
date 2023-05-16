@@ -3,10 +3,11 @@
 #include <cmath>
 #include <sstream>
 #include <string>
+#include <algorithm>
 namespace Overlord
 {
 
-	extern const double CakeTolerance, PositionTolerance, AngleTolerance, CakeHeight, CakeRadius;
+	extern const double CakeTolerance, PositionTolerance, AngleTolerance, CakeHeight, CakeRadius, ZoneWidth;
 	
 	template<class T>
 	struct Vector2d
@@ -69,6 +70,11 @@ namespace Overlord
 			return (*this)/length();
 		}
 
+		Vector2d<T> abs()
+		{
+			return Vector2d<T>(std::abs(x), std::abs(y));
+		}
+
 		T dot(const Vector2d<T> &other) const
 		{
 			return x*other.x + y*other.y;
@@ -79,11 +85,31 @@ namespace Overlord
 			return x+y;
 		}
 
+		T max()
+		{
+			return std::max(x,y);
+		}
+
+		Vector2d<T> min(const Vector2d<T>& other)
+		{
+			return Vector2d<T>(std::min<T>(x,other.x), std::min<T>(y, other.y));
+		}
+
+		Vector2d<T> max(const Vector2d<T>& other)
+		{
+			return Vector2d<T>(std::max<T>(x,other.x), std::max<T>(y, other.y));
+		}
+
 		std::string ToString() const
 		{
 			std::ostringstream oss;
 			oss << "(" << x << ", " << y << ")";
 			return oss.str();
+		}
+
+		bool operator<(const Vector2d<T>& other)
+		{
+			return x<other.x && y<other.y;
 		}
 
 		void operator+=(const Vector2d<T>& other)

@@ -6,6 +6,7 @@
 #include <vector>
 #include <utility>
 #include <optional>
+#include <memory>
 
 namespace Overlord
 {
@@ -78,16 +79,17 @@ namespace Overlord
 		std::vector<double> TrayHeights = {0,0.04,0.16,0.25};
 		Vector2dd ClawPickupPosition = {0.3,0};
 		Vector2dd CherryPickupPosition = {0.1,0.1};
-		Vector2dd CherryDepositPosition = {-0.1, 0.1};
+		Vector2dd CherryDepositPosition = {-0.12, 0.1};
 		Vector2dd position;
 		LinearMovement PositionLinear;
 		LinearMovement Rotation;
 		LinearMovement ClawHeight, ClawExtension;
 		LinearMovement Trays[3];
-		Pathfinder* pf = nullptr;
+		std::shared_ptr<Pathfinder> pf;
 		bool BlueTeam = true;
 
 		double width = 0.2, depth = 0.1; //todo : actual values
+		double PathfindingRadius = 0.1;
 
 		RobotHAL(/* args */);
 		virtual ~RobotHAL();
@@ -129,7 +131,9 @@ namespace Overlord
 		//Move the robot so that pos + rotated(offset) = target
 		double MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBudget, ForceDirection direction = ForceDirection::None);
 
-		double MovePath(Vector2dd Target, Vector2dd offset, double& TimeBudget);
+		double MovePath(Vector2dd Target, double& TimeBudget, ForceDirection direction = ForceDirection::None);
+
+		double MovePathOffset(Vector2dd Target, Vector2dd offset, double& TimeBudget, ForceDirection direction = ForceDirection::None);
 
 		//atomic claw move
 		virtual double MoveClawVertical(double height, double &TimeBudget);
