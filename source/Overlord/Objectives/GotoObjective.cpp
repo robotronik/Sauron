@@ -17,7 +17,7 @@ pair<double, vector<ActuatorType>> GotoObjective::ExecuteObjective(double &TimeB
 	return {10/timeittook, act};
 }
 
-double GotoObjective::GetPoints()
+double GotoObjective::GetPoints(RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState)
 {
 	return 0;
 }

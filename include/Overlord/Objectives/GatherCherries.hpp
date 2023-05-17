@@ -15,7 +15,7 @@
 			RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) override;
 
 		//Get the total number of points that this objective have given us
-		virtual double GetPoints() {return 0;};
+		virtual double GetPoints(RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) {return 0;};
 
 		virtual std::string GetName() {return "Objective";};
 	};
@@ -33,7 +33,7 @@ namespace Overlord
 		virtual std::pair<double, std::vector<ActuatorType>> ExecuteObjective(double &TimeBudget, RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) override;
 
 		//Get the total number of points that this objective have given us
-		virtual double GetPoints() override;
+		virtual double GetPoints(RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) override;
 
 		virtual std::string GetName() override {return "Gather cherries";};
 	};

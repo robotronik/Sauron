@@ -196,13 +196,13 @@ void RobotHandle::SetPosition(Vector2dd NewPosition, double NewRotation)
 	ToRobotPosition(endpos, endrot);
 	ToWorldPosition(endpos, endrot);
 	assert((endpos-startpos).length() < PositionTolerance);
-	assert(abs(LinearMovement::wraptwopi(endrot-Startrot)) < AngleTolerance);
+	assert(abs(wraptwopi(endrot-Startrot)) < AngleTolerance);
 
 	Vector2dd SanityPos = RobotReportedPosition;
 	double SanityRot = RobotReportedRotation;
 	ToWorldPosition(SanityPos, SanityRot);
 	assert((SanityPos-NewPosition).length() < PositionTolerance);
-	assert(abs(LinearMovement::wraptwopi(SanityRot-NewRotation)) < AngleTolerance);
+	assert(abs(wraptwopi(SanityRot-NewRotation)) < AngleTolerance);
 
 	RobotHAL::SetPosition(NewPosition, NewRotation);
 }
@@ -215,7 +215,7 @@ double RobotHandle::Rotate(double target, double &TimeBudget)
 
 	Vector2dd pr = {0,0}; double rr = target;
 	ToRobotPosition(pr, rr);
-	rr = LinearMovement::wraptwopi(rr);
+	rr = wraptwopi(rr);
 	int angledeg = -rr*180.0/M_PI; 
 	if (angledeg < 0)
 	{

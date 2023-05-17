@@ -21,7 +21,7 @@ namespace Overlord
 		{return std::make_pair(-1.0, std::vector<ActuatorType>());};
 
 		//Get the total number of points that this objective have given us
-		virtual double GetPoints() {return 0;};
+		virtual double GetPoints(RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) {return 0;};
 
 		virtual std::string GetName() {return "Base Objective";};
 	};

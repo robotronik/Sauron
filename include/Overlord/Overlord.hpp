@@ -29,7 +29,7 @@ namespace Overlord
 		CDFRTeam Team;
 
 		std::chrono::time_point<std::chrono::steady_clock> lastTick;
-		double TimeLeft;
+		std::optional<std::chrono::time_point<std::chrono::steady_clock>> StartTime;
 
 		std::unique_ptr<TCPTransport> receiver;
 		char receivebuffer[1<<16];
@@ -40,6 +40,10 @@ namespace Overlord
 		#endif
 
 		void Init(bool simulate = false);
+
+		void UpdateCollision();
+
+		void SimulateEnnemy();
 
 		void GatherData(); //Update memories
 

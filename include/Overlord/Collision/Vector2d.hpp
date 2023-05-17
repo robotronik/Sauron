@@ -179,5 +179,20 @@ namespace Overlord
 	};
 
 	typedef Vector2d<double> Vector2dd;
+
+	template<class T>
+	T wraptwopi(T in)
+	{
+		T rem = fmod(in, M_PI*2);
+		if (rem < -M_PI)
+		{
+			return rem + M_PI*2;
+		}
+		else if (rem > M_PI)
+		{
+			return rem - M_PI*2;
+		}
+		return rem;
+	}
 	
 } // namespace Overlord

@@ -20,7 +20,7 @@ namespace Overlord
 			RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) override;
 
 		//Get the total number of points that this objective have given us
-		virtual double GetPoints() {return 0;};
+		virtual double GetPoints(RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) {return 0;};
 
 		virtual std::string GetName() {return "Retract Tray " + std::to_string(Tray);};
 	};

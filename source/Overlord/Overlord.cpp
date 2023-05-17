@@ -10,6 +10,7 @@
 #include "Overlord/Objectives/RetractTray.hpp"
 #include "Overlord/Objectives/RetractClaws.hpp"
 #include "Overlord/Objectives/GotoObjective.hpp"
+#include "Overlord/Objectives/GoHomeObjective.hpp"
 #include "Overlord/RobotHandle.hpp"
 #include "thirdparty/serialib.h"
 
@@ -33,7 +34,7 @@ using namespace Overlord;
 void Manager::Init(bool simulate)
 {
 	int numbots = 1;
-	TimeLeft = 100;
+	StartTime = nullopt;
 	receiver = make_unique<TCPTransport>(false, GetWebsocketConfig().IP, GetWebsocketConfig().Port, GetWebsocketConfig().Interface);
 	receiveptr = receivebuffer;
 	RobotControllers.resize(numbots);
@@ -137,13 +138,79 @@ void Manager::Init(bool simulate)
 	{
 		Objectives.push_back(make_unique<RetractTrayObjective>(i));
 	}
+	Objectives.push_back(make_unique<GoHomeObjective>());
 	Objectives.push_back(make_unique<RetractClawsObjective>());
 	Objectives.push_back(make_unique<GatherCherriesObjective>());
 	Objectives.push_back(make_unique<DepositCherriesObjective>());
 	Objectives.push_back(make_unique<TrayRoutine>());
 	Objectives.push_back(make_unique<TakeStackObjective>());
-	Objectives.push_back(make_unique<MakeCakeObjective>());
+	//Objectives.push_back(make_unique<MakeCakeObjective>());
 	//Objectives.push_back(make_unique<GotoObjective>());
+}
+
+void Manager::UpdateCollision()
+{
+	for (int i = 0; i < RobotControllers.size(); i++)
+	{
+		auto & RC = RobotControllers[i];
+		vector<Obstacle> dynObstacles;
+		for (auto & thing : PhysicalBoardState)
+		{
+			double radius;
+			switch (thing.Type)
+			{
+			case ObjectType::Robot :
+				radius = 0.5;
+				break;
+			case ObjectType::CakeBrown :
+			case ObjectType::CakePink :
+			case ObjectType::CakeYellow : 
+				radius = CakeRadius;
+				break;
+			
+			default:
+				continue;
+				break;
+			}
+			radius += RC->PathfindingRadius;
+			Obstacle dynob;
+			dynob.position = thing.position;
+			dynob.radius = radius;
+			dynob.ClumpIdx = -1;
+			dynObstacles.push_back(dynob);
+		}
+		RC->pf->SetObstacles(dynObstacles);
+		RC->pf->AddCherryHolders(RC->PathfindingRadius);
+		RC->pf->ComputeClumps();
+	}
+}
+
+void Manager::SimulateEnnemy()
+{
+	auto ennemies = PhysicalBoardState;
+	FilterType(ennemies, {ObjectType::Robot});
+
+	for (int i = PhysicalBoardState.size() - 1; i >= 0; i--)
+	{
+		auto& obj = PhysicalBoardState[i];
+		if (obj.Type == ObjectType::Robot)
+		{
+			continue;
+		}
+		bool taken = false;
+		for (auto & robot : ennemies)
+		{
+			if ((robot.position-obj.position) < 0.3)
+			{
+				taken = true;
+				break;
+			}
+		}
+		if (taken)
+		{
+			PhysicalBoardState.erase(PhysicalBoardState.begin()+i);
+		}
+	}
 }
 
 void Manager::GatherData()
@@ -199,11 +266,18 @@ void Manager::GatherData()
 
 		case PacketType::Team :
 			{
+				bool hadnoteam = Team==CDFRTeam::Unknown;
 				Team = (CDFRTeam)obj.identity.numeral;
 				for (int j = 0; j < RobotControllers.size(); j++)
 				{
 					RobotControllers[j]->BlueTeam = Team == CDFRTeam::Blue;
+					if (hadnoteam)
+					{
+						//turn on leds 2 or 3
+					}
+					
 				}
+
 			}
 			break;
 		case PacketType::TopTracker : //may be us or the ennemy
@@ -215,6 +289,11 @@ void Manager::GatherData()
 					if (!RobotControllers[0]->IsStarted())
 					{
 						RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
+						StartTime = nullopt;
+					}
+					else if (!StartTime.has_value())
+					{
+						StartTime = chrono::steady_clock::now();
 					}
 					break;
 				}
@@ -230,40 +309,8 @@ void Manager::GatherData()
 	}
 
 updateobstacles:
-	
-	for (int i = 0; i < RobotControllers.size(); i++)
-	{
-		auto & RC = RobotControllers[i];
-		vector<Obstacle> dynObstacles;
-		for (auto & thing : PhysicalBoardState)
-		{
-			double radius;
-			switch (thing.Type)
-			{
-			case ObjectType::Robot :
-				radius = 0.5;
-				break;
-			case ObjectType::CakeBrown :
-			case ObjectType::CakePink :
-			case ObjectType::CakeYellow : 
-				radius = CakeRadius;
-				break;
-			
-			default:
-				continue;
-				break;
-			}
-			radius += RC->PathfindingRadius;
-			Obstacle dynob;
-			dynob.position = thing.position;
-			dynob.radius = radius;
-			dynob.ClumpIdx = -1;
-			dynObstacles.push_back(dynob);
-		}
-		RC->pf->SetObstacles(dynObstacles);
-		RC->pf->AddCherryHolders(RC->PathfindingRadius);
-		RC->pf->ComputeClumps();
-	}
+	SimulateEnnemy();
+	UpdateCollision();
 }
 
 void Manager::Run(double delta)
@@ -296,7 +343,12 @@ void Manager::Run(double delta)
 			SimulationRobotStates[copyrobotidx].CopyFrom(PhysicalRobotStates[copyrobotidx]);
 			SimulatedControllers[copyrobotidx] = RobotHAL(*RobotControllers[copyrobotidx]);
 		}
-		double timebudget = TimeLeft;
+		double timebudget = 100;
+		if (StartTime.has_value())
+		{
+			std::chrono::duration<double> timeSinceStart = chrono::steady_clock::now()-StartTime.value();
+			timebudget -= timeSinceStart.count();
+		}
 		auto ExecutionPair = objective->ExecuteObjective(timebudget, &SimulatedControllers[robotidx], SimulationBoardState, &SimulationRobotStates[robotidx]);
 		double Score = ExecutionPair.first;
 		auto& categories = ExecutionPair.second;
@@ -376,7 +428,6 @@ void Manager::Run(double delta)
 			cout << "Robot " << robotidx << " chose objectives" << ObjectivesChosen <<endl;
 			LastTickObjectives = seenObj;
 		}
-		
 	}
 }
 

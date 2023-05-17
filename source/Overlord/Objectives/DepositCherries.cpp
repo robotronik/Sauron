@@ -9,14 +9,14 @@ pair<double, vector<ActuatorType>> DepositCherriesObjective::ExecuteObjective(do
 {
 	double BaseTime = TimeBudget;
 	auto stoppos = robot->GetStoppingPosition();
-	Vector2dd basketcoords = {-1.5, 0.75};
+	Vector2dd basketcoords = {-1.48, 0.75};
 	if (robot->IsBlueTeam())
 	{
 		basketcoords.y = -basketcoords.y;
 	}
 	
 	static const vector<ActuatorType> act = {ActuatorType::Wheels};
-	auto parkpos = basketcoords - robot->CherryDepositPosition;
+	auto parkpos = basketcoords - robot->CherryDepositPosition - Vector2dd(robot->CherryDepositPosition.x/4, 0);
 	auto deltapos = parkpos-robot->position;
 	if (deltapos.length()>robot->CherryDepositPosition.length()*1.5)
 	{
@@ -26,7 +26,7 @@ pair<double, vector<ActuatorType>> DepositCherriesObjective::ExecuteObjective(do
 	{
 		return {0, act};
 	}
-	robot->MoveToOffset(basketcoords, robot->CherryDepositPosition, TimeBudget, RobotHAL::ForceDirection::Backwards);
+	robot->MovePathOffset(basketcoords, robot->CherryDepositPosition, TimeBudget);
 	if (TimeBudget < __DBL_EPSILON__)
 	{
 		return {0, act};
@@ -38,7 +38,7 @@ pair<double, vector<ActuatorType>> DepositCherriesObjective::ExecuteObjective(do
 	return {score/timeittook, act};
 }
 
-double DepositCherriesObjective::GetPoints()
+double DepositCherriesObjective::GetPoints(RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState)
 {
 	return 0;
 }

@@ -8,6 +8,56 @@
 using namespace Overlord;
 using namespace std;
 
+
+bool IsStackInZone(Vector2dd zoneposition, const vector<Object>& stack)
+{
+	for (auto &object : stack)
+	{
+		if ((object.position-zoneposition).abs().max() < ZoneWidth/2+CakeRadius)
+		{
+			return true;
+		}
+	}
+}
+
+optional<Vector2dd> GetCakeDepositPosition(RobotHAL* robot, std::vector<Object> &BoardState)
+{
+	auto zones = GetDropZones(robot->IsBlueTeam());
+	auto stacks = FindCakeStacks(BoardState);
+	int bestzone = -1;
+	double bestdist = INFINITY;
+	auto rsp = robot->GetStoppingPosition();
+	vector<Vector2dd> bestzonecakes;
+	for (int i = 0; i < zones.size(); i++)
+	{
+		auto & zone = zones[i];	
+		vector<Vector2dd> cakesinzone;
+		for (const auto & stack : stacks)
+		{
+			if (IsStackInZone(zone, stack))
+			{
+				cakesinzone.push_back(stack[0].position);
+			}
+		}
+		if (cakesinzone.size() >=3)
+		{
+			continue;
+		}
+		double disttozone = (rsp-zone).lengthsquared();
+		if (disttozone < bestdist)
+		{
+			bestdist = disttozone;
+			bestzone = i;
+			bestzonecakes = cakesinzone;
+		}
+	}
+	if (bestzone == -1)
+	{
+		return nullopt;
+	}
+	
+}
+
 pair<double, vector<ActuatorType>> MakeCakeObjective::ExecuteObjective(double &TimeBudget, RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState)
 {
 	bool InSim = TimeBudget > 50;

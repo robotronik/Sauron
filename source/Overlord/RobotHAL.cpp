@@ -12,20 +12,6 @@ using namespace Overlord;
 
 #define ReturnIfNoBudget {if(TimeBudget < __DBL_EPSILON__) {return 0;}}
 
-double LinearMovement::wraptwopi(double in)
-{
-	double rem = fmod(in, M_PI*2);
-	if (rem < -M_PI)
-	{
-		return rem + M_PI*2;
-	}
-	else if (rem > M_PI)
-	{
-		return rem - M_PI*2;
-	}
-	return rem;
-}
-
 double LinearMovement::closestangle(double x, double ref)
 {
 	double delta = wraptwopi(x-ref);
@@ -282,7 +268,7 @@ double RobotHAL::LinearMove(double distance, double &TimeBudget)
 
 double RobotHAL::MoveTo(Vector2dd target, double &TimeBudget, ForceDirection direction)
 {
-	
+	assert(target.abs() < Vector2dd(1.5,1.0));
 	Vector2dd deltapos;
 	double dist;
 	double angleneeded;
@@ -292,7 +278,7 @@ double RobotHAL::MoveTo(Vector2dd target, double &TimeBudget, ForceDirection dir
 		deltapos = target-position;
 		dist = deltapos.length();
 		angleneeded = deltapos.angle();
-		dangle = LinearMovement::wraptwopi(angleneeded-Rotation.Pos);
+		dangle = wraptwopi(angleneeded-Rotation.Pos);
 		switch (direction)
 		{
 		case ForceDirection::Backwards :
@@ -308,8 +294,8 @@ double RobotHAL::MoveTo(Vector2dd target, double &TimeBudget, ForceDirection dir
 		}
 		if (goingbackwards)
 		{
-			angleneeded = LinearMovement::wraptwopi(angleneeded + M_PI);
-			dangle = LinearMovement::wraptwopi(dangle + M_PI);
+			angleneeded = wraptwopi(angleneeded + M_PI);
+			dangle = wraptwopi(dangle + M_PI);
 		}
 	};
 
@@ -352,7 +338,7 @@ vector<pair<double, double>> RobotHAL::GetOffsetTarget(Vector2dd target, Vector2
 	//goto foundcorrect;
 	for (int i = 0; i < anglestotry.size(); i++)
 	{
-		double thisangle = LinearMovement::wraptwopi(anglestotry[i]); //thisangle will be the rotation we take
+		double thisangle = wraptwopi(anglestotry[i]); //thisangle will be the rotation we take
 		Vector2dd offsetrotworld = position + offset.rotate(thisangle); //final pos of the offset
 		Vector2dd deltalin = target-offsetrotworld; //final position of the robot : go forward the distance
 		auto forward = Vector2dd(thisangle);
@@ -462,7 +448,7 @@ double RobotHAL::MoveToOffset(Vector2dd target, Vector2dd offset, double &TimeBu
 	ReturnIfNoBudget
 	
 	//cout << "Delta after offset move : " << (position-offsettarget).ToString() 
-	//<< " rotation : " << LinearMovement::wraptwopi(anglestotry[correctangle]-Rotation.Pos)*180.0/M_PI << endl;
+	//<< " rotation : " << wraptwopi(anglestotry[correctangle]-Rotation.Pos)*180.0/M_PI << endl;
 
 	auto offworld = GetOffsetWorld(offset);
 	double distancetotarget = (offworld-target).length();
@@ -486,29 +472,37 @@ double RobotHAL::MovePath(Vector2dd Target, double& TimeBudget, ForceDirection d
 	return TimeBudget;
 }
 
-double RobotHAL::MovePathOffset(Vector2dd Target, Vector2dd offset, double& TimeBudget, ForceDirection direction)
+double RobotHAL::MovePathOffset(Vector2dd Target, Vector2dd offset, double& TimeBudget)
 {
 	Vector2dd dir = (Target-position).normalized();
 	Vector2dd targetmod = Target - dir*offset.length();
-	auto path = pf->Pathfind(position, targetmod);
+	auto path = pf->PathfindOffset(position, Target, offset);
 	if (!path.has_value())
 	{
 		TimeBudget = 0;
 		return 0;
 	}
 	Path& p  = path.value();
-	p[p.size()-1] = Target;
 	for (int i = 1; i < p.size(); i++)
 	{
 		ReturnIfNoBudget
+		ForceDirection dir = ForceDirection::None;
 		if (i == p.size()-1)
 		{
-			MoveToOffset(p[i], offset, TimeBudget, direction);
+			double forwardangle = (p[i]-position).angle();
+			auto forwardendpos = offset.rotate(forwardangle)+p[i];
+			double forwarddisttotarget = (Target-forwardendpos).length();
+			if (forwarddisttotarget > offset.length())
+			{
+				dir = ForceDirection::Backwards;
+			}
+			else
+			{
+				dir = ForceDirection::Forward;
+			}
 		}
-		else
-		{
-			MoveTo(p[i], TimeBudget, direction);
-		}
+		
+		MoveTo(p[i], TimeBudget, dir);
 	}
 	return TimeBudget;
 }

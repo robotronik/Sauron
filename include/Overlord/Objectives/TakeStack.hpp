@@ -15,7 +15,7 @@ namespace Overlord
 		virtual std::pair<double, std::vector<ActuatorType>> ExecuteObjective(double &TimeBudget, RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) override;
 
 		//Get the total number of points that this objective have given us
-		virtual double GetPoints() override {return 0;};
+		virtual double GetPoints(RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState) override {return 0;};
 
 		virtual std::string GetName() override {return "Take Stack";};
 	};

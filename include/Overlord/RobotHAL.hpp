@@ -27,8 +27,6 @@ namespace Overlord
 
 		virtual ~LinearMovement() {};
 
-		static double wraptwopi(double in);
-
 		static double closestangle(double x, double ref);
 
 		constexpr double SpeedDeltaTime(double v0, double v1, double acc)
@@ -77,9 +75,9 @@ namespace Overlord
 		};
 
 		std::vector<double> TrayHeights = {0,0.04,0.16,0.25};
-		Vector2dd ClawPickupPosition = {0.3,0};
-		Vector2dd CherryPickupPosition = {0.1,0.1};
-		Vector2dd CherryDepositPosition = {-0.12, 0.1};
+		Vector2dd ClawPickupPosition = {0.18,0};
+		Vector2dd CherryPickupPosition = {-0.11,-0.155};
+		Vector2dd CherryDepositPosition = {-0.11, -0.09};
 		Vector2dd position;
 		LinearMovement PositionLinear;
 		LinearMovement Rotation;
@@ -89,7 +87,7 @@ namespace Overlord
 		bool BlueTeam = true;
 
 		double width = 0.2, depth = 0.1; //todo : actual values
-		double PathfindingRadius = 0.1;
+		double PathfindingRadius = 0.21/2;
 
 		RobotHAL(/* args */);
 		virtual ~RobotHAL();
@@ -133,7 +131,7 @@ namespace Overlord
 
 		double MovePath(Vector2dd Target, double& TimeBudget, ForceDirection direction = ForceDirection::None);
 
-		double MovePathOffset(Vector2dd Target, Vector2dd offset, double& TimeBudget, ForceDirection direction = ForceDirection::None);
+		double MovePathOffset(Vector2dd Target, Vector2dd offset, double& TimeBudget);
 
 		//atomic claw move
 		virtual double MoveClawVertical(double height, double &TimeBudget);

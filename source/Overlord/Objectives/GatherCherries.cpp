@@ -18,7 +18,7 @@ pair<double, vector<ActuatorType>> GatherCherriesObjective::ExecuteObjective(dou
 		return {0, act};
 	}
 	
-	robot->MoveToOffset(cherries[0].position, robot->CherryPickupPosition, TimeBudget); //TODO: move so that the intake is that the cherry position, not the robot
+	robot->MovePathOffset(cherries[0].position, robot->CherryPickupPosition, TimeBudget); //TODO: move so that the intake is that the cherry position, not the robot
 	if (TimeBudget < __DBL_EPSILON__)
 	{
 		return {0, act}; //not able to get to the cherry in time, 0 points
@@ -37,7 +37,7 @@ pair<double, vector<ActuatorType>> GatherCherriesObjective::ExecuteObjective(dou
 	return {1/timeittook, act}; //we'll say it gives one point, even though it doesn't
 }
 
-double GatherCherriesObjective::GetPoints()
+double GatherCherriesObjective::GetPoints(RobotHAL* robot, std::vector<Object> &BoardState, RobotMemory* RobotState)
 {
 	return 0;
 }
