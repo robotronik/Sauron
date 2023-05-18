@@ -52,7 +52,7 @@ bool RobotHandle::RegenerateSerial()
 		bridgehandle = new serialib();
 	}
 	bool needregen = false;
-	if (bridgehandle->isDeviceOpen())
+	if (!bridgehandle->isDeviceOpen())
 	{
 		needregen = true;
 	}
