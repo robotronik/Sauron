@@ -150,7 +150,7 @@ void Manager::UpdateCollision()
 			switch (thing.Type)
 			{
 			case ObjectType::Robot :
-				radius = 0.5;
+				radius = 0.3;
 				break;
 			case ObjectType::CakeBrown :
 			case ObjectType::CakePink :
@@ -385,6 +385,7 @@ void Manager::Run(double delta)
 					//cout << "Objective " << objective->GetName() << " is displacing objective " << obj->GetName() << " at " << (int)cat <<endl;
 				}
 			}
+			
 			//register that objective as the objective for those actuators
 			for (auto category : categories)
 			{
@@ -414,6 +415,12 @@ void Manager::Run(double delta)
 			pair.first->ExecuteObjective(timebudget, RobotControllers[robotidx], PhysicalBoardState, &PhysicalRobotStates[robotidx]);
 			ObjectivesChosen += " " + pair.first->GetName(); 
 		}
+		if (BestObjective[robotidx].size() == 0)
+		{
+			double timebudget = delta;
+			RobotControllers[robotidx]->MoveTo(RobotControllers[robotidx]->position, timebudget);
+		}
+		
 		if (seenObj != LastTickObjectives)
 		{
 			cout << "Robot " << robotidx << " chose objectives" << ObjectivesChosen <<endl;
