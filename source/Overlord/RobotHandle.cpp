@@ -4,16 +4,18 @@
 #include <cassert>
 #include <opencv2/core/affine.hpp>
 #include <math3d.hpp>
+#include <filesystem>
 #include "thirdparty/serialib.h"
 
 using namespace Overlord;
 using namespace std;
+namespace fs = std::filesystem;
 
-#define CheckRunnable if(TimeBudget <= __DBL_EPSILON__ || !bridgehandle->isDeviceOpen()){TimeBudget=0;return 0;}
+#define CheckRunnable if(TimeBudget <= __DBL_EPSILON__ || bridgehandle == nullptr || !bridgehandle->isDeviceOpen()){TimeBudget=0;return 0;}
 
-RobotHandle::RobotHandle(serialib* InBridge)
+RobotHandle::RobotHandle()
 {
-	bridgehandle = InBridge;
+	bridgehandle = nullptr;
 	lastTick = chrono::steady_clock::now();
 	lastKeepalive = lastTick;
 }
@@ -24,133 +26,177 @@ RobotHandle::~RobotHandle()
 	delete bridgehandle;
 }
 
-void RobotHandle::Tick()
+vector<string> RobotHandle::autoDetectTTYACM()
 {
-	if (!bridgehandle->isDeviceOpen())
+	vector<string> serialports;
+	string target = "ttyACM";
+	for (const auto& entry : fs::directory_iterator("/dev"))
 	{
-		lastTick = chrono::steady_clock::now();
+		auto filename = entry.path().filename();
+		string filenamestr = filename.string();
+		int location = filenamestr.find(target);
+		//cout << filename << "@" << location << endl;
+		if (location != string::npos)
+		{
+			serialports.push_back(entry.path().string());
+		}
 	}
-	else 
+	sort(serialports.begin(), serialports.end());
+	return serialports;
+}
+
+bool RobotHandle::RegenerateSerial()
+{
+	if (bridgehandle == nullptr)
 	{
-		auto now = chrono::steady_clock::now();
-		std::chrono::duration<double> delta = now - lastTick;
-
-		if (delta.count() > 1.0/50.0)
-		{
-			char requestpos[] = "!I2CRequest:6\n!I2CSend:20\n"; //request position
-			bridgehandle->writeString(requestpos);
-			char requestripcord[] = "!bouton1:\n"; //request ripcord status
-			bridgehandle->writeString(requestripcord);
-			char keepalivebuffer[256];
-			snprintf(keepalivebuffer, sizeof(keepalivebuffer), "!ledUI1:%d\n!I2CSend:%d\n", keepalivestatus, 10+keepalivestatus); 
-			//blink led to show communication success on motors and UI
-			bridgehandle->writeString(keepalivebuffer);
-			keepalivestatus = !keepalivestatus;
-			lastTick = chrono::steady_clock::now();
-		}
-		
-		
-		
-		int sizeleft = sizeof(receivebuffer)-numreceived-1;
-		int toread = bridgehandle->available();
-		if (sizeleft < toread)
-		{
-			numreceived = 0;
-		}
-		if (toread > 0)
-		{
-			numreceived += bridgehandle->readBytes(receivebuffer+numreceived, toread);
-		}
-		
-		
-		receivebuffer[numreceived] = '\0';
-		if (numreceived > 0)
-		{
-			//cout << "received : " << receivebuffer << endl;
-		}
-		int readidx = 0;
-		for (int i = 1; i < numreceived; i++)
-		{
-			if (receivebuffer[i] != '\n')
-			{
-				continue;
-			}
-			char* rcvstart = &receivebuffer[readidx];
-			readidx = i+1;
-			int succ;
-			{
-				int x,y,theta;
-				succ = sscanf(rcvstart, "I2C:%d,%d,%d\r\n", &x, &y, &theta);
-				if (succ == 3)
-				{
-					RobotReportedPosition.x = x/1000.0;
-					RobotReportedPosition.y = y/1000.0;
-					RobotReportedRotation = -theta*M_PI/180.0;
-					Vector2dd pw = RobotReportedPosition;
-					double rw = RobotReportedRotation;
-					ToWorldPosition(pw, rw);
-					position = pw;
-					Rotation.Pos = rw;
-					continue;
-				}
-			}
-			{
-				int buttonidx, buttonstatus;
-				succ = sscanf(rcvstart, "boutonUI%d:%d", &buttonidx, &buttonstatus);
-				if (succ == 2)
-				{
-					continue;
-				}
-			}
-			{
-				int buttonidx, buttonstatus;
-				succ = sscanf(rcvstart, "bouton%d:%d", &buttonidx, &buttonstatus);
-				if (succ == 2)
-				{
-					if (buttonidx == 1)
-					{
-						RipCordStatus = buttonstatus;
-					}
-					if (!IsStarted())
-					{
-						char golimp[] = "!I2CSend:33\n"; //request ripcord status
-						bridgehandle->writeString(golimp);
-					}
-					
-					continue;
-				}
-			}
-			{
-				int keepalivenum;
-				succ = sscanf(rcvstart, "keepalive:%x", &keepalivenum);
-				if (succ == 1)
-				{
-					cout << "Received keepalive: " << keepalivenum << endl;
-					lastKeepalive = chrono::steady_clock::now();
-				}
-				
-			}
-		}
-		
-		
-		int numleft = numreceived-readidx;
-		memmove(receivebuffer, &receivebuffer[readidx], numleft);
-		memset(&receivebuffer[numleft], 0, readidx);
-		numreceived = numleft;
+		bridgehandle = new serialib();
 	}
-
+	bool needregen = false;
+	if (bridgehandle->isDeviceOpen())
+	{
+		needregen = true;
+	}
 	std::chrono::duration<double> TimeSinceLastKeepalive = chrono::steady_clock::now() - lastKeepalive;
 	if (TimeSinceLastKeepalive.count() > 2)
 	{
-		cout << "No keepalive received, reconnecting uart" <<endl;
+		needregen = true;
+	}
+	if (needregen)
+	{
+		auto serials = autoDetectTTYACM();
+		if (serials.size() == 0)
+		{
+			cout << "No ACM tty detected !" << endl;
+			return false;
+		}
+		lastSerialIndex = lastSerialIndex % serials.size();
+		
+		string selectedser = serials[lastSerialIndex];
+		lastSerialIndex++;
+		cout << "No keepalive received, reconnecting uart: " << selectedser <<endl;
 		bridgehandle->closeDevice();
-		bridgehandle->openDevice("/dev/ttyACM0", 115200);
+		bridgehandle->openDevice(selectedser.c_str(), 115200);
 		bridgehandle->clearDTR();
 		usleep(1000000);
 		bridgehandle->setDTR();
 		usleep(1000000);
 		lastKeepalive = chrono::steady_clock::now();
 	}
+	return bridgehandle->isDeviceOpen();
+}
+
+void RobotHandle::Tick()
+{
+	if (!RegenerateSerial())
+	{
+		lastTick = chrono::steady_clock::now();
+		return;
+	}
+	auto now = chrono::steady_clock::now();
+	std::chrono::duration<double> delta = now - lastTick;
+
+	if (delta.count() > 1.0/50.0)
+	{
+		char requestpos[] = "!I2CRequest:6\n!I2CSend:20\n"; //request position
+		bridgehandle->writeString(requestpos);
+		char requestripcord[] = "!bouton1:\n"; //request ripcord status
+		bridgehandle->writeString(requestripcord);
+		char keepalivebuffer[256];
+		snprintf(keepalivebuffer, sizeof(keepalivebuffer), "!ledUI1:%d\n!I2CSend:%d\n", keepalivestatus, 10+keepalivestatus); 
+		//blink led to show communication success on motors and UI
+		bridgehandle->writeString(keepalivebuffer);
+		keepalivestatus = !keepalivestatus;
+		lastTick = chrono::steady_clock::now();
+	}
+	
+	
+	
+	int sizeleft = sizeof(receivebuffer)-numreceived-1;
+	int toread = bridgehandle->available();
+	if (sizeleft < toread)
+	{
+		numreceived = 0;
+	}
+	if (toread > 0)
+	{
+		numreceived += bridgehandle->readBytes(receivebuffer+numreceived, toread);
+	}
+	
+	
+	receivebuffer[numreceived] = '\0';
+	if (numreceived > 0)
+	{
+		//cout << "received : " << receivebuffer << endl;
+	}
+	int readidx = 0;
+	for (int i = 1; i < numreceived; i++)
+	{
+		if (receivebuffer[i] != '\n')
+		{
+			continue;
+		}
+		char* rcvstart = &receivebuffer[readidx];
+		readidx = i+1;
+		int succ;
+		{
+			int x,y,theta;
+			succ = sscanf(rcvstart, "I2C:%d,%d,%d\r\n", &x, &y, &theta);
+			if (succ == 3)
+			{
+				RobotReportedPosition.x = x/1000.0;
+				RobotReportedPosition.y = y/1000.0;
+				RobotReportedRotation = -theta*M_PI/180.0;
+				Vector2dd pw = RobotReportedPosition;
+				double rw = RobotReportedRotation;
+				ToWorldPosition(pw, rw);
+				position = pw;
+				Rotation.Pos = rw;
+				continue;
+			}
+		}
+		{
+			int buttonidx, buttonstatus;
+			succ = sscanf(rcvstart, "boutonUI%d:%d", &buttonidx, &buttonstatus);
+			if (succ == 2)
+			{
+				continue;
+			}
+		}
+		{
+			int buttonidx, buttonstatus;
+			succ = sscanf(rcvstart, "bouton%d:%d", &buttonidx, &buttonstatus);
+			if (succ == 2)
+			{
+				if (buttonidx == 1)
+				{
+					RipCordStatus = buttonstatus;
+				}
+				if (!IsStarted())
+				{
+					char golimp[] = "!I2CSend:33\n"; //request ripcord status
+					bridgehandle->writeString(golimp);
+				}
+				
+				continue;
+			}
+		}
+		{
+			int keepalivenum;
+			succ = sscanf(rcvstart, "keepalive:%x", &keepalivenum);
+			if (succ == 1)
+			{
+				cout << "Received keepalive: " << keepalivenum << endl;
+				lastKeepalive = chrono::steady_clock::now();
+			}
+			
+		}
+	}
+	
+	
+	int numleft = numreceived-readidx;
+	memmove(receivebuffer, &receivebuffer[readidx], numleft);
+	memset(&receivebuffer[numleft], 0, readidx);
+	numreceived = numleft;
 	
 }
 

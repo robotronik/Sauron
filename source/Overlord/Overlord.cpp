@@ -48,14 +48,7 @@ void Manager::Init(bool simulate)
 		}
 		else
 		{
-			serialib* bridge = new serialib();
-			bridge->openDevice("/dev/ttyACM0", 115200);
-			bridge->flushReceiver();
-			bridge->setDTR(); //arduino reset
-			usleep(1000000);
-			
-			bridge->writeString("\n\n\n\n\n\n");
-			RC = new RobotHandle(bridge); //vrai robot
+			RC = new RobotHandle(); //vrai robot
 		}
 		RC->PositionLinear = LinearMovement(0.1, 0.1, 2, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
