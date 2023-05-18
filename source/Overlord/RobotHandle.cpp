@@ -29,108 +29,116 @@ void RobotHandle::Tick()
 	if (!bridgehandle->isDeviceOpen())
 	{
 		lastTick = chrono::steady_clock::now();
-		return;
 	}
-	auto now = chrono::steady_clock::now();
-	std::chrono::duration<double> delta = now - lastTick;
+	else 
+	{
+		auto now = chrono::steady_clock::now();
+		std::chrono::duration<double> delta = now - lastTick;
 
-	if (delta.count() > 1.0/50.0)
-	{
-		char requestpos[] = "!I2CRequest:6\n!I2CSend:20\n"; //request position
-		bridgehandle->writeString(requestpos);
-		char requestripcord[] = "!bouton1:\n"; //request ripcord status
-		bridgehandle->writeString(requestripcord);
-		char keepalivebuffer[256];
-		snprintf(keepalivebuffer, sizeof(keepalivebuffer), "!ledUI1:%d\n!I2CSend:%d\n", keepalivestatus, 10+keepalivestatus); 
-		//blink led to show communication success on motors and UI
-		bridgehandle->writeString(keepalivebuffer);
-		keepalivestatus = !keepalivestatus;
-		lastTick = chrono::steady_clock::now();
-	}
-	
-	
-	
-	int sizeleft = sizeof(receivebuffer)-numreceived-1;
-	int toread = bridgehandle->available();
-	if (sizeleft < toread)
-	{
-		numreceived = 0;
-	}
-	if (toread > 0)
-	{
-		numreceived += bridgehandle->readBytes(receivebuffer+numreceived, toread);
-	}
-	
-	
-	receivebuffer[numreceived] = '\0';
-	if (numreceived > 0)
-	{
-		//cout << "received : " << receivebuffer << endl;
-	}
-	int readidx = 0;
-	for (int i = 1; i < numreceived; i++)
-	{
-		if (receivebuffer[i] != '\n')
+		if (delta.count() > 1.0/50.0)
 		{
-			continue;
+			char requestpos[] = "!I2CRequest:6\n!I2CSend:20\n"; //request position
+			bridgehandle->writeString(requestpos);
+			char requestripcord[] = "!bouton1:\n"; //request ripcord status
+			bridgehandle->writeString(requestripcord);
+			char keepalivebuffer[256];
+			snprintf(keepalivebuffer, sizeof(keepalivebuffer), "!ledUI1:%d\n!I2CSend:%d\n", keepalivestatus, 10+keepalivestatus); 
+			//blink led to show communication success on motors and UI
+			bridgehandle->writeString(keepalivebuffer);
+			keepalivestatus = !keepalivestatus;
+			lastTick = chrono::steady_clock::now();
 		}
-		char* rcvstart = &receivebuffer[readidx];
-		readidx = i+1;
-		int succ;
+		
+		
+		
+		int sizeleft = sizeof(receivebuffer)-numreceived-1;
+		int toread = bridgehandle->available();
+		if (sizeleft < toread)
 		{
-			int x,y,theta;
-			succ = sscanf(rcvstart, "I2C:%d,%d,%d\r\n", &x, &y, &theta);
-			if (succ == 3)
-			{
-				RobotReportedPosition.x = x/1000.0;
-				RobotReportedPosition.y = y/1000.0;
-				RobotReportedRotation = -theta*M_PI/180.0;
-				Vector2dd pw = RobotReportedPosition;
-				double rw = RobotReportedRotation;
-				ToWorldPosition(pw, rw);
-				position = pw;
-				Rotation.Pos = rw;
-				continue;
-			}
+			numreceived = 0;
 		}
+		if (toread > 0)
 		{
-			int buttonidx, buttonstatus;
-			succ = sscanf(rcvstart, "boutonUI%d:%d", &buttonidx, &buttonstatus);
-			if (succ == 2)
+			numreceived += bridgehandle->readBytes(receivebuffer+numreceived, toread);
+		}
+		
+		
+		receivebuffer[numreceived] = '\0';
+		if (numreceived > 0)
+		{
+			//cout << "received : " << receivebuffer << endl;
+		}
+		int readidx = 0;
+		for (int i = 1; i < numreceived; i++)
+		{
+			if (receivebuffer[i] != '\n')
 			{
 				continue;
 			}
-		}
-		{
-			int buttonidx, buttonstatus;
-			succ = sscanf(rcvstart, "bouton%d:%d", &buttonidx, &buttonstatus);
-			if (succ == 2)
+			char* rcvstart = &receivebuffer[readidx];
+			readidx = i+1;
+			int succ;
 			{
-				if (buttonidx == 1)
+				int x,y,theta;
+				succ = sscanf(rcvstart, "I2C:%d,%d,%d\r\n", &x, &y, &theta);
+				if (succ == 3)
 				{
-					RipCordStatus = buttonstatus;
+					RobotReportedPosition.x = x/1000.0;
+					RobotReportedPosition.y = y/1000.0;
+					RobotReportedRotation = -theta*M_PI/180.0;
+					Vector2dd pw = RobotReportedPosition;
+					double rw = RobotReportedRotation;
+					ToWorldPosition(pw, rw);
+					position = pw;
+					Rotation.Pos = rw;
+					continue;
 				}
-				if (!IsStarted())
+			}
+			{
+				int buttonidx, buttonstatus;
+				succ = sscanf(rcvstart, "boutonUI%d:%d", &buttonidx, &buttonstatus);
+				if (succ == 2)
 				{
-					char golimp[] = "!I2CSend:33\n"; //request ripcord status
-					bridgehandle->writeString(golimp);
+					continue;
+				}
+			}
+			{
+				int buttonidx, buttonstatus;
+				succ = sscanf(rcvstart, "bouton%d:%d", &buttonidx, &buttonstatus);
+				if (succ == 2)
+				{
+					if (buttonidx == 1)
+					{
+						RipCordStatus = buttonstatus;
+					}
+					if (!IsStarted())
+					{
+						char golimp[] = "!I2CSend:33\n"; //request ripcord status
+						bridgehandle->writeString(golimp);
+					}
+					
+					continue;
+				}
+			}
+			{
+				int keepalivenum;
+				succ = sscanf(rcvstart, "keepalive:%x", &keepalivenum);
+				if (succ == 1)
+				{
+					cout << "Received keepalive: " << keepalivenum << endl;
+					lastKeepalive = chrono::steady_clock::now();
 				}
 				
-				continue;
 			}
 		}
-		{
-			int keepalivenum;
-			succ = sscanf(rcvstart, "keepalive:%x", &keepalivenum);
-			if (succ == 1)
-			{
-				cout << "Received keepalive: " << keepalivenum << endl;
-				lastKeepalive = chrono::steady_clock::now();
-			}
-			
-		}
+		
+		
+		int numleft = numreceived-readidx;
+		memmove(receivebuffer, &receivebuffer[readidx], numleft);
+		memset(&receivebuffer[numleft], 0, readidx);
+		numreceived = numleft;
 	}
-	
+
 	std::chrono::duration<double> TimeSinceLastKeepalive = chrono::steady_clock::now() - lastKeepalive;
 	if (TimeSinceLastKeepalive.count() > 2)
 	{
@@ -143,12 +151,6 @@ void RobotHandle::Tick()
 		usleep(1000000);
 		lastKeepalive = chrono::steady_clock::now();
 	}
-	
-	
-	int numleft = numreceived-readidx;
-	memmove(receivebuffer, &receivebuffer[readidx], numleft);
-	memset(&receivebuffer[numleft], 0, readidx);
-	numreceived = numleft;
 	
 }
 
