@@ -50,8 +50,8 @@ void Manager::Init(bool simulate)
 		{
 			RC = new RobotHandle(); //vrai robot
 		}
-		RC->position = Vector2dd(-1.5+0.031/2+0.1, -1.0+0.025/2+0.1);
-		RC->Rotation.Pos = M_PI/2;
+		RC->position = Vector2dd(-1.5+0.025/2+0.1, -1.0+0.031/2+0.1);
+		RC->Rotation.Pos = 0;
 		RC->PositionLinear = LinearMovement(0.1, 0.1, 2, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
 		RC->ClawExtension = LinearMovement(1, 3, 3, 0);
