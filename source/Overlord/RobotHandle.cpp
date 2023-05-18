@@ -15,6 +15,7 @@ RobotHandle::RobotHandle(serialib* InBridge)
 {
 	bridgehandle = InBridge;
 	lastTick = chrono::steady_clock::now();
+	lastKeepalive = lastTick;
 }
 
 RobotHandle::~RobotHandle()
@@ -124,9 +125,23 @@ void RobotHandle::Tick()
 			if (succ == 1)
 			{
 				cout << "Received keepalive: " << keepalivenum << endl;
+				lastKeepalive = chrono::steady_clock::now();
 			}
 			
 		}
+	}
+	
+	std::chrono::duration<double> TimeSinceLastKeepalive = chrono::steady_clock::now() - lastKeepalive;
+	if (TimeSinceLastKeepalive.count() > 2)
+	{
+		cout << "No keepalive received, reconnecting uart" <<endl;
+		bridgehandle->closeDevice();
+		bridgehandle->openDevice("/dev/ttyACM0", 115200);
+		bridgehandle->clearDTR();
+		usleep(100000);
+		bridgehandle->setDTR();
+		usleep(100000);
+		lastKeepalive = chrono::steady_clock::now();
 	}
 	
 	
