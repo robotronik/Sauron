@@ -50,6 +50,8 @@ void Manager::Init(bool simulate)
 		{
 			RC = new RobotHandle(); //vrai robot
 		}
+		RC->position = Vector2dd(-1.5+0.031/2, -1.0+0.025/2);
+		RC->Rotation.Pos = M_PI/2;
 		RC->PositionLinear = LinearMovement(0.1, 0.1, 2, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
 		RC->ClawExtension = LinearMovement(1, 3, 3, 0);
@@ -129,8 +131,8 @@ void Manager::Init(bool simulate)
 	}
 	Objectives.push_back(make_unique<GoHomeObjective>());
 	Objectives.push_back(make_unique<RetractClawsObjective>());
-	Objectives.push_back(make_unique<GatherCherriesObjective>());
-	Objectives.push_back(make_unique<DepositCherriesObjective>());
+	//Objectives.push_back(make_unique<GatherCherriesObjective>());
+	//Objectives.push_back(make_unique<DepositCherriesObjective>());
 	Objectives.push_back(make_unique<TrayRoutine>());
 	Objectives.push_back(make_unique<TakeStackObjective>());
 	//Objectives.push_back(make_unique<MakeCakeObjective>());
@@ -277,7 +279,7 @@ void Manager::GatherData()
 					//it's our robot : todo give the pos (maybe)
 					if (!RobotControllers[0]->IsStarted())
 					{
-						RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
+						//RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
 						StartTime = nullopt;
 					}
 					else if (!StartTime.has_value())
