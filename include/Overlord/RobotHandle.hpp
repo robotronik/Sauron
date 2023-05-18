@@ -3,7 +3,6 @@
 
 #include "Overlord/RobotHAL.hpp"
 
-#include <libserial/SerialPort.h>
 #include <string>
 #include <chrono>
 
