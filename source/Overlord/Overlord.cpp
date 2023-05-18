@@ -171,7 +171,7 @@ void Manager::UpdateCollision()
 			dynObstacles.push_back(dynob);
 		}
 		RC->pf->SetObstacles(dynObstacles);
-		RC->pf->AddCherryHolders(RC->PathfindingRadius);
+		//RC->pf->AddCherryHolders(RC->PathfindingRadius);
 		RC->pf->ComputeClumps();
 	}
 }
