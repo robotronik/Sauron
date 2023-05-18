@@ -161,10 +161,10 @@ const std::vector<Vector2dd>& Overlord::GetDropZones(bool IsBlue)
 {
 	static const vector<Vector2dd> greendropzones = {
 		//{-0.375,-0.775},
-		{0.375,0.775},
-		{1.275,-0.775},
-		{1.275,0.275}
-		//{-1.275,0.775} //protected zone
+		//{0.375,0.775},
+		//{1.275,-0.775},
+		//{1.275,0.275}
+		{-1.275,0.775} //protected zone
 	};
 
 	if (!IsBlue)

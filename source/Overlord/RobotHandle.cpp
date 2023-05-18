@@ -85,6 +85,21 @@ bool RobotHandle::RegenerateSerial()
 	return bridgehandle->isDeviceOpen();
 }
 
+void RobotHandle::IndicateMV() 
+{
+	if (!bridgehandle)
+	{
+		return;
+	}
+	if (!bridgehandle->isDeviceOpen())
+	{
+		return;
+	}
+	
+	
+	bridgehandle->writeString("!ledUI2:1\n");
+}
+
 void RobotHandle::Tick()
 {
 	if (!RegenerateSerial())

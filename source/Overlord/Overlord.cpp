@@ -264,6 +264,7 @@ void Manager::GatherData()
 					if (hadnoteam)
 					{
 						//turn on leds 2 or 3
+						RobotControllers[j]->IndicateMV();
 					}
 					
 				}
@@ -278,7 +279,7 @@ void Manager::GatherData()
 					//it's our robot : todo give the pos (maybe)
 					if (!RobotControllers[0]->IsStarted())
 					{
-						//RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
+						RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
 						StartTime = nullopt;
 					}
 					else if (!StartTime.has_value())

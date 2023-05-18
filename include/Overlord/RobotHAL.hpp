@@ -100,6 +100,8 @@ namespace Overlord
 
 		virtual bool IsStarted() { return true; };
 
+		virtual void IndicateMV() {};
+
 		//Can the robot fit at this location in the terrain ?
 		bool IsLocationValid(Vector2dd pos, double rot) const; 
 

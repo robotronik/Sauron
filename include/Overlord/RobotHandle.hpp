@@ -31,6 +31,8 @@ namespace Overlord
 
 		bool RegenerateSerial();
 
+		virtual void IndicateMV() override;
+
 		virtual void Tick() override;
 
 		virtual bool HasConnection() override;
