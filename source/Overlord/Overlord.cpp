@@ -49,11 +49,7 @@ void Manager::Init(bool simulate)
 		else
 		{
 			serialib* bridge = new serialib();
-			while (bridge->openDevice("/dev/ttyACM0", 115200) != 1)
-			{
-				cout << "Failed to open robot serial" << endl;
-				usleep(100000);
-			}
+			bridge->openDevice("/dev/ttyACM0", 115200);
 			bridge->flushReceiver();
 			bridge->setDTR(); //arduino reset
 			usleep(1000000);

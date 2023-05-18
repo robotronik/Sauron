@@ -138,9 +138,9 @@ void RobotHandle::Tick()
 		bridgehandle->closeDevice();
 		bridgehandle->openDevice("/dev/ttyACM0", 115200);
 		bridgehandle->clearDTR();
-		usleep(100000);
+		usleep(1000000);
 		bridgehandle->setDTR();
-		usleep(100000);
+		usleep(1000000);
 		lastKeepalive = chrono::steady_clock::now();
 	}
 	
