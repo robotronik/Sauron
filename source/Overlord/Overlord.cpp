@@ -157,7 +157,7 @@ void Manager::UpdateCollision()
 			case ObjectType::CakePink :
 			case ObjectType::CakeYellow : 
 				radius = CakeRadius;
-				break;
+				//break;
 			
 			default:
 				continue;
