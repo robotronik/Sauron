@@ -1,4 +1,9 @@
+/* 
 
+	Fichier source contenant les fonctions de mapping 3D (SLAM) de l'application à l'aide de la librairie OpenCV et de la librairie SFM de OpenCV contrib.
+	Tout cela en utilisant des tags ArUco pour la détection et la triangulation des points.
+
+*/
 #include "mapping.hpp"
 
 #include <string>
@@ -45,6 +50,9 @@ struct SolvableView
 const string MappingFolderName = "SFM/";
 
 //For a vector of tag ids seen on the image and a vector of tags that have a known location, return a vector of indices of tags that can be solved
+// Cette fonction retourne une structure SolvableView contenant les indices des tags qui peuvent être résolus. Elle contient deux vecteurs, un pour les tags vus et un pour les tags non vus (Seen et Unseen)
+// Ces deux listes sont créees à partir des vecteurs de tags vus et non vus de la structure CameraArucoData. Si un tag est vu, il est ajouté au vecteur Seen, sinon il est ajouté au vecteur Unseen.
+
 SolvableView GetUnseenSolvable(const CameraArucoData& ImageIDs, const TrackedObject* SolvedTags)
 {
 	SolvableView view;
@@ -71,6 +79,10 @@ SolvableView GetUnseenSolvable(const CameraArucoData& ImageIDs, const TrackedObj
 	}
 	return view;
 }
+
+// Cette fonction effectue la tâche principale de mapping 3D. Elle prend en paramètre une structure CameraArucoData contenant les données de la caméra (matrice de la caméra, coefficients de distorsion, etc.) et une structure TrackedObject contenant les tags déjà résolus.
+// Elle charge ensuite les images de la caméra et les détecte à l'aide de la fonction detectMarkers de la librairie OpenCV contrib. Elle les ajoute ensuite à la structure CameraArucoData.
+// Ces transformations sont ensuites utilisés pour résoudre les tags non résolus et les ajouter à la structure TrackedObject et ainsi déterminer la position de chaque tag.
 
 void SLAMSolve(void)
 {
