@@ -6,7 +6,6 @@
 #include <algorithm>
 namespace Overlord
 {
-	
 	template<class T>
 	struct Vector2d
 	{
@@ -128,6 +127,12 @@ namespace Overlord
 		{
 			return Vector2d<T>(x-other.x, y-other.y);
 		}
+
+		Vector2d<T> operator-() const
+		{
+			return Vector2d<T>(-x, -y);
+		}
+
 		void operator*=(const Vector2d<T>& other)
 		{
 			x*=other.x;
@@ -174,6 +179,13 @@ namespace Overlord
 		{
 			return other.x!=x || other.y!=y;
 		}
+
+		Vector2d<T> operator%(const Vector2d<T> &other) const
+		{
+			return Vector2d<T>(fmod(x, other.x), fmod(y, other.y));
+		}
+
+
 	};
 
 	typedef Vector2d<double> Vector2dd;

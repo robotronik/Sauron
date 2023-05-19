@@ -159,6 +159,7 @@ void Camera::GetFrameUndistorted(int BufferIndex, UMat& frame)
 	frame = buff.FrameUndistorted.CPUFrame;
 }
 
+// Fonction de calibration permettant de calculer la matrice de la caméra et les coefficients de distorsionzae
 void Camera::Calibrate(vector<vector<Point3f>> objectPoints,
 	vector<vector<Point2f>> imagePoints, vector<string> imagePaths, Size imageSize,
 	Mat& cameraMatrix, Mat& distCoeffs,
