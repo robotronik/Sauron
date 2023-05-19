@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "Overlord/Objectives/Actuators.hpp"
+#include "Overlord/cdfrdefines.hpp"
 
 namespace Overlord 
 {

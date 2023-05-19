@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include "Overlord/RobotHAL.hpp"
+#include "Overlord/cdfrdefines.hpp"
 
 using namespace std;
 using namespace Overlord;

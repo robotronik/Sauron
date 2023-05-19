@@ -55,6 +55,16 @@ bool Pathfinder::IsColliding(Vector2dd pos) const
 	return false;
 }
 
+Vector2dd Pathfinder::ProjectOnLine(Vector2dd X, Vector2dd A, Vector2dd B)
+{
+	const Vector2dd AtoB = B-A;
+	const Vector2dd dir = AtoB.normalized();
+	const Vector2dd AtoX = X-A;
+	const double projected = AtoX.dot(dir);
+	const double clampeddist = max(min(projected, AtoB.length()), 0.0);
+	return A + dir * clampeddist;
+}
+
 void Pathfinder::SetObstacles(std::vector<Obstacle> InObstacles)
 {
 	Obstacles.clear();
@@ -132,7 +142,7 @@ void Pathfinder::ComputeClumps()
 		int Clumpidx = Clumps.size();
 		for (int j = 0; j < i; j++)
 		{
-			if ((Obstacles[i].position-Obstacles[j].position).length()<(Obstacles[i].radius+Obstacles[j].radius) )
+			if ((Obstacles[i].position-Obstacles[j].position).length()<(Obstacles[i].radius+Obstacles[j].radius + RobotHalfExtent.y*2) )
 			{
 				Clumpidx = Obstacles[j].ClumpIdx;
 				break;
@@ -152,7 +162,7 @@ void Pathfinder::ComputeClumps()
 	
 }
 
-std::vector<Vector2dd> Pathfinder::GetClumpEdges(int clumpidx)
+vector<Vector2dd> Pathfinder::GetClumpEdges(int clumpidx)
 {
 	Vector2dd bbmax(-INFINITY, -INFINITY), bbmin(INFINITY, INFINITY);
 	assert(clumpidx >= 0 && clumpidx < Clumps.size());
@@ -161,13 +171,17 @@ std::vector<Vector2dd> Pathfinder::GetClumpEdges(int clumpidx)
 	for (int i = 0; i < clump.size(); i++)
 	{
 		auto& obstacle = clump[i];
-		Vector2dd obmin = obstacle.position - Vector2dd(obstacle.radius, obstacle.radius);
-		Vector2dd obmax = obstacle.position + Vector2dd(obstacle.radius, obstacle.radius);
+		const double avoidanceradius = obstacle.radius;
+		const Vector2dd avoidvec(avoidanceradius, avoidanceradius);
+		const Vector2dd obmin = obstacle.position - avoidvec;
+		const Vector2dd obmax = obstacle.position + avoidvec;
 		bbmax = bbmax.max(obmax);
 		bbmin = bbmin.min(obmin);
 	}
-	bbmax += Vector2dd(2e-3, 2e-3);
-	bbmin -= Vector2dd(2e-3, 2e-3);
+	const double extraoffset = RobotHalfExtent.y + 2e-3;
+	const Vector2dd extravec = Vector2dd(extraoffset, extraoffset);
+	bbmax += extravec;
+	bbmin -= extravec;
 	vector<Vector2dd> waypoints = {bbmin, bbmax, {bbmin.x, bbmax.y}, {bbmax.x, bbmin.y}};
 	for (int i = waypoints.size() - 1; i >= 0; i--)
 	{
@@ -184,6 +198,18 @@ std::vector<Vector2dd> Pathfinder::GetClumpEdges(int clumpidx)
 		waypoints.erase(waypoints.begin()+i);
 	}
 	return waypoints;
+}
+
+
+
+void Pathfinder::SortEdgesPath(vector<Vector2dd> &edges, Vector2dd start, Vector2dd end)
+{
+	sort(edges.begin(), edges.end(), [&start, &end](Vector2dd& A, Vector2dd& B)
+	{
+		double Aexcursion = (A-ProjectOnLine(A, start, end)).lengthsquared();
+		double Bexcursion = (B-ProjectOnLine(B, start, end)).lengthsquared();
+		return Aexcursion < Bexcursion;
+	});
 }
 
 double Pathfinder::GetPathLength(const Path& inpath)
@@ -229,18 +255,29 @@ vector<pair<int, double>> Pathfinder::GetIntersections(Vector2dd start, Vector2d
 	auto dpos = end-start;
 	auto direction = dpos.normalized();
 	double dtt = dpos.length();
+	double dirangle = direction.angle();
 	vector<pair<int, double>> hitmap;
 	for (int i = 0; i < Obstacles.size(); i++)
 	{
 		auto& obstacle = Obstacles[i];
-		auto deltaPosObstacle = obstacle.position-start;
-		auto projection = deltaPosObstacle.dot(direction);
-		double HitDistance = max(min(projection, dtt), 0.0);
-		auto projOnLine = direction * HitDistance;
-		if ((deltaPosObstacle-projOnLine).length() < obstacle.radius)
+		const Vector2dd deltaPosObstacle = obstacle.position-start;
+		const Vector2dd projOnLine = ProjectOnLine(obstacle.position, start, end);
+		const Vector2dd projToObs = deltaPosObstacle-projOnLine;
+		const double HitDistance = (projOnLine-start).length();
+		const double leeway = projToObs.length();
+
+		if (leeway < obstacle.radius)
+		{
+			hitmap.push_back({i, HitDistance});
+			continue;
+		}
+		Vector2dd projnear = projToObs*(leeway - obstacle.radius)/leeway;
+		Vector2dd localproj = projnear.rotate(-dirangle);
+		if (localproj.abs() < RobotHalfExtent)
 		{
 			hitmap.push_back({i, HitDistance});
 		}
+		
 	}
 	sort(hitmap.begin(), hitmap.end(), [](const pair<int, double> & A, const pair<int, double> & B){
 		return A.second < B.second;
@@ -266,23 +303,33 @@ optional<Path> Pathfinder::Pathfind(Vector2dd start, Vector2dd end, int depth)
 	}
 	
 	
+	
 	Path currpath = {start, end};
-	auto dpos = end-start;
-	auto direction = dpos.normalized();
-	double dtt = dpos.length();
-	set<int> HitClumps;
-	vector<pair<int, double>> hitmap = GetIntersections(start, end);
+	const Vector2dd dpos = end-start;
+	const Vector2dd direction = dpos.normalized();
+	const double dtt = dpos.length();
+	const set<int> HitClumps;
+	const vector<pair<int, double>> hitmap = GetIntersections(start, end);
 	if (hitmap.size() == 0)
 	{
 		return currpath;
 	}
-	int obstacleidx = hitmap[0].first;
+	int obstacleidx = hitmap[hitmap.size()/2].first;
+	auto& obstacle = Obstacles[obstacleidx];
+	if ((start-obstacle.position) < obstacle.radius+RobotHalfExtent.y && hitmap.size() == 1)
+	{
+		Vector2dd repulsed = Repulse(start, obstacle.position, obstacle.radius+RobotHalfExtent.y);
+		currpath.insert(currpath.end(), repulsed);
+		start = repulsed;
+	}
+	
 	int clumpidx = Obstacles[obstacleidx].ClumpIdx;
 	auto edges = GetClumpEdges(clumpidx);
 	if (edges.size() == 0)
 	{
 		return nullopt;
 	}
+	SortEdgesPath(edges, start, end);
 	optional<Path> bestpath = nullopt;
 	double bestpathlength = INFINITY;
 	for (auto & edge : edges)
@@ -297,12 +344,21 @@ optional<Path> Pathfinder::Pathfind(Vector2dd start, Vector2dd end, int depth)
 		{
 			continue;
 		}
+		if (currpath.size() >2)
+		{
+			for (int i = 1; i < currpath.size()-1; i++)
+			{
+				toedge.value().insert(toedge.value().begin()+i, currpath[i]);
+			}
+		}
+		
 		CombinePaths(toedge.value(), fromedge.value());
 		double pathlength = GetPathLength(toedge.value());
 		if (pathlength < bestpathlength)
 		{
 			bestpath = toedge;
 			bestpathlength = pathlength;
+			break;
 		}
 	}
 	if (!bestpath.has_value())
@@ -381,9 +437,10 @@ optional<Path> Pathfinder::PathfindOffset(Vector2dd start, Vector2dd end, Vector
 	bool nointersections = disablepathfinding;
 	for (int i = 0; i < solutions.size(); i++)
 	{
-		double angle = solutions[i].second;
-		double distance = solutions[i].first;
-		Vector2dd targetpos = offsetstart+Vector2dd(angle)*distance;
+		const double angle = solutions[i].second;
+		const double distance = solutions[i].first;
+		const Vector2dd targetpos = offsetstart+Vector2dd(angle)*distance;
+		const Vector2dd endposoffset = targetpos+offset.rotate(angle);
 		if (!IsInArena(targetpos))
 		{
 			continue;
@@ -397,7 +454,8 @@ optional<Path> Pathfinder::PathfindOffset(Vector2dd start, Vector2dd end, Vector
 			if (enddist < obstacle.radius)
 			{
 				//isct.erase(isct.begin()+i);
-				cout << "Cannot reach target : obstacle at target is too thick : " << obstacle.radius << " / " << enddist << endl;
+				//cout << "Cannot reach target : obstacle at target is too thick : " << obstacle.radius << " / " << enddist << endl;
+				return nullopt;
 			}
 		}
 		
@@ -450,6 +508,7 @@ optional<Path> Pathfinder::PathfindOffset(Vector2dd start, Vector2dd end, Vector
 		int obstacleidx = intersections[i][0].first;
 		int clumpidx = Obstacles[obstacleidx].ClumpIdx;
 		auto edges = GetClumpEdges(clumpidx);
+		SortEdgesPath(edges, start, end);
 		for (auto& edge : edges)
 		{
 			auto toedge = Pathfind(start, edge, depth-1);
@@ -468,6 +527,7 @@ optional<Path> Pathfinder::PathfindOffset(Vector2dd start, Vector2dd end, Vector
 			{
 				bestsinglepath = toedge;
 				bestpathlength = pathlength;
+				break;
 			}
 		}
 	}

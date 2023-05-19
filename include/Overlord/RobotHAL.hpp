@@ -86,7 +86,7 @@ namespace Overlord
 		std::shared_ptr<Pathfinder> pf;
 		bool BlueTeam = true;
 
-		double width = 0.2, depth = 0.1; //todo : actual values
+		Vector2dd RobotExtent = {0.21, 0.31};
 		double PathfindingRadius = 0.21/2;
 
 		RobotHAL(/* args */);
@@ -100,7 +100,9 @@ namespace Overlord
 
 		virtual bool IsStarted() { return true; };
 
-		virtual void IndicateMV() {};
+		virtual void IndicateMV(bool HasMV) {};
+
+		virtual void SendScore(int score) {};
 
 		//Can the robot fit at this location in the terrain ?
 		bool IsLocationValid(Vector2dd pos, double rot) const; 

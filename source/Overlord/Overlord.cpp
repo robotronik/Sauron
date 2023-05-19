@@ -35,6 +35,7 @@ void Manager::Init(bool simulate)
 {
 	int numbots = 1;
 	StartTime = nullopt;
+	lastMVPacket = GetNow();
 	receiver = make_unique<TCPTransport>(false, GetWebsocketConfig().IP, GetWebsocketConfig().Port, GetWebsocketConfig().Interface);
 	receiveptr = receivebuffer;
 	RobotControllers.resize(numbots);
@@ -50,7 +51,7 @@ void Manager::Init(bool simulate)
 		{
 			RC = new RobotHandle(); //vrai robot
 		}
-		RC->SetPosition(Vector2dd(-1.5+0.025/2+0.1, -1.0+0.031/2+0.1), 0);
+		//RC->SetPosition(Vector2dd(-1.5+0.025/2+0.1, -1.0+0.031/2+0.1), 0);
 		RC->PositionLinear = LinearMovement(0.1, 0.1, 2, 0); //TODO: add real params 
 		RC->Rotation = LinearMovement(1, 1, 1, 0.1);
 		RC->ClawExtension = LinearMovement(1, 3, 3, 0);
@@ -61,7 +62,8 @@ void Manager::Init(bool simulate)
 			RC->Trays[j] = LinearMovement(1, 3, 3, 0);
 		}
 		RC->pf = make_shared<Pathfinder>();
-		RC->pf->SetArenaSize({1.5,1}, RC->PathfindingRadius);
+		RC->pf->SetArenaSize({1.5,1}, RC->RobotExtent.length()/2);
+		RC->pf->RobotHalfExtent = RC->RobotExtent/2;
 		double TimeBudget = 1000;
 		RC->MoveClawExtension(0, TimeBudget);
 		for (int i = 0; i < 3; i++)
@@ -129,13 +131,101 @@ void Manager::Init(bool simulate)
 		Objectives.push_back(make_unique<RetractTrayObjective>(i));
 	}
 	Objectives.push_back(make_unique<GoHomeObjective>());
-	//Objectives.push_back(make_unique<RetractClawsObjective>());
+	Objectives.push_back(make_unique<RetractClawsObjective>());
 	//Objectives.push_back(make_unique<GatherCherriesObjective>());
 	//Objectives.push_back(make_unique<DepositCherriesObjective>());
-	//Objectives.push_back(make_unique<TrayRoutine>());
+	Objectives.push_back(make_unique<TrayRoutine>());
 	//Objectives.push_back(make_unique<TakeStackObjective>());
 	//Objectives.push_back(make_unique<MakeCakeObjective>());
 	//Objectives.push_back(make_unique<GotoObjective>());
+}
+
+void Manager::GetMVData()
+{
+	//receivee from external sauron
+	int numrecv = receiver->Receive(receiveptr, sizeof(receivebuffer)+receivebuffer-receiveptr, false);
+	DecodedMinimalData data;
+	if (numrecv > 0)
+	{
+		//cout << "Received " << numrecv << " bytes from Sauron" << endl;
+		receiveptr += numrecv;
+		int numdecoded;
+		char* decodestartptr = receivebuffer;
+		int available = receiveptr-receivebuffer;
+		do
+		{
+			numdecoded = MinimalEncoder::Decode(EncodedData(receiveptr-decodestartptr, decodestartptr), data);
+			decodestartptr += numdecoded;
+		}
+		while (numdecoded >0);
+		memmove(receivebuffer, decodestartptr, receiveptr-decodestartptr);
+		receiveptr -= decodestartptr-receivebuffer;
+		//cout << "Sauron gave " <<data.Objects.size() << " objects" <<endl;
+	}
+	if (data.Objects.size() == 0)
+	{
+		return; //we're done here; no machine vision data
+	}
+	lastMVPacket = GetNow();
+	//clear all robots
+	for (int i = PhysicalBoardState.size() - 1; i >= 0; i--)
+	{
+		if (PhysicalBoardState[i].Type == ObjectType::Robot)
+		{
+			PhysicalBoardState.erase(PhysicalBoardState.begin() + i);
+		}
+	}
+	for (int i = 0; i < data.Objects.size(); i++)
+	{
+		auto& obj = data.Objects[i];
+		Vector2dd pos = Vector2dd(obj.X, obj.Y);
+		double rot = obj.rotation;
+		switch (obj.identity.type)
+		{
+
+		case PacketType::Team :
+			{
+				bool hadnoteam = Team==CDFRTeam::Unknown;
+				Team = (CDFRTeam)obj.identity.numeral;
+				for (int j = 0; j < RobotControllers.size(); j++)
+				{
+					RobotControllers[j]->BlueTeam = Team == CDFRTeam::Blue;
+					if (hadnoteam)
+					{
+						//turn on leds 2 or 3
+						RobotControllers[j]->IndicateMV(true);
+					}
+				}
+			}
+			break;
+		case PacketType::TopTracker : //may be us or the ennemy
+			{
+				int markeridx = GetTypeFromMetadata<uint8_t>(obj.identity.metadata, 0);
+				if ((markeridx >= 1 && markeridx <= 5 && Team == CDFRTeam::Blue) || (markeridx >= 6 && markeridx <= 10 && Team==CDFRTeam::Green))
+				{
+					//it's our robot : todo give the pos (maybe)
+					if (!RobotControllers[0]->IsStarted())
+					{
+						RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
+						StartTime = nullopt;
+					}
+					else if (!StartTime.has_value())
+					{
+						StartTime = GetNow();
+					}
+					break;
+				}
+			}
+			[[fallthrough]];
+		case PacketType::TrackerCube : 
+			{
+				PhysicalBoardState.emplace_back(ObjectType::Robot, pos, rot);
+			}
+		
+		default:
+			break;
+		}
+	}
 }
 
 void Manager::UpdateCollision()
@@ -156,13 +246,12 @@ void Manager::UpdateCollision()
 			case ObjectType::CakePink :
 			case ObjectType::CakeYellow : 
 				radius = CakeRadius;
-				//break;
+				break;
 			
 			default:
 				continue;
 				break;
 			}
-			radius += RC->PathfindingRadius;
 			Obstacle dynob;
 			dynob.position = thing.position;
 			dynob.radius = radius;
@@ -170,7 +259,7 @@ void Manager::UpdateCollision()
 			dynObstacles.push_back(dynob);
 		}
 		RC->pf->SetObstacles(dynObstacles);
-		//RC->pf->AddCherryHolders(RC->PathfindingRadius);
+		RC->pf->AddCherryHolders(0.03);
 		RC->pf->ComputeClumps();
 	}
 }
@@ -205,101 +294,22 @@ void Manager::SimulateEnnemy()
 
 void Manager::GatherData()
 {
-	//receivee from external sauron
-	int numrecv = receiver->Receive(receiveptr, sizeof(receivebuffer)+receivebuffer-receiveptr, false);
-	DecodedMinimalData data;
-	if (numrecv > 0)
-	{
-		//cout << "Received " << numrecv << " bytes from Sauron" << endl;
-		receiveptr += numrecv;
-		int numdecoded;
-		char* decodestartptr = receivebuffer;
-		int available = receiveptr-receivebuffer;
-		do
-		{
-			numdecoded = MinimalEncoder::Decode(EncodedData(receiveptr-decodestartptr, decodestartptr), data);
-			decodestartptr += numdecoded;
-		}
-		while (numdecoded >0);
-		memmove(receivebuffer, decodestartptr, receiveptr-decodestartptr);
-		receiveptr -= decodestartptr-receivebuffer;
-		//cout << "Sauron gave " <<data.Objects.size() << " objects" <<endl;
-	}
-	
-	
-	
 	//gather data from bots
 	for (int i = 0; i < RobotControllers.size(); i++)
 	{
 		RobotControllers[i]->Tick();
 	}
-	if (data.Objects.size() == 0)
+
+	GetMVData();
+
+	if (GetDeltaFromNow(lastMVPacket).count() > 5)
 	{
-		goto updateobstacles; //we're done here; no machine vision data
+		for (int j = 0; j < RobotControllers.size(); j++)
+		{
+			RobotControllers[j]->IndicateMV(false);
+		}
 	}
 	
-	//clear all robots
-	for (int i = PhysicalBoardState.size() - 1; i >= 0; i--)
-	{
-		if (PhysicalBoardState[i].Type == ObjectType::Robot)
-		{
-			PhysicalBoardState.erase(PhysicalBoardState.begin() + i);
-		}
-	}
-	for (int i = 0; i < data.Objects.size(); i++)
-	{
-		auto& obj = data.Objects[i];
-		Vector2dd pos = Vector2dd(obj.X, obj.Y);
-		double rot = obj.rotation;
-		switch (obj.identity.type)
-		{
-
-		case PacketType::Team :
-			{
-				bool hadnoteam = Team==CDFRTeam::Unknown;
-				Team = (CDFRTeam)obj.identity.numeral;
-				for (int j = 0; j < RobotControllers.size(); j++)
-				{
-					RobotControllers[j]->BlueTeam = Team == CDFRTeam::Blue;
-					if (hadnoteam)
-					{
-						//turn on leds 2 or 3
-						RobotControllers[j]->IndicateMV();
-					}
-					
-				}
-
-			}
-			break;
-		case PacketType::TopTracker : //may be us or the ennemy
-			{
-				int markeridx = GetTypeFromMetadata<uint8_t>(obj.identity.metadata, 0);
-				if ((markeridx >= 1 && markeridx <= 5 && Team == CDFRTeam::Blue) || (markeridx >= 6 && markeridx <= 10 && Team==CDFRTeam::Green))
-				{
-					//it's our robot : todo give the pos (maybe)
-					if (!RobotControllers[0]->IsStarted())
-					{
-						RobotControllers[0]->SetPosition({obj.X, obj.Y}, obj.rotation);
-						StartTime = nullopt;
-					}
-					else if (!StartTime.has_value())
-					{
-						StartTime = chrono::steady_clock::now();
-					}
-					break;
-				}
-			}
-		case PacketType::TrackerCube : 
-			{
-				PhysicalBoardState.emplace_back(ObjectType::Robot, pos, rot);
-			}
-		
-		default:
-			break;
-		}
-	}
-
-updateobstacles:
 	SimulateEnnemy();
 	UpdateCollision();
 }
@@ -334,10 +344,10 @@ void Manager::Run(double delta)
 			SimulationRobotStates[copyrobotidx].CopyFrom(PhysicalRobotStates[copyrobotidx]);
 			SimulatedControllers[copyrobotidx] = RobotHAL(*RobotControllers[copyrobotidx]);
 		}
-		double timebudget = 100;
+		double timebudget = 99;
 		if (StartTime.has_value())
 		{
-			std::chrono::duration<double> timeSinceStart = chrono::steady_clock::now()-StartTime.value();
+			monodelta timeSinceStart = GetNow()-StartTime.value();
 			timebudget -= timeSinceStart.count();
 		}
 		auto ExecutionPair = objective->ExecuteObjective(timebudget, &SimulatedControllers[robotidx], SimulationBoardState, &SimulationRobotStates[robotidx]);
@@ -594,17 +604,17 @@ void Manager::Thread(bool v3d, bool simulate)
 #endif
 	bool killed = false;
 	//usleep(2*1000000);
-	lastTick = chrono::steady_clock::now();
+	lastTick = GetNow();
 	while (!killed)
 	{
-		auto then = chrono::steady_clock::now();
-		std::chrono::duration<double> delta = then - lastTick;
+		auto then = GetNow();
+		monodelta delta = then - lastTick;
 		GatherData();
 		//Run(delta.count());
 		Run(1.0/50);
 		killed = !Display(v3d);
-		auto now = chrono::steady_clock::now();
-		std::chrono::duration<double> deltadel = now - then;
+		auto now = GetNow();
+		monodelta deltadel = now - then;
 		int micros = 1000000/50 - delta.count() * 1000000;
 		if (micros > 0)
 		{

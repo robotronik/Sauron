@@ -7,6 +7,8 @@
 #include <filesystem>
 #include "thirdparty/serialib.h"
 
+#include "Overlord/cdfrdefines.hpp"
+
 using namespace Overlord;
 using namespace std;
 namespace fs = std::filesystem;
@@ -16,7 +18,7 @@ namespace fs = std::filesystem;
 RobotHandle::RobotHandle()
 {
 	bridgehandle = nullptr;
-	lastTick = chrono::steady_clock::now();
+	lastTick = GetNow();
 	lastKeepalive = lastTick;
 }
 
@@ -56,7 +58,7 @@ bool RobotHandle::RegenerateSerial()
 	{
 		needregen = true;
 	}
-	std::chrono::duration<double> TimeSinceLastKeepalive = chrono::steady_clock::now() - lastKeepalive;
+	monodelta TimeSinceLastKeepalive = GetNow() - lastKeepalive;
 	if (TimeSinceLastKeepalive.count() > 2)
 	{
 		needregen = true;
@@ -80,12 +82,12 @@ bool RobotHandle::RegenerateSerial()
 		usleep(1000000);
 		bridgehandle->setDTR();
 		usleep(1000000);
-		lastKeepalive = chrono::steady_clock::now();
+		lastKeepalive = GetNow();
 	}
 	return bridgehandle->isDeviceOpen();
 }
 
-void RobotHandle::IndicateMV() 
+void RobotHandle::IndicateMV(bool HasMV) 
 {
 	if (!bridgehandle)
 	{
@@ -95,20 +97,35 @@ void RobotHandle::IndicateMV()
 	{
 		return;
 	}
-	
-	
-	bridgehandle->writeString("!ledUI2:1\n");
+	char mvbuff[256];
+	snprintf(mvbuff, sizeof(mvbuff), "!ledUI2:%d\n!ledUI3:%d\n", HasMV, IsBlueTeam());
+	bridgehandle->writeString(mvbuff);
+}
+
+void RobotHandle::SendScore(int score)
+{
+	if (!bridgehandle)
+	{
+		return;
+	}
+	if (!bridgehandle->isDeviceOpen())
+	{
+		return;
+	}
+	char scorebuff[256];
+	snprintf(scorebuff, sizeof(scorebuff), "!setscore:%d\n", score);
+	bridgehandle->writeString(scorebuff);
 }
 
 void RobotHandle::Tick()
 {
 	if (!RegenerateSerial())
 	{
-		lastTick = chrono::steady_clock::now();
+		lastTick = GetNow();
 		return;
 	}
-	auto now = chrono::steady_clock::now();
-	std::chrono::duration<double> delta = now - lastTick;
+	auto now = GetNow();
+	monodelta delta = now - lastTick;
 
 	if (delta.count() > 1.0/50.0)
 	{
@@ -121,7 +138,7 @@ void RobotHandle::Tick()
 		//blink led to show communication success on motors and UI
 		bridgehandle->writeString(keepalivebuffer);
 		keepalivestatus = !keepalivestatus;
-		lastTick = chrono::steady_clock::now();
+		lastTick = GetNow();
 	}
 	
 	
@@ -201,7 +218,7 @@ void RobotHandle::Tick()
 			if (succ == 1)
 			{
 				cout << "Received keepalive: " << keepalivenum << endl;
-				lastKeepalive = chrono::steady_clock::now();
+				lastKeepalive = GetNow();
 			}
 			
 		}

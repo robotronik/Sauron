@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Overlord/RobotHAL.hpp"
+#include "Overlord/cdfrdefines.hpp"
 
 #include <string>
 #include <chrono>
@@ -16,7 +17,7 @@ namespace Overlord
 		int numreceived = 0;
 		bool RipCordStatus = true;
 		bool keepalivestatus = false;
-		std::chrono::time_point<std::chrono::steady_clock> lastTick, lastKeepalive;
+		monotime lastTick, lastKeepalive;
 		Vector2dd RobotReportedPosition = {0,0};
 		double RobotReportedRotation = 0;
 		Vector2dd RobotOrigin = {0,0};
@@ -31,7 +32,9 @@ namespace Overlord
 
 		bool RegenerateSerial();
 
-		virtual void IndicateMV() override;
+		virtual void IndicateMV(bool HasMV) override;
+
+		virtual void SendScore(int score) override;
 
 		virtual void Tick() override;
 

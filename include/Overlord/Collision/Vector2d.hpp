@@ -6,8 +6,6 @@
 #include <algorithm>
 namespace Overlord
 {
-
-	extern const double CakeTolerance, PositionTolerance, AngleTolerance, CakeHeight, CakeRadius, ZoneWidth;
 	
 	template<class T>
 	struct Vector2d

@@ -28,8 +28,8 @@ namespace Overlord
 		std::set<BaseObjective*> LastTickObjectives;
 		CDFRTeam Team;
 
-		std::chrono::time_point<std::chrono::steady_clock> lastTick;
-		std::optional<std::chrono::time_point<std::chrono::steady_clock>> StartTime;
+		monotime lastTick, lastMVPacket;
+		std::optional<monotime> StartTime;
 
 		std::unique_ptr<TCPTransport> receiver;
 		char receivebuffer[1<<16];
@@ -40,6 +40,8 @@ namespace Overlord
 		#endif
 
 		void Init(bool simulate = false);
+
+		void GetMVData();
 
 		void UpdateCollision();
 

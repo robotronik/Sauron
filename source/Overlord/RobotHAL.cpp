@@ -6,6 +6,8 @@
 #include <limits>
 #include <iostream>
 
+#include "Overlord/cdfrdefines.hpp"
+
 
 using namespace std;
 using namespace Overlord;

@@ -23,6 +23,7 @@ namespace Overlord
 		std::vector<std::vector<Obstacle>> Clumps;
 		Vector2dd ArenaSizeRemoved;
 	public:
+		Vector2dd RobotHalfExtent;
 
 		bool IsInArena(Vector2dd pos) const;
 
@@ -34,6 +35,8 @@ namespace Overlord
 
 		bool IsColliding(Vector2dd pos) const;
 
+		static Vector2dd ProjectOnLine(Vector2dd X, Vector2dd A, Vector2dd B);
+
 		void SetObstacles(std::vector<Obstacle> InObstacles);
 
 		void AddCherryHolders(double RobotRadius);
@@ -41,6 +44,8 @@ namespace Overlord
 		void ComputeClumps();
 
 		std::vector<Vector2dd> GetClumpEdges(int clumpidx);
+
+		static void SortEdgesPath(std::vector<Vector2dd> &edges, Vector2dd start, Vector2dd end);
 
 		static double GetPathLength(const Path& inpath);
 
@@ -50,14 +55,14 @@ namespace Overlord
 
 		std::vector<std::pair<int, double>> GetIntersections(Vector2dd start, Vector2dd end);
 
-		std::optional<Path> Pathfind(Vector2dd start, Vector2dd end, int depth = 3);
+		std::optional<Path> Pathfind(Vector2dd start, Vector2dd end, int depth = 5);
 
 		bool IsOffsetInSingularity(Vector2dd position, Vector2dd target, Vector2dd offset);
 
 		//distance, angle
 		std::vector<std::pair<double, double>> GetOffsetTarget(Vector2dd position, Vector2dd target, Vector2dd offset);
 
-		std::optional<Path> PathfindOffset(Vector2dd start, Vector2dd end, Vector2dd offset, int depth = 3);
+		std::optional<Path> PathfindOffset(Vector2dd start, Vector2dd end, Vector2dd offset, int depth = 5);
 	};
 } // namespace Overlord
 
