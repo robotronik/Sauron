@@ -1,3 +1,9 @@
+/* 
+
+	Ce fichier est une bibliothèque de fonctions mathématiques 3D. Il utilise la bibliothèque OpenCV, une bibliothèque d'outils et d'algorithme de vision par ordinateur. Ainsi que la bibliothèque glm, une bibliothèque mathématique pour les graphiques 3D.
+
+*/
+
 #include "math3d.hpp"
 #include <math.h>
 #include <glm/glm.hpp>
@@ -5,6 +11,8 @@
 using namespace cv;
 using namespace std;
 
+
+// Adapte la taille d'une image à une taille cible en gardant le ratio de l'image
 Size ScaleToFit(Size original, Size target)
 {
 	Size &insize = target;
@@ -18,6 +26,7 @@ Size ScaleToFit(Size original, Size target)
 	return outsize;
 }
 
+// Surcharge de la fonction précédente pour adapter une image à un rectangle et retourne ce rectangle
 cv::Rect ScaleToFit(cv::Size original, cv::Rect target)
 {
 	Size targetsz = ScaleToFit(original, target.size());
@@ -26,6 +35,7 @@ cv::Rect ScaleToFit(cv::Size original, cv::Rect target)
 	return roi;
 }
 
+// Cette fonction calcule le champ de vision de la caméra (en radians) à partir de la matrice de la caméra et de la résolution de l'image
 Size2d GetCameraFOV(Size Resolution, Mat CameraMatrix)
 {
 	if (CameraMatrix.size().width != 3 || CameraMatrix.size().height != 3)
@@ -37,21 +47,25 @@ Size2d GetCameraFOV(Size Resolution, Mat CameraMatrix)
 	return Size2d(fovx, fovy);
 } 
 
+// Cette fonction renvoie une matrice de transformation d'espace qui convertit les coordonnées de l'image en coordonnées du monde réel
 Matx33d ImageToWorld()
 {
 	return Matx33d(1,0,0, 0,-1,0, 0,0,1);
 }
 
+// Retourne la longueur carrée d'un vecteur
 double GetVectorLengthSquared(Vec3d x)
 {
 	return x.ddot(x);
 }
 
+// Retourne la longueur d'un vecteur normalisé
 Vec3d NormaliseVector(Vec3d x)
 {
 	return x / sqrt(GetVectorLengthSquared(x));
 }
 
+// Retourne un vecteur orthogonal à un vecteur de base
 Vec3d MakeVectorOrthogonal(Vec3d base, Vec3d x)
 {
 	double comp = x.ddot(base);
@@ -59,6 +73,7 @@ Vec3d MakeVectorOrthogonal(Vec3d base, Vec3d x)
 	return NormaliseVector(rem);
 }
 
+// Retourne une matrice de rotation à partir de trois vecteurs
 Matx33d MakeRotationFromXYZ(Vec3d X, Vec3d Y, Vec3d Z)
 {
 	Matx33d outputmatrix;
@@ -80,6 +95,7 @@ Matx33d MakeRotationFromXYZ(Vec3d X, Vec3d Y, Vec3d Z)
 	return outputmatrix;
 }
 
+// Retourne une matrice de rotation à partir de deux vecteurs
 Matx33d MakeRotationFromXY(Vec3d X, Vec3d Y)
 {
 	X = NormaliseVector(X);
@@ -88,6 +104,8 @@ Matx33d MakeRotationFromXY(Vec3d X, Vec3d Y)
 	return MakeRotationFromXYZ(X, Y, Z);
 }
 
+
+// Retourne une matrice de rotation à partir de deux vecteurs
 Matx33d MakeRotationFromXZ(Vec3d X, Vec3d Z)
 {
 	X = NormaliseVector(X);
@@ -96,6 +114,7 @@ Matx33d MakeRotationFromXZ(Vec3d X, Vec3d Z)
 	return MakeRotationFromXYZ(X, Y, Z);
 }
 
+// Retourne une matrice de rotation à partir de deux vecteurs
 Matx33d MakeRotationFromZX(Vec3d Z, Vec3d X)
 {
 	Z = NormaliseVector(Z);
@@ -104,6 +123,7 @@ Matx33d MakeRotationFromZX(Vec3d Z, Vec3d X)
 	return MakeRotationFromXYZ(X, Y, Z);
 }
 
+// Retourne une matrice de rotation à partir de deux vecteurs
 Matx33d MakeRotationFromZY(Vec3d Z, Vec3d Y)
 {
 	Z = NormaliseVector(Z);
@@ -112,11 +132,13 @@ Matx33d MakeRotationFromZY(Vec3d Z, Vec3d Y)
 	return MakeRotationFromXYZ(X, Y, Z);
 }
 
+// Retourne une matrice de rotation à partir de deux vecteurs
 Matx31d GetAxis(Matx33d rotation, int i)
 {
 	return rotation.col(i);
 }
 
+// Retourne l'angle de rotation autour de l'axe Z
 double GetRotZ(Matx33d rotation)
 {
 	Matx31d Xaxis = GetAxis(rotation, 0);
@@ -125,6 +147,7 @@ double GetRotZ(Matx33d rotation)
 	return atan2(Xaxis(1,0), Xaxis(0,0));
 }
 
+// Projette un point sur une ligne donnée
 Vec3d ProjectPointOnLine(Vec3d Point, Vec3d LineOrig, Vec3d LineDir)
 {
 	Vec3d LineToPoint = Point-LineOrig;
@@ -133,6 +156,7 @@ Vec3d ProjectPointOnLine(Vec3d Point, Vec3d LineOrig, Vec3d LineDir)
 	return projected;
 }
 
+// Cette fonction trouve les points les plus proches sur deux lignes
 bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Vec3d Line2Dir, Vec3d &Line1Point, Vec3d &Line2Point)
 {
 	/*https://math.stackexchange.com/questions/846054/closest-points-on-two-line-segments*/
@@ -192,6 +216,7 @@ bool ClosestPointsOnTwoLine(Vec3d Line1Orig, Vec3d Line1Dir, Vec3d Line2Orig, Ve
 	return true;*/
 }
 
+// Cette fonction convertit une transformation affine 3D (rotation + translation) de OpenCV en matrice 4x4 de glm
 glm::mat4 Affine3DToGLM(cv::Affine3d Location)
 {
 	glm::mat4 outmat;
