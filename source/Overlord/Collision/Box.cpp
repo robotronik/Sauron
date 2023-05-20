@@ -1,8 +1,16 @@
+/* 
+
+	Système de détection entre boites.
+
+*/
+
 #include "Overlord/Collision/Box.hpp"
 
 using namespace Overlord;
 using namespace std;
 
+
+// Obtenir les coordonnées des coins de la boite.  Les coins sont stockés dans un vecteur. La méthode utilise des vecteurs pour décrire la rotation de la boite.
 std::vector<Vector2dd> Box::GetCorners() const
 {
 	Vector2dd xvec(rot), yvec(rot+M_PI_2);
@@ -16,6 +24,8 @@ std::vector<Vector2dd> Box::GetCorners() const
 	return corners;
 }
 
+// Cette méthode vérifie si la boite actuelle est en collision avec une autre boite.
+// Pour ce faire, on récupère les coins de la boite et on vérifie si un des coins est dans la boite.
 bool Box::Colliding(const Box &other) const
 {
 	auto othercorners = other.GetCorners();

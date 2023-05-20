@@ -9,7 +9,7 @@ project(${PROJECT_NAME})
 # Find OpenCV, you may need to set OpenCV_DIR variable
 # to the absolute path to the directory containing OpenCVConfig.cmake file
 # via the command line or GUI
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4.7 REQUIRED)
 
 #Window manager, used to get the screen resolution
 find_package(X11 REQUIRED)
